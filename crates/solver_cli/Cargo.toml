@@ -1,0 +1,12 @@
+[package]
+name = "opentimetable-solver-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Command-line interface and benchmark runner for OpenTimetable solver"
+license = "MIT"
+
+[dependencies]
+opentimetable-solver-core = { path = "../solver_core" }
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

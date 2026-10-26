@@ -1,0 +1,25 @@
+[package]
+name = "opentimetable-solver-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WebAssembly bindings for OpenTimetable constraint solver"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+opentimetable-solver-core = { path = "../solver_core" }
+wasm-bindgen = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6"
+rand = "0.8"
+console_error_panic_hook = "0.1"
+getrandom = { version = "0.2", features = ["js"] }
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "console",
+]
