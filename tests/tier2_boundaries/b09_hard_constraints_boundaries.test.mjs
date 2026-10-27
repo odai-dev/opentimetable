@@ -7,6 +7,7 @@ import { evaluateHardConflicts, generateSyntheticSchedule } from '../helpers/sol
 
 describe('Tier 2 - Boundary: Feature 9 (Hard Constraints Engine)', () => {
   const baseReq = generateSyntheticSchedule(4, 2, 2, 2);
+  baseReq.teachers.forEach((t) => (t.unavailableSlots = []));
 
   it('T2.B9.1: Single remaining available slot boundary (34 of 35 slots blocked)', () => {
     const tightReq = JSON.parse(JSON.stringify(baseReq));
@@ -38,6 +39,7 @@ describe('Tier 2 - Boundary: Feature 9 (Hard Constraints Engine)', () => {
 
   it('T2.B9.3: Exact boundary for maxConsecutivePeriods (N vs N + 1)', () => {
     const req = JSON.parse(JSON.stringify(baseReq));
+    req.teachers.forEach((t) => (t.unavailableSlots = []));
     req.config.maxConsecutivePeriods = 3;
 
     // Exactly 3 consecutive periods: 0, 1, 2 (boundary allowed)

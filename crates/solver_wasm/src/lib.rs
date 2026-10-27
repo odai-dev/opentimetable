@@ -9,7 +9,7 @@ use opentimetable_solver_core::{
 };
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use std::time::{Duration, Instant};
+use opentimetable_solver_core::time::{Duration, Instant};
 
 #[wasm_bindgen(start)]
 pub fn init() {

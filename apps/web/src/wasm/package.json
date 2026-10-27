@@ -1,0 +1,17 @@
+{
+  "name": "opentimetable-solver-wasm",
+  "type": "module",
+  "description": "WebAssembly bindings for OpenTimetable constraint solver",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "opentimetable_solver_wasm_bg.wasm",
+    "opentimetable_solver_wasm.js",
+    "opentimetable_solver_wasm.d.ts"
+  ],
+  "main": "opentimetable_solver_wasm.js",
+  "types": "opentimetable_solver_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

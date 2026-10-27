@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Sparkles, X, Sliders, CheckCircle2, AlertTriangle, Layers, Clock } from 'lucide-react';
 import { GenerationComplexity } from '../lib/types';
+import { SolverProgressPayload } from '../lib/solver-protocol';
 import { translations } from '../lib/i18n';
 
 interface GenerateModalProps {
@@ -10,6 +11,7 @@ interface GenerateModalProps {
   onClose: () => void;
   lang: 'en' | 'ar';
   isSolving: boolean;
+  progress?: SolverProgressPayload | null;
   onRunGenerate: (complexity: GenerationComplexity, options: { minimizeGaps: boolean; strictRooms: boolean; distributeSubjects: boolean }) => void;
   solveDurationMs?: number | null;
   unplacedCount: number;
@@ -21,6 +23,7 @@ export const GenerateModal: React.FC<GenerateModalProps> = ({
   onClose,
   lang,
   isSolving,
+  progress,
   onRunGenerate,
   solveDurationMs,
   unplacedCount,
@@ -147,13 +150,30 @@ export const GenerateModal: React.FC<GenerateModalProps> = ({
               <div className="flex items-center justify-between text-xs font-bold text-sky-900">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-sky-600 animate-spin" />
-                  {t.generatorModal.generating}
+                  {progress
+                    ? (isRtl ? progress.stageNameAr : progress.stageName)
+                    : t.generatorModal.generating}
                 </span>
-                <span>Stage 2 / 3</span>
+                <span>
+                  {progress ? `Stage ${progress.stage} / ${progress.totalStages}` : 'Solving...'}
+                </span>
               </div>
               <div className="w-full bg-sky-200 rounded-full h-3 overflow-hidden">
-                <div className="h-full bg-sky-600 animated-progress-stripes w-3/4 rounded-full" />
+                <div
+                  className="h-full bg-sky-600 animated-progress-stripes rounded-full transition-all duration-300"
+                  style={{
+                    width: progress
+                      ? `${Math.round((progress.stage / progress.totalStages) * 100)}%`
+                      : '60%',
+                  }}
+                />
               </div>
+              {progress && (
+                <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                  <span>{t.generatorModal.iterations}: {progress.iteration}</span>
+                  <span>{progress.elapsedMs} ms</span>
+                </div>
+              )}
             </div>
           ) : solveDurationMs != null ? (
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">

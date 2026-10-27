@@ -1,0 +1,11 @@
+{
+  "name": "opentimetable",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenTimetable Enterprise Scheduling Platform",
+  "scripts": {
+    "build:wasm": "wasm-pack build crates/solver_wasm --target web --out-dir ../../apps/web/src/wasm && mkdir -p apps/web/public/wasm && cp apps/web/src/wasm/opentimetable_solver_wasm_bg.wasm apps/web/public/wasm/",
+    "build:web": "npm --prefix apps/web run build",
+    "test": "bash tests/run_all_tests.sh"
+  }
+}

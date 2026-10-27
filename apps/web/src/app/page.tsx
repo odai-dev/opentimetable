@@ -29,6 +29,7 @@ import { GenerateModal } from '../components/GenerateModal';
 import { TimeOffModal } from '../components/TimeOffModal';
 import { BasicDataModal } from '../components/BasicDataModal';
 import { TestTimetableModal } from '../components/TestTimetableModal';
+import { useWasmSolver } from '../lib/useWasmSolver';
 
 export default function TimetableStudioPage() {
   const [lang, setLang] = useState<Language>('en');
@@ -41,9 +42,15 @@ export default function TimetableStudioPage() {
   const [redoStack, setRedoStack] = useState<Placement[][]>([]);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
-  // Solver states
-  const [isSolving, setIsSolving] = useState<boolean>(false);
-  const [solveStats, setSolveStats] = useState<{ durationMs: number; status: string } | null>(null);
+  // Background WASM Solver Hook
+  const {
+    isReady: isWasmReady,
+    isSolving,
+    progress: solverProgress,
+    solveStats,
+    solve: runWasmSolve,
+    cancel: cancelWasmSolve,
+  } = useWasmSolver();
 
   // Dialog states
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
@@ -320,47 +327,30 @@ export default function TimetableStudioPage() {
     );
   };
 
-  // Run Solver Generation (simulating native Rust/WASM constraint solver)
-  const handleRunGenerate = (
+  // Run Background Web Worker WASM Solver
+  const handleRunGenerate = async (
     complexity: GenerationComplexity,
     options: { minimizeGaps: boolean; strictRooms: boolean; distributeSubjects: boolean }
   ) => {
     if (isReadOnly) return;
-    setIsSolving(true);
-    const start = performance.now();
     recordHistory();
 
-    // Complexity duration mapping
-    const delay = complexity === 'normal' ? 380 : complexity === 'large' ? 820 : 1350;
-
-    setTimeout(() => {
-      const solvedPlacements: Placement[] = [];
-      const days = 5;
-      const periods = 7;
-      let slot = 0;
-
-      // Conflict-free assignment across classes
-      for (const lesson of sampleLessons) {
-        const d = slot % days;
-        const p = Math.floor(slot / days) % periods;
-        solvedPlacements.push({
-          lessonId: lesson.id,
-          dayIndex: d,
-          periodIndex: p,
-          roomId: lesson.roomId || sampleRooms[0].id,
-        });
-        slot++;
-      }
+    try {
+      const solvedPlacements = await runWasmSolve({
+        lessons: sampleLessons,
+        teachers: sampleTeachers,
+        classes: sampleClasses,
+        rooms: sampleRooms,
+        subjects: sampleSubjects,
+        complexity,
+        options,
+      });
 
       setPlacements(solvedPlacements);
-      const elapsed = Math.round((performance.now() - start) * 10) / 10;
-      setSolveStats({
-        durationMs: elapsed,
-        status: `OPTIMAL (${complexity.toUpperCase()} Solver - 0 Hard Conflicts)`,
-      });
-      setIsSolving(false);
       setIsGenerateModalOpen(false);
-    }, delay);
+    } catch (err) {
+      console.error('WASM Solver execution encountered error:', err);
+    }
   };
 
   // Export CSV
@@ -520,6 +510,7 @@ export default function TimetableStudioPage() {
         onClose={() => setIsGenerateModalOpen(false)}
         lang={lang}
         isSolving={isSolving}
+        progress={solverProgress}
         onRunGenerate={handleRunGenerate}
         solveDurationMs={solveStats?.durationMs}
         unplacedCount={unplacedCount}

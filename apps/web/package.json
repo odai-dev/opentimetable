@@ -4,6 +4,7 @@
   "private": true,
   "description": "OpenTimetable Enterprise Studio & University Portal Interface",
   "scripts": {
+    "build:wasm": "wasm-pack build ../../crates/solver_wasm --target web --out-dir ../../apps/web/src/wasm && mkdir -p public/wasm && cp src/wasm/opentimetable_solver_wasm_bg.wasm public/wasm/",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

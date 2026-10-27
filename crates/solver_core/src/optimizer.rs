@@ -1,4 +1,4 @@
-use std::time::Instant;
+use crate::time::Instant;
 use rand::Rng;
 use crate::bitmask::*;
 use crate::state::SolverState;

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use crate::time::{Duration, Instant};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 

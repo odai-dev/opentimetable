@@ -7,6 +7,7 @@ pub mod optimizer;
 pub mod solver;
 pub mod validator;
 pub mod synthetic;
+pub mod time;
 
 pub use models::*;
 pub use solver::TimetableSolver;
