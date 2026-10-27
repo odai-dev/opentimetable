@@ -4,6 +4,21 @@ export type ViewMode = 'class' | 'teacher' | 'room' | 'wall';
 
 export type Language = 'en' | 'ar';
 
+export type RibbonTab = 'file' | 'main' | 'timetable' | 'specification' | 'view';
+
+export type GenerationComplexity = 'normal' | 'large' | 'huge';
+
+export type AvailabilityState = 0 | 1 | 2; // 1 = Available (Check), 0 = Blocked (X), 2 = Disfavored (?)
+
+export type BasicDataTab = 'school' | 'subjects' | 'classes' | 'rooms' | 'teachers' | 'lessons';
+
+export interface DragItem {
+  type: 'deck' | 'grid';
+  lessonId: string;
+  sourceDay?: number;
+  sourcePeriod?: number;
+}
+
 export interface Teacher {
   id: string;
   name: string;
