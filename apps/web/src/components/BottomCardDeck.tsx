@@ -278,7 +278,9 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
       {/* Dock Hint Footer */}
       <div className="bg-slate-200/60 border-t border-slate-300/60 px-3 py-0.5 text-[10px] text-slate-500 flex items-center justify-between">
         <span>💡 {t.deck.dragHint}</span>
-        <span className="text-[9px] font-mono opacity-60">OpenTimetable Cards Shelf v1.0</span>
+        <span className="text-[10px] text-slate-500 font-medium">
+          {unplacedLessons.length} {isRtl ? 'بطاقات في البنك' : 'cards in bank'}
+        </span>
       </div>
     </div>
   );

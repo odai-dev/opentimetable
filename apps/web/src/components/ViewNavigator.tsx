@@ -4,11 +4,8 @@ import React from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   AlertTriangle,
-  CheckCircle2,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import { ViewMode, ClassGroup, Teacher, Room, Conflict } from '../lib/types';
 import { translations } from '../lib/i18n';
@@ -124,41 +121,28 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
         )}
       </div>
 
-      {/* Right: Schedule Live Metrics Badges */}
+      {/* Right: Clean Desktop Schedule Status */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Placed vs Unplaced stats */}
-        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded border border-slate-300 shadow-xs text-slate-700">
+        {/* Placed vs Total lessons counter */}
+        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded border border-slate-300 shadow-xs text-slate-700 font-medium">
           <Layers className="w-3.5 h-3.5 text-sky-600" />
-          <span className="font-semibold">
-            {placedLessonsCount} / {totalLessons}
+          <span>
+            {isRtl ? 'الحصص المسكنة:' : 'Placed:'}{' '}
+            <strong className="text-slate-900">{placedLessonsCount}</strong> / {totalLessons}
           </span>
-          <span className="text-slate-400">|</span>
-          <span className={unplacedCount > 0 ? 'text-amber-600 font-bold' : 'text-slate-500'}>
-            {unplacedCount} {isRtl ? 'معلقة' : 'pending'}
-          </span>
+          {unplacedCount > 0 && (
+            <span className="text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded text-[11px] border border-amber-200">
+              {unplacedCount} {isRtl ? 'متبقية' : 'unplaced'}
+            </span>
+          )}
         </div>
 
-        {/* Conflict indicator */}
-        {conflicts.length === 0 ? (
-          <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded shadow-xs font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{t.viewNav.stats.allValid}</span>
-          </div>
-        ) : (
+        {/* Conflict indicator - only displays when real conflicts exist */}
+        {conflicts.length > 0 && (
           <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-300 text-rose-800 px-2.5 py-1 rounded shadow-xs font-bold animate-pulse">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
             <span>
               {conflicts.length} {t.viewNav.stats.conflicts}
-            </span>
-          </div>
-        )}
-
-        {/* Solver duration badge */}
-        {solveDurationMs != null && (
-          <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-1 rounded shadow-xs font-medium">
-            <Sparkles className="w-3 h-3 text-indigo-500" />
-            <span>
-              {solveDurationMs} ms
             </span>
           </div>
         )}

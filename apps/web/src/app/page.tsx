@@ -32,8 +32,7 @@ import { TestTimetableModal } from '../components/TestTimetableModal';
 import { useWasmSolver } from '../lib/useWasmSolver';
 
 export default function TimetableStudioPage() {
-  const [lang, setLang] = useState<Language>('en');
-  const [role, setRole] = useState<Role>('ADMIN');
+  const [lang, setLang] = useState<Language>('ar');
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTab>('main');
   const [viewMode, setViewMode] = useState<ViewMode>('class');
   const [selectedEntityId, setSelectedEntityId] = useState<string>('C1');
@@ -62,9 +61,9 @@ export default function TimetableStudioPage() {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  // Role permissions
-  const isReadOnly = role === 'STUDENT';
-  const canRunSolver = ['ADMIN', 'DEPT_HEAD'].includes(role);
+  // Desktop timetable authoring mode (always full scheduling capability)
+  const isReadOnly = false;
+  const canRunSolver = true;
 
   // Fast entity lookup maps
   const teacherMap = useMemo(() => new Map(sampleTeachers.map((item) => [item.id, item])), []);
@@ -426,8 +425,6 @@ export default function TimetableStudioPage() {
         setLang={setLang}
         activeTab={activeRibbonTab}
         setActiveTab={setActiveRibbonTab}
-        role={role}
-        setRole={setRole}
         viewMode={viewMode}
         setViewMode={setViewMode}
         canRunSolver={canRunSolver}
@@ -503,6 +500,34 @@ export default function TimetableStudioPage() {
         onClearEntityPlacements={handleClearEntityPlacements}
         isReadOnly={isReadOnly}
       />
+
+      {/* 5. Authentic Desktop Status Bar */}
+      <div className="bg-slate-300 border-t border-slate-400/80 px-3 py-1 flex items-center justify-between text-[11px] text-slate-700 select-none shrink-0 font-sans">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs"></span>
+            <span>{isRtl ? 'جاهز' : 'Ready'}</span>
+          </div>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-600">
+            {isRtl ? 'الملف الحالي: Saudi Arabia 1.roz (الإصدار 314)' : 'Current File: Saudi Arabia 1.roz (v314)'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-slate-600 hidden md:inline">
+            {isRtl ? 'محرك التسكين: مدمج (Rust WASM)' : 'Engine: Client WASM'}
+          </span>
+          <span className="text-slate-400 hidden md:inline">|</span>
+          <span className="text-slate-600 font-mono text-[10px]">
+            {isRtl ? 'الترميز: Windows-1256' : 'Encoding: UTF-8'}
+          </span>
+          <span className="text-slate-400">|</span>
+          <span className="font-semibold text-slate-700">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+        </div>
+      </div>
 
       {/* Modals */}
       <GenerateModal

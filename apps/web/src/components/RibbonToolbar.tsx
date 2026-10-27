@@ -26,7 +26,6 @@ import {
   ZoomIn,
   ZoomOut,
   HelpCircle,
-  ShieldCheck,
 } from 'lucide-react';
 import { RibbonTab, Role, ViewMode, BasicDataTab } from '../lib/types';
 import { translations } from '../lib/i18n';
@@ -36,8 +35,8 @@ interface RibbonToolbarProps {
   setLang: (lang: 'en' | 'ar') => void;
   activeTab: RibbonTab;
   setActiveTab: (tab: RibbonTab) => void;
-  role: Role;
-  setRole: (role: Role) => void;
+  role?: Role;
+  setRole?: (role: Role) => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   canRunSolver: boolean;
@@ -111,6 +110,28 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
           {/* Quick Access Tools */}
           <div className="flex items-center gap-1">
             <button
+              onClick={() => alert(isRtl ? 'مشروع جديد' : 'New Project')}
+              title={t.ribbon.tools.newFile}
+              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+            >
+              <FilePlus className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onImportRoz}
+              title={t.ribbon.tools.openRoz}
+              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => alert(isRtl ? 'تم حفظ التغييرات محلياً' : 'Changes saved locally')}
+              title={t.ribbon.tools.saveFile}
+              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+            >
+              <Save className="w-3.5 h-3.5" />
+            </button>
+            <div className="h-3 w-[1px] bg-slate-600 mx-0.5" />
+            <button
               onClick={onUndo}
               disabled={!canUndo || isReadOnly}
               title={t.ribbon.tools.undo}
@@ -127,13 +148,6 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               <RotateCw className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => alert(isRtl ? 'تم حفظ التغييرات محلياً' : 'Changes saved locally')}
-              title={t.ribbon.tools.saveFile}
-              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
-            >
-              <Save className="w-3.5 h-3.5" />
-            </button>
-            <button
               onClick={onPrintPreview}
               title={t.ribbon.tools.printPreview}
               className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
@@ -143,40 +157,52 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
           </div>
         </div>
 
-        {/* Right Corner: SIS status, Portal Role & Language Switcher */}
+        {/* Right Corner: Bilingual Language Switcher, Help & Native Window Controls */}
         <div className="flex items-center gap-2">
-          {/* SIS Status Badge */}
-          <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isRtl ? 'منظومة مسار SIS متصلة' : 'SIS / Masar Connected'}</span>
-          </div>
-
-          {/* Portal Role Selector */}
-          <div className="flex items-center gap-1 bg-slate-700/80 px-2 py-0.5 rounded border border-slate-600">
-            <span className="text-[11px] text-slate-300 hidden sm:inline">
-              {isRtl ? 'الدور:' : 'Role:'}
-            </span>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              className="bg-transparent text-slate-100 font-semibold text-[11px] focus:outline-none cursor-pointer"
-            >
-              <option value="ADMIN" className="bg-slate-800 text-white">{t.roles.ADMIN}</option>
-              <option value="DEPT_HEAD" className="bg-slate-800 text-white">{t.roles.DEPT_HEAD}</option>
-              <option value="ACADEMIC_ADVISOR" className="bg-slate-800 text-white">{t.roles.ACADEMIC_ADVISOR}</option>
-              <option value="STAFF" className="bg-slate-800 text-white">{t.roles.STAFF}</option>
-              <option value="TEACHER" className="bg-slate-800 text-white">{t.roles.TEACHER}</option>
-              <option value="STUDENT" className="bg-slate-800 text-white">{t.roles.STUDENT}</option>
-            </select>
-          </div>
-
           {/* Bilingual Language Switcher */}
           <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="px-2.5 py-0.5 rounded bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs transition border border-sky-500/50"
+            className="px-2.5 py-0.5 rounded bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs transition border border-sky-500/50 shadow-xs"
           >
             {lang === 'en' ? '🇸🇦 العربية (RTL)' : '🇺🇸 English (LTR)'}
           </button>
+
+          {/* About / Help */}
+          <button
+            onClick={() =>
+              alert(
+                isRtl
+                  ? 'برنامج الجداول المدرسية المفتوحة (OpenTimetable 2026)\nنظام متكامل مفتوح المصدر لإعداد وتوليد الجداول المدرسية والجامعية.\nمتوافق مع ملفات .roz ويعمل بكفاءة عالية بدون الحاجة لأي خوادم خارجية.'
+                  : 'OpenTimetable 2026 Studio\nStandalone open-source school and university timetable system.\nCompatible with .roz files with high-performance desktop parity.'
+              )
+            }
+            title={isRtl ? 'حول البرنامج' : 'About OpenTimetable'}
+            className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Desktop Window Controls (Min, Max, Close) */}
+          <div className="flex items-center ml-1 border-l border-slate-700 pl-1.5 gap-0.5">
+            <div
+              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-white rounded-xs text-[10px] cursor-pointer"
+              title={isRtl ? 'تصغير' : 'Minimize'}
+            >
+              ─
+            </div>
+            <div
+              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-white rounded-xs text-[10px] cursor-pointer"
+              title={isRtl ? 'تكبير' : 'Maximize'}
+            >
+              □
+            </div>
+            <div
+              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-rose-600 hover:text-white rounded-xs text-[10px] cursor-pointer"
+              title={isRtl ? 'إغلاق' : 'Close'}
+            >
+              ✕
+            </div>
+          </div>
         </div>
       </div>
 
