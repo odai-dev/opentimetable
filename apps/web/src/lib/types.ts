@@ -69,8 +69,31 @@ export interface Placement {
 }
 
 export interface Conflict {
-  type: 'TEACHER_CLASH' | 'ROOM_CLASH' | 'CLASS_CLASH' | 'CAPACITY_CLASH';
+  type: 'TEACHER_CLASH' | 'ROOM_CLASH' | 'CLASS_CLASH' | 'CAPACITY_CLASH' | 'UNAVAILABLE_SLOT';
   message: string;
   messageAr: string;
   lessonId: string;
 }
+
+export type AdvancedRelationType =
+  | 'DISTRIBUTION_ACROSS_DAYS'
+  | 'MAX_CONSECUTIVE_PERIODS'
+  | 'MAX_DAILY_HOURS'
+  | 'TEACHER_GAP_LIMITS'
+  | 'SHARED_CLASSROOM'
+  | 'LUNCH_BREAK_PLACEMENT';
+
+export interface AdvancedRelationRule {
+  id: string;
+  name: string;
+  nameAr?: string;
+  type: AdvancedRelationType;
+  enabled: boolean;
+  subjectId?: string;
+  teacherId?: string;
+  classId?: string;
+  parameterValue?: number;
+  description?: string;
+  descriptionAr?: string;
+}
+

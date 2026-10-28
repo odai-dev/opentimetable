@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Calendar, X, Check, Slash, HelpCircle, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, X, Check, Slash, HelpCircle, Save, RotateCcw } from 'lucide-react';
 import { Teacher, ClassGroup, AvailabilityState } from '../lib/types';
 import { translations } from '../lib/i18n';
 
@@ -11,6 +11,8 @@ interface TimeOffModalProps {
   lang: 'en' | 'ar';
   teachers: Teacher[];
   classes: ClassGroup[];
+  initialMatrix?: Record<string, AvailabilityState>;
+  onSaveTimeOff?: (entityId: string, matrix: Record<string, AvailabilityState>) => void;
 }
 
 export const TimeOffModal: React.FC<TimeOffModalProps> = ({
@@ -19,16 +21,32 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   lang,
   teachers,
   classes,
+  initialMatrix = { 'T2-0-0': 0 },
+  onSaveTimeOff,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  const [selectedEntityId, setSelectedEntityId] = useState<string>(teachers[0]?.id || 'T1');
+  const [selectedEntityId, setSelectedEntityId] = useState<string>(
+    teachers[0]?.id || classes[0]?.id || 'T1'
+  );
 
   // Matrix state: map key `${entityId}-${day}-${period}` -> AvailabilityState (1 = Available, 0 = Blocked, 2 = Disfavored)
-  const [matrix, setMatrix] = useState<Record<string, AvailabilityState>>({
-    'T2-0-0': 0, // Sample: Prof. Layla unavailable Monday period 1
-  });
+  const [matrix, setMatrix] = useState<Record<string, AvailabilityState>>(initialMatrix);
+
+  useEffect(() => {
+    if (initialMatrix) {
+      setMatrix((prev) => ({ ...prev, ...initialMatrix }));
+    }
+  }, [initialMatrix]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (teachers.length > 0 && !teachers.some((t) => t.id === selectedEntityId)) {
+        setSelectedEntityId(teachers[0].id);
+      }
+    }
+  }, [isOpen, teachers, selectedEntityId]);
 
   if (!isOpen) return null;
 
@@ -49,35 +67,118 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
     }));
   };
 
-  const handleSetAllAvailable = () => {
-    const updated = { ...matrix };
-    for (let d = 0; d < 5; d++) {
+  // Toggle entire day row
+  const handleToggleDay = (day: number) => {
+    const states = Array.from({ length: 7 }, (_, p) => getSlotState(day, p));
+    const allAvailable = states.every((s) => s === 1);
+    const nextState: AvailabilityState = allAvailable ? 0 : 1;
+
+    setMatrix((prev) => {
+      const updated = { ...prev };
       for (let p = 0; p < 7; p++) {
-        updated[getKey(d, p)] = 1;
+        updated[getKey(day, p)] = nextState;
       }
-    }
-    setMatrix(updated);
+      return updated;
+    });
+  };
+
+  // Toggle entire period column
+  const handleTogglePeriod = (period: number) => {
+    const states = Array.from({ length: 5 }, (_, d) => getSlotState(d, period));
+    const allAvailable = states.every((s) => s === 1);
+    const nextState: AvailabilityState = allAvailable ? 0 : 1;
+
+    setMatrix((prev) => {
+      const updated = { ...prev };
+      for (let d = 0; d < 5; d++) {
+        updated[getKey(d, period)] = nextState;
+      }
+      return updated;
+    });
+  };
+
+  const handleSetAllAvailable = () => {
+    setMatrix((prev) => {
+      const updated = { ...prev };
+      for (let d = 0; d < 5; d++) {
+        for (let p = 0; p < 7; p++) {
+          updated[getKey(d, p)] = 1;
+        }
+      }
+      return updated;
+    });
   };
 
   const handleBlockPeriod1 = () => {
-    const updated = { ...matrix };
-    for (let d = 0; d < 5; d++) {
-      updated[getKey(d, 0)] = 0;
-    }
-    setMatrix(updated);
+    setMatrix((prev) => {
+      const updated = { ...prev };
+      for (let d = 0; d < 5; d++) {
+        updated[getKey(d, 0)] = 0;
+      }
+      return updated;
+    });
   };
 
   const handleBlockLastPeriod = () => {
-    const updated = { ...matrix };
-    for (let d = 0; d < 5; d++) {
-      updated[getKey(d, 6)] = 0;
-    }
-    setMatrix(updated);
+    setMatrix((prev) => {
+      const updated = { ...prev };
+      for (let d = 0; d < 5; d++) {
+        updated[getKey(d, 6)] = 0;
+      }
+      return updated;
+    });
   };
+
+  const handleInvert = () => {
+    setMatrix((prev) => {
+      const updated = { ...prev };
+      for (let d = 0; d < 5; d++) {
+        for (let p = 0; p < 7; p++) {
+          const current = getSlotState(d, p);
+          // Invert: 1 -> 0, 0 -> 1, 2 -> 1
+          updated[getKey(d, p)] = current === 1 ? 0 : 1;
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleSaveAndClose = () => {
+    if (onSaveTimeOff) {
+      onSaveTimeOff(selectedEntityId, matrix);
+    }
+    onClose();
+  };
+
+  const selectedTeacher = teachers.find((tc) => tc.id === selectedEntityId);
+  const selectedClass = classes.find((c) => c.id === selectedEntityId);
+  const entityName =
+    selectedTeacher
+      ? isRtl
+        ? selectedTeacher.nameAr || selectedTeacher.name
+        : selectedTeacher.name
+      : selectedClass
+      ? isRtl
+        ? selectedClass.nameAr || selectedClass.name
+        : selectedClass.name
+      : selectedEntityId;
+
+  // Stats for current entity
+  let availableCount = 0;
+  let blockedCount = 0;
+  let disfavoredCount = 0;
+  for (let d = 0; d < 5; d++) {
+    for (let p = 0; p < 7; p++) {
+      const st = getSlotState(d, p);
+      if (st === 1) availableCount++;
+      else if (st === 0) blockedCount++;
+      else disfavoredCount++;
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-3xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-5 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -116,11 +217,23 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                 <optgroup label={isRtl ? 'الفصول' : 'Classes'}>
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {isRtl ? c.nameAr || c.name : c.name}
+                      {isRtl ? c.nameAr || c.name : c.name} (Grade {c.grade})
                     </option>
                   ))}
                 </optgroup>
               </select>
+            </div>
+
+            {/* Current entity quick stats */}
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="text-slate-500 font-medium">
+                {isRtl ? 'المحدد:' : 'Selected:'} <strong className="text-slate-800">{entityName}</strong>
+              </span>
+              <span className="text-emerald-700 font-semibold">{availableCount} {isRtl ? 'متاح' : 'Available'}</span>
+              <span className="text-rose-700 font-semibold">{blockedCount} {isRtl ? 'محظور' : 'Blocked'}</span>
+              {disfavoredCount > 0 && (
+                <span className="text-amber-700 font-semibold">{disfavoredCount} {isRtl ? 'غير مرغوب' : 'Disfavored'}</span>
+              )}
             </div>
 
             {/* Availability Legend Badges */}
@@ -140,7 +253,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
             </div>
           </div>
 
-          {/* 5 Days $\times$ 7 Periods Matrix Grid */}
+          {/* 5 Days x 7 Periods Matrix Grid */}
           <div className="overflow-x-auto border border-slate-300 rounded-lg shadow-xs bg-white">
             <table className="w-full border-collapse text-center">
               <thead>
@@ -149,7 +262,12 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                     {isRtl ? 'اليوم / الحصة' : 'Day / Period'}
                   </th>
                   {t.periods.map((_, pIdx) => (
-                    <th key={pIdx} className="p-2 border-r border-slate-200">
+                    <th
+                      key={pIdx}
+                      onClick={() => handleTogglePeriod(pIdx)}
+                      className="p-2 border-r border-slate-200 hover:bg-slate-200 cursor-pointer transition select-none"
+                      title={isRtl ? `انقر لتعديل عمود الحصة ${pIdx + 1}` : `Click to toggle column ${pIdx + 1}`}
+                    >
                       <div>{pIdx + 1}</div>
                       <div className="text-[9px] text-slate-400 font-mono font-normal">
                         {t.bellSchedule[pIdx].split('-')[0].trim()}
@@ -161,7 +279,11 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
               <tbody>
                 {t.days.map((dayName, dIdx) => (
                   <tr key={dayName} className="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td className="p-2 border-r border-slate-300 bg-slate-50 font-bold text-slate-800 text-start px-3">
+                    <td
+                      onClick={() => handleToggleDay(dIdx)}
+                      className="p-2 border-r border-slate-300 bg-slate-50 font-bold text-slate-800 text-start px-3 hover:bg-slate-200 cursor-pointer transition select-none"
+                      title={isRtl ? `انقر لتعديل صف يوم ${dayName}` : `Click to toggle row ${dayName}`}
+                    >
                       {dayName}
                     </td>
 
@@ -172,7 +294,14 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleToggle(dIdx, pIdx)}
-                            className={`w-9 h-9 rounded-md flex items-center justify-center font-extrabold text-sm transition-all shadow-xs mx-auto ${
+                            title={
+                              state === 1
+                                ? isRtl ? 'متاح (انقر للتعطيل)' : 'Available (Click to Block)'
+                                : state === 0
+                                ? isRtl ? 'محظور (انقر لغير مفضل)' : 'Blocked (Click for Disfavored)'
+                                : isRtl ? 'غير مفضل (انقر للمتاح)' : 'Disfavored (Click for Available)'
+                            }
+                            className={`w-10 h-10 rounded-md flex items-center justify-center font-extrabold text-sm transition-all shadow-xs mx-auto ${
                               state === 1
                                 ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
                                 : state === 0
@@ -219,6 +348,14 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
               >
                 {t.timeOffModal.blockLastPeriod}
               </button>
+              <button
+                type="button"
+                onClick={handleInvert}
+                className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-medium transition flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3 text-slate-500" />
+                <span>{isRtl ? 'عكس التحديد' : 'Invert'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -228,9 +365,17 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-sm transition"
+            className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition"
           >
-            {t.timeOffModal.saveAndClose}
+            {isRtl ? 'إلغاء' : 'Cancel'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveAndClose}
+            className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{t.timeOffModal.saveAndClose}</span>
           </button>
         </div>
       </div>

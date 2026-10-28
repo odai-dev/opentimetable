@@ -56,6 +56,7 @@ interface RibbonToolbarProps {
   onExportPdf: () => void;
   onImportRoz: () => void;
   onPrintPreview: () => void;
+  onOpenAdvancedRelations?: () => void;
   zoomLevel: number;
   setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -86,6 +87,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   onExportPdf,
   onImportRoz,
   onPrintPreview,
+  onOpenAdvancedRelations,
   zoomLevel,
   setZoomLevel,
 }) => {
@@ -592,6 +594,18 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     {isRtl ? 'سعة القاعات' : 'Room Limits'}
                   </span>
                 </button>
+
+                {onOpenAdvancedRelations && (
+                  <button
+                    onClick={onOpenAdvancedRelations}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-slate-700 hover:text-indigo-800 transition w-16"
+                  >
+                    <Sparkles className="w-7 h-7 text-indigo-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'قيود متقدمة' : 'Relations'}
+                    </span>
+                  </button>
+                )}
               </div>
               <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                 {t.ribbon.groups.solverParams}
