@@ -13,11 +13,12 @@ import {
   DragItem,
 } from '../lib/types';
 import { translations } from '../lib/i18n';
-import { AlertTriangle, X, GripVertical } from 'lucide-react';
+import { AlertTriangle, X, LayoutGrid, Users, DoorOpen, Eye } from 'lucide-react';
 
 interface TimetableGridProps {
   lang: 'en' | 'ar';
   viewMode: ViewMode;
+  setViewMode?: (mode: ViewMode) => void;
   selectedEntityId: string;
   setSelectedEntityId: (id: string) => void;
   placements: Placement[];
@@ -32,11 +33,15 @@ interface TimetableGridProps {
   onMovePlacement: (lessonId: string, targetDay: number, targetPeriod: number) => void;
   zoomLevel: number;
   isReadOnly: boolean;
+  customDays?: string[];
+  customPeriods?: string[];
+  bellSchedule?: string[];
 }
 
 export const TimetableGrid: React.FC<TimetableGridProps> = ({
   lang,
   viewMode,
+  setViewMode,
   selectedEntityId,
   setSelectedEntityId,
   placements,
@@ -51,9 +56,17 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   onMovePlacement,
   zoomLevel,
   isReadOnly,
+  customDays,
+  customPeriods,
+  bellSchedule,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
+
+  // Days and periods to render (dynamic with fallback)
+  const daysList = customDays && customDays.length > 0 ? customDays : t.days;
+  const periodsList = customPeriods && customPeriods.length > 0 ? customPeriods : t.periods;
+  const bells = bellSchedule && bellSchedule.length > 0 ? bellSchedule : t.bellSchedule;
 
   // Fast entity lookup maps
   const lessonMap = React.useMemo(() => new Map(lessons.map((l) => [l.id, l])), [lessons]);
@@ -72,7 +85,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
   // Entities displayed as rows in the matrix
   const rowEntities = React.useMemo(() => {
-    if (viewMode === 'class') {
+    if (viewMode === 'class' || viewMode === 'wall') {
       return classes.map((c) => ({
         id: c.id,
         name: isRtl ? c.nameAr || c.name : c.name,
@@ -96,7 +109,6 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
         type: 'room' as const,
       }));
     }
-    // Wall view: shows all classes
     return classes.map((c) => ({
       id: c.id,
       name: isRtl ? c.nameAr || c.name : c.name,
@@ -142,10 +154,8 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
       const item: DragItem = JSON.parse(dataStr);
 
       if (item.type === 'grid') {
-        // Move placed card
         onMovePlacement(item.lessonId, targetDay, targetPeriod);
       } else if (item.type === 'deck') {
-        // Place from deck
         onPlaceLesson(item.lessonId, targetDay, targetPeriod);
       }
     } catch (err) {
@@ -153,198 +163,327 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
     }
   };
 
+  // Left vertical tab switching
+  const verticalTabs = [
+    { id: 'class' as ViewMode, labelEn: 'Lesson grid', labelAr: 'الجدول العام', icon: LayoutGrid },
+    { id: 'wall' as ViewMode, labelEn: 'Whole', labelAr: 'الكل', icon: Eye },
+    { id: 'teacher' as ViewMode, labelEn: 'Teachers', labelAr: 'المعلمون', icon: Users },
+    { id: 'room' as ViewMode, labelEn: 'Classrooms', labelAr: 'القاعات', icon: DoorOpen },
+  ];
+
   return (
     <div
-      className="flex-1 overflow-auto bg-slate-200 select-none p-2"
+      className="flex-1 flex overflow-hidden bg-slate-200 select-none"
       style={{ fontSize: `${Math.round(zoomLevel * 12)}px` }}
     >
-      <div className="bg-white border border-slate-300 rounded shadow-sm overflow-hidden inline-block min-w-full">
-        <table className="border-collapse w-full text-slate-800">
-          {/* Day Headers (Upper Tier) */}
-          <thead>
-            <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 text-xs font-bold">
-              {/* Top-Left Entity Header Column */}
-              <th
-                rowSpan={2}
-                className="p-2 border-r border-slate-300 bg-slate-100 text-center min-w-[140px] sticky left-0 z-20 shadow-xs"
+      {/* 1. Iconic Desktop Left Vertical Tab Strip (from roz.exe) */}
+      <div className="w-9 bg-slate-300 border-r border-slate-400 flex flex-col justify-start items-center py-2 gap-1.5 shrink-0 z-30 shadow-inner">
+        {verticalTabs.map((tab) => {
+          const isActive = viewMode === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setViewMode && setViewMode(tab.id)}
+              title={isRtl ? tab.labelAr : tab.labelEn}
+              className={`w-7 py-2 rounded flex flex-col items-center justify-center transition-all ${
+                isActive
+                  ? 'bg-sky-600 text-white shadow-md ring-1 ring-sky-700 font-bold'
+                  : 'text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 mb-1" />
+              <span
+                className="text-[9px] tracking-tighter"
+                style={{
+                  writingMode: 'vertical-rl',
+                  transform: isRtl ? 'none' : 'rotate(180deg)',
+                }}
               >
-                <div className="font-bold text-slate-800">
-                  {viewMode === 'class' || viewMode === 'wall'
-                    ? isRtl ? 'الشعبة / الفصل' : 'Class / Section'
-                    : viewMode === 'teacher'
-                    ? isRtl ? 'المعلم' : 'Teacher'
-                    : isRtl ? 'الغرفة الدراسية' : 'Classroom'}
-                </div>
-              </th>
+                {isRtl ? tab.labelAr : tab.labelEn}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-              {/* Days Columns */}
-              {t.days.map((dayName, dIdx) => (
+      {/* 2. Main Matrix Grid Canvas */}
+      <div className="flex-1 overflow-auto p-2">
+        <div className="bg-white border border-slate-300 rounded shadow-sm overflow-hidden inline-block min-w-full">
+          <table className="border-collapse w-full text-slate-800">
+            {/* Day Headers (Upper Tier) */}
+            <thead>
+              <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 text-xs font-bold">
+                {/* Top-Left Entity Header Column */}
                 <th
-                  key={dayName}
-                  colSpan={t.periods.length}
-                  className="p-1.5 border-r border-slate-300 text-center font-bold text-slate-800 bg-slate-100 tracking-wide"
+                  rowSpan={2}
+                  className="p-2 border-r border-slate-300 bg-slate-100 text-center min-w-[140px] sticky left-0 z-20 shadow-xs"
                 >
-                  {dayName}
+                  <div className="font-bold text-slate-800">
+                    {viewMode === 'class' || viewMode === 'wall'
+                      ? isRtl ? 'الشعبة / الفصل' : 'Class / Section'
+                      : viewMode === 'teacher'
+                      ? isRtl ? 'المعلم' : 'Teacher'
+                      : isRtl ? 'الغرفة الدراسية' : 'Classroom'}
+                  </div>
                 </th>
-              ))}
-            </tr>
 
-            {/* Period Sub-headers (Lower Tier with Bell Times) */}
-            <tr className="bg-slate-100 border-b border-slate-300 text-[10px] text-slate-600 font-semibold">
-              {t.days.map((_, dIdx) =>
-                t.periods.map((periodName, pIdx) => (
+                {/* Days Columns */}
+                {daysList.map((dayName) => (
                   <th
-                    key={`${dIdx}-${pIdx}`}
-                    className="p-1 border-r border-slate-200 text-center min-w-[100px] max-w-[130px]"
+                    key={dayName}
+                    colSpan={periodsList.length}
+                    className="p-1.5 border-r border-slate-300 text-center font-bold text-slate-800 bg-slate-100 tracking-wide"
                   >
-                    <div className="font-bold text-slate-700">{pIdx + 1}</div>
-                    <div className="text-[9px] text-slate-400 font-mono scale-90">
-                      {t.bellSchedule[pIdx].split('-')[0].trim()}
-                    </div>
+                    {dayName}
                   </th>
-                ))
-              )}
-            </tr>
-          </thead>
+                ))}
+              </tr>
 
-          {/* Matrix Body: Rows of Entities $\times$ Cells */}
-          <tbody>
-            {rowEntities.map((entity) => {
-              const isSelectedRow = selectedEntityId === entity.id;
+              {/* Period Sub-headers (Lower Tier with Period Numbers & Bell Times) */}
+              <tr className="bg-slate-100 border-b border-slate-300 text-[10px] text-slate-600 font-semibold">
+                {daysList.map((_, dIdx) =>
+                  periodsList.map((periodName, pIdx) => {
+                    const bellTime = bells[pIdx] ? bells[pIdx].split('-')[0].trim() : '';
+                    return (
+                      <th
+                        key={`${dIdx}-${pIdx}`}
+                        className="p-1 border-r border-slate-200 text-center min-w-[95px] max-w-[130px]"
+                      >
+                        <div className="font-bold text-slate-700">{pIdx + 1}</div>
+                        {bellTime && (
+                          <div className="text-[9px] text-slate-400 font-mono scale-90">
+                            {bellTime}
+                          </div>
+                        )}
+                      </th>
+                    );
+                  })
+                )}
+              </tr>
+            </thead>
 
-              return (
-                <tr
-                  key={entity.id}
-                  onClick={() => setSelectedEntityId(entity.id)}
-                  className={`border-b border-slate-200 transition-colors cursor-pointer ${
-                    isSelectedRow
-                      ? 'bg-sky-50/70'
-                      : 'hover:bg-slate-50/70'
-                  }`}
-                >
-                  {/* Entity Label Cell (Sticky Left) */}
-                  <td
-                    className={`p-2 border-r border-slate-300 text-xs sticky left-0 z-10 transition-colors ${
+            {/* Matrix Body: Rows of Entities × Cells */}
+            <tbody>
+              {rowEntities.map((entity) => {
+                const isSelectedRow = selectedEntityId === entity.id;
+
+                return (
+                  <tr
+                    key={entity.id}
+                    onClick={() => setSelectedEntityId(entity.id)}
+                    className={`border-b border-slate-200 transition-colors cursor-pointer ${
                       isSelectedRow
-                        ? 'bg-sky-100/90 font-bold text-sky-900 border-l-4 border-l-sky-600 shadow-xs'
-                        : 'bg-slate-50 font-semibold text-slate-700'
+                        ? 'bg-sky-50/70'
+                        : 'hover:bg-slate-50/70'
                     }`}
                   >
-                    <div className="truncate font-bold">{entity.name}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{entity.code}</div>
-                  </td>
+                    {/* Entity Label Cell (Sticky Left) */}
+                    <td
+                      className={`p-2 border-r border-slate-300 text-xs sticky left-0 z-10 transition-colors ${
+                        isSelectedRow
+                          ? 'bg-sky-100/90 font-bold text-sky-900 border-l-4 border-l-sky-600 shadow-xs'
+                          : 'bg-slate-50 font-semibold text-slate-700'
+                      }`}
+                    >
+                      <div className="truncate font-bold">{entity.name}</div>
+                      <div className="text-[10px] text-slate-400 truncate">{entity.code}</div>
+                    </td>
 
-                  {/* Period Slot Cells */}
-                  {t.days.map((_, dIdx) =>
-                    t.periods.map((_, pIdx) => {
-                      // Find placement for this row entity and slot
-                      const placement = placements.find((p) => {
-                        if (p.dayIndex !== dIdx || p.periodIndex !== pIdx) return false;
-                        const lesson = lessonMap.get(p.lessonId);
-                        if (!lesson) return false;
-                        if (entity.type === 'class') return lesson.classId === entity.id;
-                        if (entity.type === 'teacher') return lesson.teacherId === entity.id;
-                        if (entity.type === 'room') return p.roomId === entity.id;
-                        return false;
-                      });
+                    {/* Period Slot Cells */}
+                    {daysList.map((_, dIdx) =>
+                      periodsList.map((_, pIdx) => {
+                        // Find all placements for this row entity and slot (supports split cards)
+                        const slotPlacements = placements.filter((p) => {
+                          if (p.dayIndex !== dIdx || p.periodIndex !== pIdx) return false;
+                          const lesson = lessonMap.get(p.lessonId);
+                          if (!lesson) return false;
+                          if (entity.type === 'class') return lesson.classId === entity.id;
+                          if (entity.type === 'teacher') return lesson.teacherId === entity.id;
+                          if (entity.type === 'room') return p.roomId === entity.id;
+                          return false;
+                        });
 
-                      const lesson = placement ? lessonMap.get(placement.lessonId) : null;
-                      const subject = lesson ? subjectMap.get(lesson.subjectId) : null;
-                      const teacher = lesson ? teacherMap.get(lesson.teacherId) : null;
-                      const targetClass = lesson ? classMap.get(lesson.classId) : null;
-                      const room = placement ? roomMap.get(placement.roomId) : null;
+                        const isDragOver =
+                          dragOverCell?.day === dIdx &&
+                          dragOverCell?.period === pIdx &&
+                          dragOverCell?.entityId === entity.id;
 
-                      const hasConflict = lesson ? conflictLessonIds.has(lesson.id) : false;
-                      const isDragOver =
-                        dragOverCell?.day === dIdx &&
-                        dragOverCell?.period === pIdx &&
-                        dragOverCell?.entityId === entity.id;
-
-                      return (
-                        <td
-                          key={`${dIdx}-${pIdx}`}
-                          onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
-                          className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
-                            isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
-                          }`}
-                        >
-                          {lesson && subject ? (
-                            /* Authentic Desktop Physical Lesson Card */
-                            <div
-                              draggable={!isReadOnly}
-                              onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
-                              className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing ${
-                                hasConflict
-                                  ? 'conflict-stripes border-rose-500 bg-rose-50/90 ring-1 ring-rose-400'
-                                  : 'border-slate-300'
+                        // Case 1: Empty slot
+                        if (slotPlacements.length === 0) {
+                          return (
+                            <td
+                              key={`${dIdx}-${pIdx}`}
+                              onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
+                              className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
+                                isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
                               }`}
-                              style={{
-                                backgroundColor: hasConflict ? undefined : subject.color + '26', // Pastel tint
-                                borderTop: `3px solid ${subject.color}`,
-                              }}
                             >
-                              {/* Subject Code Center */}
-                              <div className="flex items-center justify-between gap-0.5">
-                                <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
-                                  {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
-                                </span>
+                              <div className="h-full border border-dashed border-slate-200/80 rounded flex items-center justify-center text-[10px] text-slate-300 hover:border-slate-400 hover:bg-slate-50 transition">
+                                <span className="opacity-0 group-hover:opacity-60">+</span>
+                              </div>
+                            </td>
+                          );
+                        }
 
-                                <div className="flex items-center gap-0.5">
-                                  {hasConflict && (
-                                    <span title={isRtl ? 'تعارض في هذا التسكين' : 'Clash in this placement'}>
-                                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 animate-bounce" />
-                                    </span>
-                                  )}
+                        // Case 2: Exactly 1 lesson (Standard Card)
+                        if (slotPlacements.length === 1) {
+                          const p = slotPlacements[0];
+                          const lesson = lessonMap.get(p.lessonId);
+                          const subject = lesson ? subjectMap.get(lesson.subjectId) : null;
+                          const teacher = lesson ? teacherMap.get(lesson.teacherId) : null;
+                          const room = roomMap.get(p.roomId);
+                          const hasConflict = lesson ? conflictLessonIds.has(lesson.id) : false;
 
-                                  {/* Quick Remove Button (hover) */}
-                                  {!isReadOnly && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemovePlacement(lesson.id);
-                                      }}
-                                      title={isRtl ? 'إرجاع إلى بنك البطاقات' : 'Return to cards bank'}
-                                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500 hover:text-white text-slate-500 transition"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  )}
+                          if (!lesson || !subject) return <td key={`${dIdx}-${pIdx}`} className="p-1 border-r border-slate-200" />;
+
+                          return (
+                            <td
+                              key={`${dIdx}-${pIdx}`}
+                              onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
+                              className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
+                                isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
+                              }`}
+                            >
+                              <div
+                                draggable={!isReadOnly}
+                                onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
+                                className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs ${
+                                  hasConflict
+                                    ? 'border-rose-500 bg-rose-50/90 ring-1 ring-rose-400'
+                                    : 'border-slate-300'
+                                }`}
+                                style={{
+                                  backgroundColor: hasConflict ? undefined : subject.color + '26',
+                                  borderTop: `3px solid ${subject.color}`,
+                                }}
+                              >
+                                <div className="flex items-center justify-between gap-0.5">
+                                  <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
+                                    {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
+                                  </span>
+
+                                  <div className="flex items-center gap-0.5">
+                                    {hasConflict && (
+                                      <span title={isRtl ? 'تعارض في هذا التسكين' : 'Clash in this placement'}>
+                                        <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
+                                      </span>
+                                    )}
+                                    {!isReadOnly && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onRemovePlacement(lesson.id);
+                                        }}
+                                        title={isRtl ? 'إرجاع إلى بنك البطاقات' : 'Return to cards bank'}
+                                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500 hover:text-white text-slate-500 transition"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
+                                  <span className="truncate max-w-[45px]" title={teacher?.name}>
+                                    {teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : ''}
+                                  </span>
+                                  <span
+                                    className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
+                                    title={room?.name}
+                                  >
+                                    {room ? room.id : 'N/A'}
+                                  </span>
                                 </div>
                               </div>
+                            </td>
+                          );
+                        }
 
-                              {/* Badges: Teacher and Room Corner Badges */}
-                              <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
-                                {/* Bottom-left: Teacher shortcode */}
-                                <span className="truncate max-w-[50px]" title={teacher?.name}>
-                                  {teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : ''}
+                        // Case 3: Multiple lessons in one slot -> Authentic Desktop Diagonal Split Card (/)
+                        const p1 = slotPlacements[0];
+                        const p2 = slotPlacements[1];
+                        const l1 = lessonMap.get(p1.lessonId);
+                        const l2 = lessonMap.get(p2.lessonId);
+                        const s1 = l1 ? subjectMap.get(l1.subjectId) : null;
+                        const s2 = l2 ? subjectMap.get(l2.subjectId) : null;
+                        const t1 = l1 ? teacherMap.get(l1.teacherId) : null;
+                        const t2 = l2 ? teacherMap.get(l2.teacherId) : null;
+
+                        const color1 = s1?.color || '#3b82f6';
+                        const color2 = s2?.color || '#10b981';
+
+                        return (
+                          <td
+                            key={`${dIdx}-${pIdx}`}
+                            onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
+                            className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
+                              isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
+                            }`}
+                          >
+                            <div className="relative h-full w-full rounded border border-slate-300 overflow-hidden shadow-xs select-none">
+                              {/* Top-Left Half (Diagonal Split) */}
+                              <div
+                                draggable={!isReadOnly && !!l1}
+                                onDragStart={(e) => l1 && handleDragStart(e, l1.id, dIdx, pIdx)}
+                                className="absolute inset-0 cursor-grab active:cursor-grabbing p-1"
+                                style={{
+                                  clipPath: 'polygon(0 0, 100% 0, 0 100%)',
+                                  backgroundColor: color1 + '33',
+                                  borderTop: `3px solid ${color1}`,
+                                }}
+                              >
+                                <span className="font-extrabold text-[10px] text-slate-900 block truncate max-w-[50%]">
+                                  {s1?.code || s1?.name}
                                 </span>
-
-                                {/* Bottom-right: Classroom badge */}
-                                <span
-                                  className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
-                                  title={room?.name}
-                                >
-                                  {room ? room.id : 'N/A'}
+                                <span className="text-[8px] text-slate-700 block truncate max-w-[45%] font-medium">
+                                  {t1 ? (isRtl ? t1.nameAr?.split(' ')[0] || t1.name : t1.name.split(' ').slice(-1)[0]) : ''}
                                 </span>
                               </div>
+
+                              {/* Bottom-Right Half (Diagonal Split) */}
+                              <div
+                                draggable={!isReadOnly && !!l2}
+                                onDragStart={(e) => l2 && handleDragStart(e, l2.id, dIdx, pIdx)}
+                                className="absolute inset-0 cursor-grab active:cursor-grabbing flex flex-col justify-end items-end p-1 text-right"
+                                style={{
+                                  clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                                  backgroundColor: color2 + '33',
+                                  borderBottom: `3px solid ${color2}`,
+                                }}
+                              >
+                                <span className="text-[8px] text-slate-700 block truncate max-w-[50%] font-medium">
+                                  {t2 ? (isRtl ? t2.nameAr?.split(' ')[0] || t2.name : t2.name.split(' ').slice(-1)[0]) : ''}
+                                </span>
+                                <span className="font-extrabold text-[10px] text-slate-900 block truncate max-w-[50%]">
+                                  {s2?.code || s2?.name}
+                                </span>
+                              </div>
+
+                              {/* Diagonal Dividing Line */}
+                              <div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                  background: 'linear-gradient(to top right, transparent calc(50% - 0.75px), #94a3b8 calc(50% - 0.75px), #94a3b8 calc(50% + 0.75px), transparent calc(50% + 0.75px))',
+                                }}
+                              />
                             </div>
-                          ) : (
-                            /* Empty Slot (Drop Target) */
-                            <div className="h-full border border-dashed border-slate-200/80 rounded flex items-center justify-center text-[10px] text-slate-300 hover:border-slate-400 hover:bg-slate-50 transition">
-                              <span className="opacity-0 group-hover:opacity-60">+</span>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                          </td>
+                        );
+                      })
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

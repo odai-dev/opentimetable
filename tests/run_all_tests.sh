@@ -20,6 +20,9 @@ node --test tests/test_roz_parser.mjs
 echo "==> Running Milestone 3 Modal & CRUD Parity Verification Suite..."
 node --test tests/test_modal_crud_parity.mjs
 
+echo "==> Running Milestone 4 Canvas & Card Deck Precision Verification Suite..."
+node --test tests/test_canvas_card_deck_precision.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="

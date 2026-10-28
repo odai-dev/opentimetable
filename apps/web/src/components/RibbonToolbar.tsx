@@ -57,6 +57,7 @@ interface RibbonToolbarProps {
   onImportRoz: () => void;
   onPrintPreview: () => void;
   onOpenAdvancedRelations?: () => void;
+  onLoadSample?: (sample: 'saudi' | 'demo1' | 'toy' | 'blank') => void;
   zoomLevel: number;
   setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -88,6 +89,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   onImportRoz,
   onPrintPreview,
   onOpenAdvancedRelations,
+  onLoadSample,
   zoomLevel,
   setZoomLevel,
 }) => {
@@ -161,6 +163,25 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
 
         {/* Right Corner: Bilingual Language Switcher, Help & Native Window Controls */}
         <div className="flex items-center gap-2">
+          {/* Quick Real-School Dataset Switcher */}
+          {onLoadSample && (
+            <div className="flex items-center gap-1.5 bg-slate-700/80 rounded px-2 py-0.5 border border-slate-600">
+              <span className="text-[10px] text-slate-300 font-medium hidden md:inline">
+                {isRtl ? 'المدرسة النموذجية:' : 'Sample:'}
+              </span>
+              <select
+                onChange={(e) => onLoadSample(e.target.value as any)}
+                className="bg-slate-900 text-white text-[10px] rounded px-1.5 py-0.5 border border-slate-500 font-bold cursor-pointer"
+                defaultValue="saudi"
+              >
+                <option value="saudi">🇸🇦 Saudi Arabia 1 (82 Teachers / 250 Cards)</option>
+                <option value="demo1">🌍 Demo 1 (45 Teachers / 216 Cards)</option>
+                <option value="toy">🧩 Sample Toy Data (5 Teachers)</option>
+                <option value="blank">📄 Blank Timetable</option>
+              </select>
+            </div>
+          )}
+
           {/* Bilingual Language Switcher */}
           <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}

@@ -113,6 +113,8 @@ export default function TimetableStudioPage() {
   const [currentFileName, setCurrentFileName] = useState<string>('Saudi Arabia 1.roz');
   const [schemaVersion, setSchemaVersion] = useState<number>(314);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [customDays, setCustomDays] = useState<string[] | undefined>(undefined);
+  const [customPeriods, setCustomPeriods] = useState<string[] | undefined>(undefined);
 
   // Time-Off Matrix state: `${entityId}-${dayIndex}-${periodIndex}` -> AvailabilityState (1=Avail, 0=Blocked, 2=Disfavored)
   const [timeOffMatrix, setTimeOffMatrix] = useState<Record<string, AvailabilityState>>({
@@ -166,6 +168,30 @@ export default function TimetableStudioPage() {
         setCurrentFileName(fileName);
         setSchemaVersion(parsed.schema_version);
 
+        // Dynamically configure cycle days and periods matching the loaded school
+        if (fileName.toLowerCase().includes('saudi') || parsed.school_name.includes('2006/2007') || parsed.cycle_days === 5) {
+          setCustomDays(
+            isRtl
+              ? ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء']
+              : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday']
+          );
+          setCustomPeriods(
+            Array.from({ length: 12 }, (_, i) => (isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`))
+          );
+        } else if (parsed.cycle_days === 7 || fileName.toLowerCase().includes('demo1')) {
+          setCustomDays(
+            isRtl
+              ? ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+              : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+          );
+          setCustomPeriods(
+            Array.from({ length: 7 }, (_, i) => (isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`))
+          );
+        } else {
+          setCustomDays(undefined);
+          setCustomPeriods(undefined);
+        }
+
         // Sync parsed teacher unavailable slots into TimeOffMatrix
         const newTimeOffMatrix: Record<string, AvailabilityState> = {};
         for (const tc of parsed.mapped.teachers) {
@@ -214,6 +240,62 @@ export default function TimetableStudioPage() {
     }
     e.target.value = '';
   };
+
+  // One-Click Real-School Sample Switcher
+  const loadNamedSample = useCallback(
+    async (sample: 'saudi' | 'demo1' | 'toy' | 'blank') => {
+      if (sample === 'saudi') {
+        try {
+          const res = await fetch('/demos/Saudi_Arabia_1.roz');
+          if (res.ok) {
+            const buf = await res.arrayBuffer();
+            loadRozBuffer(buf, 'Saudi arabia 1.roz');
+          }
+        } catch (err) {
+          console.error('Failed loading Saudi sample:', err);
+        }
+      } else if (sample === 'demo1') {
+        try {
+          const res = await fetch('/demos/Demo1.roz');
+          if (res.ok) {
+            const buf = await res.arrayBuffer();
+            loadRozBuffer(buf, 'Demo1.roz');
+          }
+        } catch (err) {
+          console.error('Failed loading Demo1 sample:', err);
+        }
+      } else if (sample === 'toy') {
+        setTeachers(sampleTeachers);
+        setClasses(sampleClasses);
+        setRooms(sampleRooms);
+        setSubjects(sampleSubjects);
+        setLessons(sampleLessons);
+        setPlacements(initialPlacements);
+        setSchoolName('Al-Noor Model High School');
+        setCurrentFileName('sample-toy-data.roz');
+        setCustomDays(undefined);
+        setCustomPeriods(undefined);
+        if (sampleClasses.length > 0) setSelectedEntityId(sampleClasses[0].id);
+      } else if (sample === 'blank') {
+        setTeachers([]);
+        setClasses([]);
+        setRooms([]);
+        setSubjects([]);
+        setLessons([]);
+        setPlacements([]);
+        setSchoolName(isRtl ? 'مدرسة جديدة' : 'New School');
+        setCurrentFileName('untitled.roz');
+        setCustomDays(undefined);
+        setCustomPeriods(undefined);
+      }
+    },
+    [loadRozBuffer, isRtl]
+  );
+
+  // Auto-load Saudi Arabia 1 demo school on initial mount so npm run dev starts up looking full-scale
+  useEffect(() => {
+    loadNamedSample('saudi');
+  }, [loadNamedSample]);
 
   // Window Drag & Drop ingestion handlers
   useEffect(() => {
@@ -787,6 +869,7 @@ export default function TimetableStudioPage() {
         onExportPdf={handlePrintPreview}
         onImportRoz={() => fileInputRef.current?.click()}
         onPrintPreview={handlePrintPreview}
+        onLoadSample={loadNamedSample}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
       />
@@ -811,6 +894,7 @@ export default function TimetableStudioPage() {
       <TimetableGrid
         lang={lang}
         viewMode={viewMode}
+        setViewMode={setViewMode}
         selectedEntityId={selectedEntityId}
         setSelectedEntityId={setSelectedEntityId}
         placements={placements}
@@ -825,6 +909,8 @@ export default function TimetableStudioPage() {
         onMovePlacement={handleMovePlacement}
         zoomLevel={zoomLevel}
         isReadOnly={isReadOnly}
+        customDays={customDays}
+        customPeriods={customPeriods}
       />
 
       {/* 4. Signature Bottom Lesson Card Deck ("بنك البطاقات") */}

@@ -14,12 +14,15 @@ import { translations } from '../lib/i18n';
 import {
   Layers,
   Wand2,
-  Filter,
   CheckCircle2,
   Trash2,
-  MoveRight,
-  GripHorizontal,
+  School,
+  Users,
+  GraduationCap,
+  DoorOpen,
 } from 'lucide-react';
+
+type DeckCategory = 'school' | 'teacher' | 'class' | 'room';
 
 interface BottomCardDeckProps {
   lang: 'en' | 'ar';
@@ -55,7 +58,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  const [showAllFilter, setShowAllFilter] = useState(false);
+  const [deckCategory, setDeckCategory] = useState<DeckCategory>('school');
   const [isDeckDragOver, setIsDeckDragOver] = useState(false);
 
   // Maps
@@ -81,17 +84,35 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
     return lessons.filter((l) => !placedLessonIds.has(l.id));
   }, [lessons, placedLessonIds]);
 
-  // Filtered unplaced lessons (synced with selected row or show all)
+  // Filtered unplaced lessons based on category
   const displayedCards = React.useMemo(() => {
-    if (showAllFilter) return unplacedLessons;
-    return unplacedLessons.filter((l) => {
-      return (
-        l.classId === selectedEntityId ||
-        l.teacherId === selectedEntityId ||
-        l.roomId === selectedEntityId
-      );
-    });
-  }, [unplacedLessons, showAllFilter, selectedEntityId]);
+    if (deckCategory === 'school') {
+      return unplacedLessons;
+    }
+    if (deckCategory === 'class') {
+      // If selected entity is a class, filter by it; otherwise show all class cards
+      const isSelectedClass = classMap.has(selectedEntityId);
+      if (isSelectedClass) {
+        return unplacedLessons.filter((l) => l.classId === selectedEntityId);
+      }
+      return unplacedLessons;
+    }
+    if (deckCategory === 'teacher') {
+      const isSelectedTeacher = teacherMap.has(selectedEntityId);
+      if (isSelectedTeacher) {
+        return unplacedLessons.filter((l) => l.teacherId === selectedEntityId);
+      }
+      return unplacedLessons;
+    }
+    if (deckCategory === 'room') {
+      const isSelectedRoom = roomMap.has(selectedEntityId);
+      if (isSelectedRoom) {
+        return unplacedLessons.filter((l) => l.roomId === selectedEntityId);
+      }
+      return unplacedLessons;
+    }
+    return unplacedLessons;
+  }, [unplacedLessons, deckCategory, selectedEntityId, classMap, teacherMap, roomMap]);
 
   // HTML5 Drag & Drop handlers
   const handleDragStart = (e: React.DragEvent, lessonId: string) => {
@@ -125,13 +146,19 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
       if (!dataStr) return;
       const item: DragItem = JSON.parse(dataStr);
       if (item.type === 'grid') {
-        // Dropped from grid back into deck -> unplace it!
         onRemovePlacement(item.lessonId);
       }
     } catch (err) {
       console.error('Failed to parse deck drop:', err);
     }
   };
+
+  const categoryButtons = [
+    { id: 'school' as DeckCategory, labelEn: 'School', labelAr: 'المدرسة', icon: School },
+    { id: 'teacher' as DeckCategory, labelEn: 'Teachers', labelAr: 'المعلمون', icon: Users },
+    { id: 'class' as DeckCategory, labelEn: 'Classes', labelAr: 'الشعب', icon: GraduationCap },
+    { id: 'room' as DeckCategory, labelEn: 'Classrooms', labelAr: 'القاعات', icon: DoorOpen },
+  ];
 
   return (
     <div
@@ -144,48 +171,56 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
     >
       {/* Deck Header Bar */}
       <div className="bg-slate-200/90 border-b border-slate-300 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-        {/* Left: Title & Unplaced Badge */}
+        {/* Left: Category Filter Icons (Classic aSc Desktop Icons) */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 font-bold text-slate-800">
             <Layers className="w-4 h-4 text-sky-700" />
             <span>{t.deck.title}</span>
           </div>
 
+          {/* 4 Iconic Category Switcher Buttons */}
+          <div className="flex items-center bg-white border border-slate-300 rounded p-0.5 gap-0.5 shadow-2xs">
+            {categoryButtons.map((btn) => {
+              const isActive = deckCategory === btn.id;
+              const Icon = btn.icon;
+              return (
+                <button
+                  key={btn.id}
+                  onClick={() => setDeckCategory(btn.id)}
+                  title={isRtl ? btn.labelAr : btn.labelEn}
+                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-sky-600 text-white shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{isRtl ? btn.labelAr : btn.labelEn}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <span
             className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              unplacedLessons.length > 0
+              displayedCards.length > 0
                 ? 'bg-amber-100 text-amber-800 border border-amber-300'
                 : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
             }`}
           >
-            {unplacedLessons.length > 0
-              ? `${unplacedLessons.length} ${t.deck.unplacedCount}`
-              : t.deck.allPlaced}
+            {displayedCards.length} {t.deck.unplacedCount}
           </span>
         </div>
 
-        {/* Center: Dynamic Row-Click Filter Info */}
+        {/* Center: Dynamic Active Context */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-slate-500 font-medium">
             {t.deck.filterLabel}
           </span>
 
           <span className="px-2 py-0.5 bg-white border border-slate-300 rounded font-bold text-sky-800 text-[11px] shadow-xs">
-            {showAllFilter ? t.deck.showAll : selectedEntityName}
+            {deckCategory === 'school' ? (isRtl ? 'كامل المدرسة' : 'Entire School') : selectedEntityName}
           </span>
-
-          {/* Toggle All vs Filtered */}
-          <button
-            onClick={() => setShowAllFilter(!showAllFilter)}
-            className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition ${
-              showAllFilter
-                ? 'bg-sky-600 text-white border-sky-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-            }`}
-          >
-            <Filter className="w-3 h-3 inline mr-1" />
-            {showAllFilter ? t.deck.filterActive : t.deck.showAll}
-          </button>
         </div>
 
         {/* Right: Quick Deck Actions */}
@@ -279,7 +314,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
       <div className="bg-slate-200/60 border-t border-slate-300/60 px-3 py-0.5 text-[10px] text-slate-500 flex items-center justify-between">
         <span>💡 {t.deck.dragHint}</span>
         <span className="text-[10px] text-slate-500 font-medium">
-          {unplacedLessons.length} {isRtl ? 'بطاقات في البنك' : 'cards in bank'}
+          {displayedCards.length} {isRtl ? 'بطاقات ظاهرة' : 'visible cards'} ({unplacedLessons.length} {isRtl ? 'في البنك' : 'total pending'})
         </span>
       </div>
     </div>
