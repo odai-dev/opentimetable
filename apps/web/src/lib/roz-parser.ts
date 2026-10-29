@@ -509,8 +509,10 @@ export function parseRozBinary(
     }
   }
 
-  // 5. Extract / Generate Lesson Cards
+  // 5. Extract / Generate Lesson Cards with conflict-free teacher and room allocations
   const lessons: RozRawLesson[] = [];
+  const teacherOccupied = new Set<string>();
+  const roomOccupied = new Set<string>();
   let cardId = 1;
 
   for (let cIdx = 0; cIdx < classes.length; cIdx++) {
@@ -519,17 +521,42 @@ export function parseRozBinary(
 
     for (let sIdx = 0; sIdx < subjectSlice.length; sIdx++) {
       const sb = subjectSlice[sIdx];
-      const t =
+      const day = (sIdx % daysCount) + 1;
+      const period = (Math.floor(sIdx / daysCount) % periodsCount) + 1;
+
+      // Select conflict-free teacher for (day, period)
+      let t =
         teachers.length > 0
-          ? teachers[(cIdx + sIdx) % teachers.length]
+          ? teachers[(cIdx * 3 + sIdx) % teachers.length]
           : { id: '1', name: 'Staff', short: 'ST' };
-      const r =
+      if (teachers.length > 0) {
+        for (let offset = 0; offset < teachers.length; offset++) {
+          const candidate = teachers[(cIdx * 3 + sIdx + offset) % teachers.length];
+          const key = `${candidate.id}-${day}-${period}`;
+          if (!teacherOccupied.has(key)) {
+            t = candidate;
+            teacherOccupied.add(key);
+            break;
+          }
+        }
+      }
+
+      // Select conflict-free room for (day, period)
+      let r =
         rooms.length > 0
           ? rooms[cIdx % rooms.length]
           : { id: '1', name: 'Room 1', short: 'R1' };
-
-      const day = (cardId % daysCount) + 1;
-      const period = (Math.floor(cardId / daysCount) % periodsCount) + 1;
+      if (rooms.length > 0) {
+        for (let offset = 0; offset < rooms.length; offset++) {
+          const candidate = rooms[(cIdx + offset) % rooms.length];
+          const key = `${candidate.id}-${day}-${period}`;
+          if (!roomOccupied.has(key)) {
+            r = candidate;
+            roomOccupied.add(key);
+            break;
+          }
+        }
+      }
 
       lessons.push({
         id: String(cardId),

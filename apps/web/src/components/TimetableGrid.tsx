@@ -171,6 +171,11 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
     { id: 'room' as ViewMode, labelEn: 'Classrooms', labelAr: 'القاعات', icon: DoorOpen },
   ];
 
+  // Detect authentic compact Whole (wall) view vs detailed view
+  const isCompact = viewMode === 'wall';
+  const colMinWidth = isCompact ? Math.max(32, Math.round(zoomLevel * 36)) : Math.max(85, Math.round(zoomLevel * 95));
+  const colMaxWidth = isCompact ? Math.max(44, Math.round(zoomLevel * 50)) : Math.max(115, Math.round(zoomLevel * 130));
+
   return (
     <div
       className="flex-1 flex overflow-hidden bg-slate-200 select-none"
@@ -217,7 +222,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 {/* Top-Left Entity Header Column */}
                 <th
                   rowSpan={2}
-                  className="p-2 border-r border-slate-300 bg-slate-100 text-center min-w-[140px] sticky left-0 z-20 shadow-xs"
+                  className={`p-2 border-r border-slate-300 bg-slate-100 text-center sticky ltr:left-0 rtl:right-0 z-20 shadow-xs ${
+                    isCompact ? 'min-w-[110px]' : 'min-w-[140px]'
+                  }`}
                 >
                   <div className="font-bold text-slate-800">
                     {viewMode === 'class' || viewMode === 'wall'
@@ -248,10 +255,11 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                     return (
                       <th
                         key={`${dIdx}-${pIdx}`}
-                        className="p-1 border-r border-slate-200 text-center min-w-[95px] max-w-[130px]"
+                        style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
+                        className="p-1 border-r border-slate-200 text-center transition-all"
                       >
                         <div className="font-bold text-slate-700">{pIdx + 1}</div>
-                        {bellTime && (
+                        {!isCompact && bellTime && (
                           <div className="text-[9px] text-slate-400 font-mono scale-90">
                             {bellTime}
                           </div>
@@ -280,7 +288,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                   >
                     {/* Entity Label Cell (Sticky Left) */}
                     <td
-                      className={`p-2 border-r border-slate-300 text-xs sticky left-0 z-10 transition-colors ${
+                      className={`p-2 border-r border-slate-300 text-xs sticky ltr:left-0 rtl:right-0 z-10 transition-colors ${
                         isSelectedRow
                           ? 'bg-sky-100/90 font-bold text-sky-900 border-l-4 border-l-sky-600 shadow-xs'
                           : 'bg-slate-50 font-semibold text-slate-700'
@@ -317,9 +325,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
                               onDragLeave={handleDragLeave}
                               onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
-                              className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
-                                isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
-                              }`}
+                              style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
+                              className={`p-1 border-r border-slate-200 align-top transition-all relative ${
+                                isCompact ? 'h-11' : 'h-16'
+                              } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
                             >
                               <div className="h-full border border-dashed border-slate-200/80 rounded flex items-center justify-center text-[10px] text-slate-300 hover:border-slate-400 hover:bg-slate-50 transition">
                                 <span className="opacity-0 group-hover:opacity-60">+</span>
@@ -334,6 +343,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           const lesson = lessonMap.get(p.lessonId);
                           const subject = lesson ? subjectMap.get(lesson.subjectId) : null;
                           const teacher = lesson ? teacherMap.get(lesson.teacherId) : null;
+                          const targetClass = lesson ? classMap.get(lesson.classId) : null;
                           const room = roomMap.get(p.roomId);
                           const hasConflict = lesson ? conflictLessonIds.has(lesson.id) : false;
 
@@ -345,61 +355,97 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
                               onDragLeave={handleDragLeave}
                               onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
-                              className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
-                                isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
-                              }`}
+                              style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
+                              className={`p-1 border-r border-slate-200 align-top transition-all relative ${
+                                isCompact ? 'h-11' : 'h-16'
+                              } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
                             >
-                              <div
-                                draggable={!isReadOnly}
-                                onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
-                                className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs ${
-                                  hasConflict
-                                    ? 'border-rose-500 bg-rose-50/90 ring-1 ring-rose-400'
-                                    : 'border-slate-300'
-                                }`}
-                                style={{
-                                  backgroundColor: hasConflict ? undefined : subject.color + '26',
-                                  borderTop: `3px solid ${subject.color}`,
-                                }}
-                              >
-                                <div className="flex items-center justify-between gap-0.5">
-                                  <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
-                                    {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
+                              {isCompact ? (
+                                <div
+                                  draggable={!isReadOnly}
+                                  onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
+                                  className={`lesson-card h-full rounded border select-none p-0.5 flex flex-col justify-center items-center text-center cursor-grab active:cursor-grabbing shadow-2xs overflow-hidden transition ${
+                                    hasConflict
+                                      ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-400'
+                                      : 'border-slate-300'
+                                  }`}
+                                  style={{
+                                    backgroundColor: hasConflict ? undefined : subject.color + '26',
+                                    borderTop: `3px solid ${subject.color}`,
+                                  }}
+                                  title={`${subject.name} - ${teacher?.name || ''} (${room?.name || ''})`}
+                                >
+                                  <span className="font-bold text-[10px] text-slate-900 leading-tight truncate w-full">
+                                    {subject.code || subject.name.slice(0, 3)}
                                   </span>
+                                  <span className="text-[8px] text-slate-600 truncate w-full leading-none mt-0.5">
+                                    {entity.type === 'teacher'
+                                      ? targetClass?.name.split('-')[0].trim() || ''
+                                      : entity.type === 'room'
+                                      ? targetClass?.name.split('-')[0].trim() || ''
+                                      : isRtl
+                                      ? teacher?.nameAr?.slice(0, 3) || teacher?.name.slice(0, 3) || ''
+                                      : teacher?.name.slice(0, 3) || ''}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div
+                                  draggable={!isReadOnly}
+                                  onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
+                                  className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs ${
+                                    hasConflict
+                                      ? 'border-rose-500 bg-rose-50/90 ring-1 ring-rose-400'
+                                      : 'border-slate-300'
+                                  }`}
+                                  style={{
+                                    backgroundColor: hasConflict ? undefined : subject.color + '26',
+                                    borderTop: `3px solid ${subject.color}`,
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between gap-0.5">
+                                    <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
+                                      {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
+                                    </span>
 
-                                  <div className="flex items-center gap-0.5">
-                                    {hasConflict && (
-                                      <span title={isRtl ? 'تعارض في هذا التسكين' : 'Clash in this placement'}>
-                                        <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
-                                      </span>
-                                    )}
-                                    {!isReadOnly && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onRemovePlacement(lesson.id);
-                                        }}
-                                        title={isRtl ? 'إرجاع إلى بنك البطاقات' : 'Return to cards bank'}
-                                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500 hover:text-white text-slate-500 transition"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
+                                    <div className="flex items-center gap-0.5">
+                                      {hasConflict && (
+                                        <span title={isRtl ? 'تعارض في هذا التسكين' : 'Clash in this placement'}>
+                                          <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
+                                        </span>
+                                      )}
+                                      {!isReadOnly && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemovePlacement(lesson.id);
+                                          }}
+                                          title={isRtl ? 'إرجاع إلى بنك البطاقات' : 'Return to cards bank'}
+                                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500 hover:text-white text-slate-500 transition"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
+                                    <span
+                                      className="truncate max-w-[45px]"
+                                      title={entity.type === 'teacher' ? targetClass?.name : teacher?.name}
+                                    >
+                                      {entity.type === 'teacher'
+                                        ? targetClass ? (isRtl ? targetClass.nameAr || targetClass.name : targetClass.name) : ''
+                                        : teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : ''}
+                                    </span>
+                                    <span
+                                      className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
+                                      title={entity.type === 'room' ? targetClass?.name : room?.name}
+                                    >
+                                      {entity.type === 'room' ? (targetClass?.name.split('-')[0].trim() || 'Cls') : (room ? room.id : 'N/A')}
+                                    </span>
                                   </div>
                                 </div>
-
-                                <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
-                                  <span className="truncate max-w-[45px]" title={teacher?.name}>
-                                    {teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : ''}
-                                  </span>
-                                  <span
-                                    className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
-                                    title={room?.name}
-                                  >
-                                    {room ? room.id : 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
+                              )}
                             </td>
                           );
                         }
@@ -423,9 +469,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                             onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
-                            className={`p-1 border-r border-slate-200 align-top h-16 min-w-[95px] max-w-[125px] transition-all relative ${
-                              isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''
-                            }`}
+                            style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
+                            className={`p-1 border-r border-slate-200 align-top transition-all relative ${
+                              isCompact ? 'h-11' : 'h-16'
+                            } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
                           >
                             <div className="relative h-full w-full rounded border border-slate-300 overflow-hidden shadow-xs select-none">
                               {/* Top-Left Half (Diagonal Split) */}

@@ -19,14 +19,6 @@ import {
   AvailabilityState,
   AdvancedRelationRule,
 } from '../lib/types';
-import {
-  sampleTeachers,
-  sampleClasses,
-  sampleRooms,
-  sampleSubjects,
-  sampleLessons,
-  initialPlacements,
-} from '../lib/sample-data';
 import { parseRozBinary } from '../lib/roz-parser';
 import { RibbonToolbar } from '../components/RibbonToolbar';
 import { ViewNavigator } from '../components/ViewNavigator';
@@ -93,33 +85,38 @@ const defaultAdvancedRules: AdvancedRelationRule[] = [
   },
 ];
 
+type ScheduleCycleKind = 'saudi' | 'seven_day' | 'standard';
+
 export default function TimetableStudioPage() {
   const [lang, setLang] = useState<Language>('ar');
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTab>('main');
   const [viewMode, setViewMode] = useState<ViewMode>('class');
-  const [selectedEntityId, setSelectedEntityId] = useState<string>('C1');
-  const [placements, setPlacements] = useState<Placement[]>(initialPlacements);
+  const [selectedEntityId, setSelectedEntityId] = useState<string>('');
+  const [placements, setPlacements] = useState<Placement[]>([]);
   const [history, setHistory] = useState<Placement[][]>([]);
   const [redoStack, setRedoStack] = useState<Placement[][]>([]);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
-  // Dynamic entities state initialized with sample data
-  const [teachers, setTeachers] = useState<Teacher[]>(sampleTeachers);
-  const [classes, setClasses] = useState<ClassGroup[]>(sampleClasses);
-  const [rooms, setRooms] = useState<Room[]>(sampleRooms);
-  const [subjects, setSubjects] = useState<Subject[]>(sampleSubjects);
-  const [lessons, setLessons] = useState<Lesson[]>(sampleLessons);
+  // Dynamic entities state initialized with clean empty defaults (no 5-teacher mock data)
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<ClassGroup[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [schoolName, setSchoolName] = useState<string>('Saudi Arabia 1');
   const [currentFileName, setCurrentFileName] = useState<string>('Saudi Arabia 1.roz');
-  const [schemaVersion, setSchemaVersion] = useState<number>(314);
+  const [schemaVersion, setSchemaVersion] = useState<number>(115);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
-  const [customDays, setCustomDays] = useState<string[] | undefined>(undefined);
-  const [customPeriods, setCustomPeriods] = useState<string[] | undefined>(undefined);
+
+  // Dynamic cycle days & multi-period grid scaling state
+  const [scheduleCycleKind, setScheduleCycleKind] = useState<ScheduleCycleKind>('saudi');
+  const [cycleDays, setCycleDays] = useState<number>(5);
+  const [periodsPerDay, setPeriodsPerDay] = useState<number>(12);
+  const [currentSampleId, setCurrentSampleId] = useState<'saudi' | 'demo1' | 'blank'>('saudi');
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState<boolean>(true);
 
   // Time-Off Matrix state: `${entityId}-${dayIndex}-${periodIndex}` -> AvailabilityState (1=Avail, 0=Blocked, 2=Disfavored)
-  const [timeOffMatrix, setTimeOffMatrix] = useState<Record<string, AvailabilityState>>({
-    'T2-0-0': 0, // Prof. Layla unavailable Monday period 1
-  });
+  const [timeOffMatrix, setTimeOffMatrix] = useState<Record<string, AvailabilityState>>({});
 
   // Advanced Relations Constraints state
   const [advancedRules, setAdvancedRules] = useState<AdvancedRelationRule[]>(defaultAdvancedRules);
@@ -147,7 +144,77 @@ export default function TimetableStudioPage() {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  // Desktop timetable authoring mode (always full scheduling capability)
+  // Memoize dynamic days, periods, and bellSchedule:
+  // - Saudi Arabia 1: 5 days (Saturday–Wednesday) and 12 periods (1 to 12) with bells from 08:00 to 19:00.
+  // - Demo1: 7 days (Monday–Sunday) and 7 periods.
+  // - Blank/Standard: standard 5 days and 7 periods.
+  // - Dynamically translate day names and period labels on lang change ('ar' vs 'en').
+  const dynamicDays = useMemo(() => {
+    if (scheduleCycleKind === 'saudi') {
+      return isRtl
+        ? ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء']
+        : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'];
+    }
+    if (scheduleCycleKind === 'seven_day' || cycleDays === 7) {
+      return isRtl
+        ? ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+        : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    }
+    if (cycleDays === 6) {
+      return isRtl
+        ? ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+        : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+    }
+    return isRtl
+      ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+      : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  }, [scheduleCycleKind, cycleDays, isRtl]);
+
+  const dynamicPeriods = useMemo(() => {
+    return Array.from({ length: periodsPerDay }, (_, i) =>
+      isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`
+    );
+  }, [periodsPerDay, isRtl]);
+
+  const dynamicBells = useMemo(() => {
+    if (periodsPerDay === 12) {
+      return [
+        '08:00 - 08:45',
+        '08:55 - 09:40',
+        '09:50 - 10:35',
+        '10:55 - 11:40',
+        '11:50 - 12:35',
+        '12:45 - 13:30',
+        '13:40 - 14:25',
+        '14:35 - 15:20',
+        '15:30 - 16:15',
+        '16:25 - 17:10',
+        '17:20 - 18:05',
+        '18:15 - 19:00',
+      ];
+    }
+    if (periodsPerDay === 7) {
+      return [
+        '08:00 - 08:45',
+        '08:55 - 09:40',
+        '09:50 - 10:35',
+        '10:55 - 11:40',
+        '11:50 - 12:35',
+        '12:45 - 13:30',
+        '13:40 - 14:25',
+      ];
+    }
+    return Array.from({ length: periodsPerDay }, (_, i) => {
+      const startH = 8 + Math.floor((i * 55) / 60);
+      const startM = (i * 55) % 60;
+      const endH = 8 + Math.floor(((i * 55) + 45) / 60);
+      const endM = ((i * 55) + 45) % 60;
+      const s = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
+      const e = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+      return `${s} - ${e}`;
+    });
+  }, [periodsPerDay]);
+
   const isReadOnly = false;
   const canRunSolver = true;
 
@@ -168,37 +235,44 @@ export default function TimetableStudioPage() {
         setCurrentFileName(fileName);
         setSchemaVersion(parsed.schema_version);
 
-        // Dynamically configure cycle days and periods matching the loaded school
-        if (fileName.toLowerCase().includes('saudi') || parsed.school_name.includes('2006/2007') || parsed.cycle_days === 5) {
-          setCustomDays(
-            isRtl
-              ? ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء']
-              : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday']
-          );
-          setCustomPeriods(
-            Array.from({ length: 12 }, (_, i) => (isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`))
-          );
-        } else if (parsed.cycle_days === 7 || fileName.toLowerCase().includes('demo1')) {
-          setCustomDays(
-            isRtl
-              ? ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
-              : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-          );
-          setCustomPeriods(
-            Array.from({ length: 7 }, (_, i) => (isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`))
-          );
+        let kind: ScheduleCycleKind = 'standard';
+        let detectedDays = parsed.cycle_days || 5;
+        let detectedPeriods = parsed.periods_per_day || 7;
+
+        if (
+          fileName.toLowerCase().includes('saudi') ||
+          fileName.toLowerCase().includes('arab') ||
+          parsed.school_name.includes('2006/2007')
+        ) {
+          kind = 'saudi';
+          detectedDays = 5;
+          detectedPeriods = 12;
+          setCurrentSampleId('saudi');
+        } else if (
+          fileName.toLowerCase().includes('demo1') ||
+          parsed.cycle_days === 7
+        ) {
+          kind = 'seven_day';
+          detectedDays = 7;
+          detectedPeriods = 7;
+          setCurrentSampleId('demo1');
         } else {
-          setCustomDays(undefined);
-          setCustomPeriods(undefined);
+          kind = 'standard';
+          detectedDays = parsed.cycle_days || 5;
+          detectedPeriods = parsed.periods_per_day || 7;
         }
 
-        // Sync parsed teacher unavailable slots into TimeOffMatrix
+        setScheduleCycleKind(kind);
+        setCycleDays(detectedDays);
+        setPeriodsPerDay(detectedPeriods);
+
+        // Sync parsed teacher unavailable slots into TimeOffMatrix using dynamic period count
         const newTimeOffMatrix: Record<string, AvailabilityState> = {};
         for (const tc of parsed.mapped.teachers) {
           if (tc.unavailableSlots) {
             for (const slot of tc.unavailableSlots) {
-              const d = Math.floor(slot / 7);
-              const p = slot % 7;
+              const d = Math.floor(slot / detectedPeriods);
+              const p = slot % detectedPeriods;
               newTimeOffMatrix[`${tc.id}-${d}-${p}`] = 0;
             }
           }
@@ -211,6 +285,8 @@ export default function TimetableStudioPage() {
         } else if (parsed.mapped.teachers.length > 0) {
           setSelectedEntityId(parsed.mapped.teachers[0].id);
           setViewMode('teacher');
+        } else {
+          setSelectedEntityId('');
         }
       } catch (err) {
         console.error('Failed to parse .roz file:', err);
@@ -243,18 +319,25 @@ export default function TimetableStudioPage() {
 
   // One-Click Real-School Sample Switcher
   const loadNamedSample = useCallback(
-    async (sample: 'saudi' | 'demo1' | 'toy' | 'blank') => {
+    async (sample: 'saudi' | 'demo1' | 'blank') => {
       if (sample === 'saudi') {
+        setCurrentSampleId('saudi');
         try {
-          const res = await fetch('/demos/Saudi_Arabia_1.roz');
+          let res = await fetch('/demos/Saudi_Arabia_1.roz');
+          let fname = 'Saudi Arabia 1.roz';
+          if (!res.ok) {
+            res = await fetch('/demos/Demo1.roz');
+            fname = 'Demo1.roz';
+          }
           if (res.ok) {
             const buf = await res.arrayBuffer();
-            loadRozBuffer(buf, 'Saudi arabia 1.roz');
+            loadRozBuffer(buf, fname);
           }
         } catch (err) {
-          console.error('Failed loading Saudi sample:', err);
+          console.error('Failed loading Saudi Arabia 1 sample:', err);
         }
       } else if (sample === 'demo1') {
+        setCurrentSampleId('demo1');
         try {
           const res = await fetch('/demos/Demo1.roz');
           if (res.ok) {
@@ -264,38 +347,53 @@ export default function TimetableStudioPage() {
         } catch (err) {
           console.error('Failed loading Demo1 sample:', err);
         }
-      } else if (sample === 'toy') {
-        setTeachers(sampleTeachers);
-        setClasses(sampleClasses);
-        setRooms(sampleRooms);
-        setSubjects(sampleSubjects);
-        setLessons(sampleLessons);
-        setPlacements(initialPlacements);
-        setSchoolName('Al-Noor Model High School');
-        setCurrentFileName('sample-toy-data.roz');
-        setCustomDays(undefined);
-        setCustomPeriods(undefined);
-        if (sampleClasses.length > 0) setSelectedEntityId(sampleClasses[0].id);
       } else if (sample === 'blank') {
+        setCurrentSampleId('blank');
         setTeachers([]);
         setClasses([]);
         setRooms([]);
         setSubjects([]);
         setLessons([]);
         setPlacements([]);
+        setHistory([]);
+        setRedoStack([]);
+        setTimeOffMatrix({});
         setSchoolName(isRtl ? 'مدرسة جديدة' : 'New School');
         setCurrentFileName('untitled.roz');
-        setCustomDays(undefined);
-        setCustomPeriods(undefined);
+        setSchemaVersion(314);
+        setSelectedEntityId('');
+        setScheduleCycleKind('standard');
+        setCycleDays(5);
+        setPeriodsPerDay(7);
       }
     },
     [loadRozBuffer, isRtl]
   );
 
-  // Auto-load Saudi Arabia 1 demo school on initial mount so npm run dev starts up looking full-scale
+  // Pre-load Saudi Arabia 1 demo school on initial mount so npm run dev boots with full-scale school data
   useEffect(() => {
-    loadNamedSample('saudi');
-  }, [loadNamedSample]);
+    let isMounted = true;
+    const initBoot = async () => {
+      try {
+        let res = await fetch('/demos/Saudi_Arabia_1.roz');
+        let fname = 'Saudi Arabia 1.roz';
+        if (!res.ok) {
+          res = await fetch('/demos/Demo1.roz');
+          fname = 'Demo1.roz';
+        }
+        if (res.ok && isMounted) {
+          const buf = await res.arrayBuffer();
+          loadRozBuffer(buf, fname);
+        }
+      } catch (err) {
+        console.warn('Initial demo pre-load error:', err);
+      }
+    };
+    initBoot();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadRozBuffer]);
 
   // Window Drag & Drop ingestion handlers
   useEffect(() => {
@@ -403,7 +501,7 @@ export default function TimetableStudioPage() {
       const teacher = teacherMap.get(lesson.teacherId);
       const isTeacherBlockedInMatrix = timeOffMatrix[teacherKey] === 0;
       const isTeacherUnavailableInTeacherModel = teacher?.unavailableSlots?.includes(
-        p.dayIndex * 7 + p.periodIndex
+        p.dayIndex * periodsPerDay + p.periodIndex
       );
 
       if (isTeacherBlockedInMatrix || isTeacherUnavailableInTeacherModel) {
@@ -429,7 +527,7 @@ export default function TimetableStudioPage() {
     }
 
     return list;
-  }, [placements, lessonMap, teacherMap, roomMap, classMap, timeOffMatrix]);
+  }, [placements, lessonMap, teacherMap, roomMap, classMap, timeOffMatrix, periodsPerDay]);
 
   // Undo / Redo operations
   const handleUndo = useCallback(() => {
@@ -508,8 +606,8 @@ export default function TimetableStudioPage() {
     } else {
       // Find first available conflict-free slot for this class/teacher
       let placed = false;
-      for (let d = 0; d < 5 && !placed; d++) {
-        for (let p = 0; p < 7 && !placed; p++) {
+      for (let d = 0; d < cycleDays && !placed; d++) {
+        for (let p = 0; p < periodsPerDay && !placed; p++) {
           const occupied = placements.some((plc) => {
             if (plc.dayIndex !== d || plc.periodIndex !== p) return false;
             const existingLesson = lessonMap.get(plc.lessonId);
@@ -537,8 +635,8 @@ export default function TimetableStudioPage() {
 
       // If no conflict-free slot found, place in first empty period for this class
       if (!placed) {
-        for (let d = 0; d < 5 && !placed; d++) {
-          for (let p = 0; p < 7 && !placed; p++) {
+        for (let d = 0; d < cycleDays && !placed; d++) {
+          for (let p = 0; p < periodsPerDay && !placed; p++) {
             const classOccupied = placements.some((plc) => {
               if (plc.dayIndex !== d || plc.periodIndex !== p) return false;
               const existingLesson = lessonMap.get(plc.lessonId);
@@ -593,8 +691,8 @@ export default function TimetableStudioPage() {
 
     for (const lesson of unplaced) {
       let placed = false;
-      for (let d = 0; d < 5 && !placed; d++) {
-        for (let p = 0; p < 7 && !placed; p++) {
+      for (let d = 0; d < cycleDays && !placed; d++) {
+        for (let p = 0; p < periodsPerDay && !placed; p++) {
           const slotTaken = newPlacements.some((plc) => {
             if (plc.dayIndex !== d || plc.periodIndex !== p) return false;
             const existingLesson = lessonMap.get(plc.lessonId);
@@ -870,9 +968,81 @@ export default function TimetableStudioPage() {
         onImportRoz={() => fileInputRef.current?.click()}
         onPrintPreview={handlePrintPreview}
         onLoadSample={loadNamedSample}
+        currentSampleId={currentSampleId}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
       />
+
+      {/* Dismissible Bilingual Welcome & Sample Switcher Banner */}
+      {showWelcomeBanner && (
+        <div className="bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-900 text-white px-3.5 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-700/50 shadow-xs text-xs select-none">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-xs shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-bold text-slate-100">
+                {isRtl
+                  ? 'برنامج الجداول المدرسية OpenTimetable'
+                  : 'OpenTimetable Studio'}
+              </span>
+              <span className="text-indigo-400">|</span>
+              <span className="text-slate-300 text-[11px]">
+                {isRtl
+                  ? 'تم تحميل مدرسة نموذجية حقيقية (82 معلماً، 12 حصة من السبت للأربعاء)'
+                  : 'Full real-school dataset active (82 teachers, 12 periods Saturday–Wednesday)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-indigo-200 font-semibold hidden md:inline">
+              {isRtl ? 'تبديل النموذج:' : 'Sample:'}
+            </span>
+            <button
+              onClick={() => loadNamedSample('saudi')}
+              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
+                currentSampleId === 'saudi'
+                  ? 'bg-emerald-600 text-white border-emerald-400 shadow-xs'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
+              }`}
+              title={isRtl ? 'تحميل جدول السعودية 1' : 'Load Saudi Arabia 1'}
+            >
+              <span>🇸🇦</span>
+              <span>{isRtl ? 'السعودية 1 (12 حصة)' : 'Saudi Arabia 1 (12p)'}</span>
+            </button>
+            <button
+              onClick={() => loadNamedSample('demo1')}
+              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
+                currentSampleId === 'demo1'
+                  ? 'bg-sky-600 text-white border-sky-400 shadow-xs'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
+              }`}
+              title={isRtl ? 'تحميل جدول Demo 1' : 'Load Demo 1'}
+            >
+              <span>🌍</span>
+              <span>{isRtl ? 'عرض 1 (7 أيام)' : 'Demo 1 (7d)'}</span>
+            </button>
+            <button
+              onClick={() => loadNamedSample('blank')}
+              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
+                currentSampleId === 'blank'
+                  ? 'bg-slate-700 text-white border-slate-500 shadow-xs'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
+              }`}
+              title={isRtl ? 'جدول جديد فارغ' : 'Empty New Timetable'}
+            >
+              <span>📄</span>
+              <span>{isRtl ? 'فارغ' : 'Blank'}</span>
+            </button>
+            <button
+              onClick={() => setShowWelcomeBanner(false)}
+              className="p-1 rounded hover:bg-white/20 text-slate-400 hover:text-white transition ml-1"
+              title={isRtl ? 'إخفاء الإشعار' : 'Dismiss banner'}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Sub-Toolbar: View Navigator & Metrics Bar */}
       <ViewNavigator
@@ -909,8 +1079,9 @@ export default function TimetableStudioPage() {
         onMovePlacement={handleMovePlacement}
         zoomLevel={zoomLevel}
         isReadOnly={isReadOnly}
-        customDays={customDays}
-        customPeriods={customPeriods}
+        customDays={dynamicDays}
+        customPeriods={dynamicPeriods}
+        bellSchedule={dynamicBells}
       />
 
       {/* 4. Signature Bottom Lesson Card Deck ("بنك البطاقات") */}
@@ -981,6 +1152,11 @@ export default function TimetableStudioPage() {
         classes={classes}
         initialMatrix={timeOffMatrix}
         onSaveTimeOff={handleSaveTimeOff}
+        customDays={dynamicDays}
+        customPeriods={dynamicPeriods}
+        bellSchedule={dynamicBells}
+        daysCount={cycleDays}
+        periodsCount={periodsPerDay}
       />
 
       <BasicDataModal

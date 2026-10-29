@@ -57,7 +57,8 @@ interface RibbonToolbarProps {
   onImportRoz: () => void;
   onPrintPreview: () => void;
   onOpenAdvancedRelations?: () => void;
-  onLoadSample?: (sample: 'saudi' | 'demo1' | 'toy' | 'blank') => void;
+  onLoadSample?: (sample: 'saudi' | 'demo1' | 'blank') => void;
+  currentSampleId?: 'saudi' | 'demo1' | 'blank';
   zoomLevel: number;
   setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
 }
@@ -90,6 +91,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   onPrintPreview,
   onOpenAdvancedRelations,
   onLoadSample,
+  currentSampleId,
   zoomLevel,
   setZoomLevel,
 }) => {
@@ -165,19 +167,18 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
         <div className="flex items-center gap-2">
           {/* Quick Real-School Dataset Switcher */}
           {onLoadSample && (
-            <div className="flex items-center gap-1.5 bg-slate-700/80 rounded px-2 py-0.5 border border-slate-600">
-              <span className="text-[10px] text-slate-300 font-medium hidden md:inline">
-                {isRtl ? 'المدرسة النموذجية:' : 'Sample:'}
+            <div className="flex items-center gap-1.5 bg-slate-700/90 rounded px-2.5 py-0.5 border border-sky-500/40 shadow-xs">
+              <span className="text-[10px] text-sky-200 font-semibold hidden md:inline">
+                {isRtl ? 'تحميل مدرسة نموذجية:' : 'Quick Load Sample:'}
               </span>
               <select
+                value={currentSampleId || 'saudi'}
                 onChange={(e) => onLoadSample(e.target.value as any)}
-                className="bg-slate-900 text-white text-[10px] rounded px-1.5 py-0.5 border border-slate-500 font-bold cursor-pointer"
-                defaultValue="saudi"
+                className="bg-slate-900 text-white text-[10px] rounded px-2 py-0.5 border border-slate-500 font-bold cursor-pointer focus:ring-1 focus:ring-sky-400 focus:outline-none"
               >
-                <option value="saudi">🇸🇦 Saudi Arabia 1 (82 Teachers / 250 Cards)</option>
-                <option value="demo1">🌍 Demo 1 (45 Teachers / 216 Cards)</option>
-                <option value="toy">🧩 Sample Toy Data (5 Teachers)</option>
-                <option value="blank">📄 Blank Timetable</option>
+                <option value="saudi">🇸🇦 {isRtl ? 'السعودية 1 (82 معلماً / 250 حصة)' : 'Saudi Arabia 1 (82 Teachers / 250 Cards)'}</option>
+                <option value="demo1">🌍 {isRtl ? 'عرض 1 (45 معلماً / 216 حصة)' : 'Demo 1 (45 Teachers / 216 Cards)'}</option>
+                <option value="blank">📄 {isRtl ? 'جدول جديد فارغ' : 'Empty New Timetable'}</option>
               </select>
             </div>
           )}
@@ -425,6 +426,64 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
         {/* TAB: FILE (ملف) */}
         {activeTab === 'file' && (
           <div className="flex items-stretch gap-2">
+            {/* Quick Load Sample Datasets Group */}
+            {onLoadSample && (
+              <div className="ribbon-group flex flex-col justify-between px-2 bg-sky-50/40 rounded border border-sky-100">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => onLoadSample('saudi')}
+                    className={`flex flex-col items-center justify-center p-1.5 rounded-md border transition ${
+                      currentSampleId === 'saudi'
+                        ? 'border-emerald-500 bg-emerald-100/80 text-emerald-950 font-bold shadow-xs'
+                        : 'border-transparent hover:border-emerald-300 hover:bg-emerald-50 text-slate-700'
+                    } w-20`}
+                    title={isRtl ? 'تحميل جدول السعودية 1 (82 معلماً)' : 'Load Saudi Arabia 1 (82 Teachers)'}
+                  >
+                    <span className="text-xl mb-0.5">🇸🇦</span>
+                    <span className="text-[10px] font-bold text-center leading-tight">
+                      {isRtl ? 'السعودية 1' : 'Saudi Arabia 1'}
+                    </span>
+                    <span className="text-[8px] text-slate-500 font-mono">82 Teachers</span>
+                  </button>
+
+                  <button
+                    onClick={() => onLoadSample('demo1')}
+                    className={`flex flex-col items-center justify-center p-1.5 rounded-md border transition ${
+                      currentSampleId === 'demo1'
+                        ? 'border-sky-500 bg-sky-100/80 text-sky-950 font-bold shadow-xs'
+                        : 'border-transparent hover:border-sky-300 hover:bg-sky-50 text-slate-700'
+                    } w-20`}
+                    title={isRtl ? 'تحميل جدول Demo 1 (45 معلماً)' : 'Load Demo 1 (45 Teachers)'}
+                  >
+                    <span className="text-xl mb-0.5">🌍</span>
+                    <span className="text-[10px] font-bold text-center leading-tight">
+                      {isRtl ? 'عرض 1' : 'Demo 1'}
+                    </span>
+                    <span className="text-[8px] text-slate-500 font-mono">45 Teachers</span>
+                  </button>
+
+                  <button
+                    onClick={() => onLoadSample('blank')}
+                    className={`flex flex-col items-center justify-center p-1.5 rounded-md border transition ${
+                      currentSampleId === 'blank'
+                        ? 'border-slate-500 bg-slate-200 text-slate-900 font-bold shadow-xs'
+                        : 'border-transparent hover:border-slate-300 hover:bg-slate-100 text-slate-700'
+                    } w-20`}
+                    title={isRtl ? 'بدء جدول جديد فارغ' : 'Start Empty New Timetable'}
+                  >
+                    <FilePlus className="w-6 h-6 text-slate-600 mb-0.5" />
+                    <span className="text-[10px] font-bold text-center leading-tight">
+                      {isRtl ? 'جدول جديد' : 'Empty New'}
+                    </span>
+                    <span className="text-[8px] text-slate-500 font-mono">{isRtl ? 'فارغ' : 'Blank'}</span>
+                  </button>
+                </div>
+                <span className="text-[9px] font-medium text-slate-500 text-center tracking-wider pt-0.5 border-t border-slate-200/60">
+                  {isRtl ? 'تحميل مدرسة نموذجية' : 'Quick Load Sample'}
+                </span>
+              </div>
+            )}
+
             <div className="ribbon-group flex flex-col justify-between px-2">
               <div className="flex items-center gap-1.5">
                 <button

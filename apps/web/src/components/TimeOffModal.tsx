@@ -13,6 +13,11 @@ interface TimeOffModalProps {
   classes: ClassGroup[];
   initialMatrix?: Record<string, AvailabilityState>;
   onSaveTimeOff?: (entityId: string, matrix: Record<string, AvailabilityState>) => void;
+  customDays?: string[];
+  customPeriods?: string[];
+  bellSchedule?: string[];
+  daysCount?: number;
+  periodsCount?: number;
 }
 
 export const TimeOffModal: React.FC<TimeOffModalProps> = ({
@@ -23,9 +28,21 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   classes,
   initialMatrix = { 'T2-0-0': 0 },
   onSaveTimeOff,
+  customDays,
+  customPeriods,
+  bellSchedule,
+  daysCount,
+  periodsCount,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
+
+  const daysList = customDays && customDays.length > 0 ? customDays : t.days;
+  const periodsList = customPeriods && customPeriods.length > 0 ? customPeriods : t.periods;
+  const bells = bellSchedule && bellSchedule.length > 0 ? bellSchedule : t.bellSchedule;
+
+  const totalDays = daysCount || daysList.length;
+  const totalPeriods = periodsCount || periodsList.length;
 
   const [selectedEntityId, setSelectedEntityId] = useState<string>(
     teachers[0]?.id || classes[0]?.id || 'T1'
@@ -69,13 +86,13 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
 
   // Toggle entire day row
   const handleToggleDay = (day: number) => {
-    const states = Array.from({ length: 7 }, (_, p) => getSlotState(day, p));
+    const states = Array.from({ length: totalPeriods }, (_, p) => getSlotState(day, p));
     const allAvailable = states.every((s) => s === 1);
     const nextState: AvailabilityState = allAvailable ? 0 : 1;
 
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let p = 0; p < 7; p++) {
+      for (let p = 0; p < totalPeriods; p++) {
         updated[getKey(day, p)] = nextState;
       }
       return updated;
@@ -84,13 +101,13 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
 
   // Toggle entire period column
   const handleTogglePeriod = (period: number) => {
-    const states = Array.from({ length: 5 }, (_, d) => getSlotState(d, period));
+    const states = Array.from({ length: totalDays }, (_, d) => getSlotState(d, period));
     const allAvailable = states.every((s) => s === 1);
     const nextState: AvailabilityState = allAvailable ? 0 : 1;
 
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let d = 0; d < 5; d++) {
+      for (let d = 0; d < totalDays; d++) {
         updated[getKey(d, period)] = nextState;
       }
       return updated;
@@ -100,8 +117,8 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   const handleSetAllAvailable = () => {
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let d = 0; d < 5; d++) {
-        for (let p = 0; p < 7; p++) {
+      for (let d = 0; d < totalDays; d++) {
+        for (let p = 0; p < totalPeriods; p++) {
           updated[getKey(d, p)] = 1;
         }
       }
@@ -112,7 +129,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   const handleBlockPeriod1 = () => {
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let d = 0; d < 5; d++) {
+      for (let d = 0; d < totalDays; d++) {
         updated[getKey(d, 0)] = 0;
       }
       return updated;
@@ -122,8 +139,9 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   const handleBlockLastPeriod = () => {
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let d = 0; d < 5; d++) {
-        updated[getKey(d, 6)] = 0;
+      const lastPeriodIdx = totalPeriods - 1;
+      for (let d = 0; d < totalDays; d++) {
+        updated[getKey(d, lastPeriodIdx)] = 0;
       }
       return updated;
     });
@@ -132,8 +150,8 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   const handleInvert = () => {
     setMatrix((prev) => {
       const updated = { ...prev };
-      for (let d = 0; d < 5; d++) {
-        for (let p = 0; p < 7; p++) {
+      for (let d = 0; d < totalDays; d++) {
+        for (let p = 0; p < totalPeriods; p++) {
           const current = getSlotState(d, p);
           // Invert: 1 -> 0, 0 -> 1, 2 -> 1
           updated[getKey(d, p)] = current === 1 ? 0 : 1;
@@ -167,8 +185,8 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   let availableCount = 0;
   let blockedCount = 0;
   let disfavoredCount = 0;
-  for (let d = 0; d < 5; d++) {
-    for (let p = 0; p < 7; p++) {
+  for (let d = 0; d < totalDays; d++) {
+    for (let p = 0; p < totalPeriods; p++) {
       const st = getSlotState(d, p);
       if (st === 1) availableCount++;
       else if (st === 0) blockedCount++;
@@ -178,7 +196,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-3xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-5 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -197,7 +215,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
         </div>
 
         {/* Modal Content */}
-        <div className="p-5 flex flex-col gap-4 text-xs text-slate-700">
+        <div className="p-5 flex flex-col gap-4 text-xs text-slate-700 overflow-y-auto flex-1">
           {/* Entity Selector & Legend */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
             <div className="flex items-center gap-2">
@@ -253,7 +271,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
             </div>
           </div>
 
-          {/* 5 Days x 7 Periods Matrix Grid */}
+          {/* Dynamic Days x Periods Matrix Grid */}
           <div className="overflow-x-auto border border-slate-300 rounded-lg shadow-xs bg-white">
             <table className="w-full border-collapse text-center">
               <thead>
@@ -261,24 +279,29 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                   <th className="p-2 border-r border-slate-300 w-28 bg-slate-200/70 text-start px-3">
                     {isRtl ? 'اليوم / الحصة' : 'Day / Period'}
                   </th>
-                  {t.periods.map((_, pIdx) => (
-                    <th
-                      key={pIdx}
-                      onClick={() => handleTogglePeriod(pIdx)}
-                      className="p-2 border-r border-slate-200 hover:bg-slate-200 cursor-pointer transition select-none"
-                      title={isRtl ? `انقر لتعديل عمود الحصة ${pIdx + 1}` : `Click to toggle column ${pIdx + 1}`}
-                    >
-                      <div>{pIdx + 1}</div>
-                      <div className="text-[9px] text-slate-400 font-mono font-normal">
-                        {t.bellSchedule[pIdx].split('-')[0].trim()}
-                      </div>
-                    </th>
-                  ))}
+                  {periodsList.map((_, pIdx) => {
+                    const bellTime = bells[pIdx] ? bells[pIdx].split('-')[0].trim() : '';
+                    return (
+                      <th
+                        key={pIdx}
+                        onClick={() => handleTogglePeriod(pIdx)}
+                        className="p-2 border-r border-slate-200 hover:bg-slate-200 cursor-pointer transition select-none min-w-[50px]"
+                        title={isRtl ? `انقر لتعديل عمود الحصة ${pIdx + 1}` : `Click to toggle column ${pIdx + 1}`}
+                      >
+                        <div>{pIdx + 1}</div>
+                        {bellTime && (
+                          <div className="text-[9px] text-slate-400 font-mono font-normal">
+                            {bellTime}
+                          </div>
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {t.days.map((dayName, dIdx) => (
-                  <tr key={dayName} className="border-b border-slate-100 hover:bg-slate-50/50">
+                {daysList.map((dayName, dIdx) => (
+                  <tr key={`${dayName}-${dIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50">
                     <td
                       onClick={() => handleToggleDay(dIdx)}
                       className="p-2 border-r border-slate-300 bg-slate-50 font-bold text-slate-800 text-start px-3 hover:bg-slate-200 cursor-pointer transition select-none"
@@ -287,7 +310,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                       {dayName}
                     </td>
 
-                    {t.periods.map((_, pIdx) => {
+                    {periodsList.map((_, pIdx) => {
                       const state = getSlotState(dIdx, pIdx);
                       return (
                         <td key={pIdx} className="p-1 border-r border-slate-100">
@@ -301,7 +324,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                                 ? isRtl ? 'محظور (انقر لغير مفضل)' : 'Blocked (Click for Disfavored)'
                                 : isRtl ? 'غير مفضل (انقر للمتاح)' : 'Disfavored (Click for Available)'
                             }
-                            className={`w-10 h-10 rounded-md flex items-center justify-center font-extrabold text-sm transition-all shadow-xs mx-auto ${
+                            className={`w-9 h-9 rounded-md flex items-center justify-center font-extrabold text-sm transition-all shadow-xs mx-auto ${
                               state === 1
                                 ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
                                 : state === 0

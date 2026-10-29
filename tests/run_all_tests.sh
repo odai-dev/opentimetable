@@ -23,6 +23,13 @@ node --test tests/test_modal_crud_parity.mjs
 echo "==> Running Milestone 4 Canvas & Card Deck Precision Verification Suite..."
 node --test tests/test_canvas_card_deck_precision.mjs
 
+echo "==> Running Dynamic Scaling & Multi-Period Boundaries Adversarial Suite..."
+node --test tests/test_dynamic_scaling_adversarial.mjs
+
+echo "==> Running Dataset Loading & Sample Switching Resilience Suite (R1)..."
+node --test tests/test_dataset_switching_resilience.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="
+
