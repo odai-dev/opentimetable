@@ -32,6 +32,11 @@ interface TestTimetableModalProps {
   lessons: Lesson[];
   placements?: Placement[];
   conflicts?: Conflict[];
+  teacherMap?: Map<string, Teacher>;
+  classMap?: Map<string, ClassGroup>;
+  roomMap?: Map<string, Room>;
+  subjectMap?: Map<string, Subject>;
+  lessonMap?: Map<string, Lesson>;
 }
 
 type TestTab = 'overview' | 'clashes' | 'single';
@@ -47,6 +52,11 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
   lessons,
   placements = [],
   conflicts = [],
+  teacherMap: propTeacherMap,
+  classMap: propClassMap,
+  roomMap: propRoomMap,
+  subjectMap: propSubjectMap,
+  lessonMap: propLessonMap,
 }) => {
   const [activeTab, setActiveTab] = useState<TestTab>('overview');
   const [isRunning, setIsRunning] = useState(false);
@@ -75,17 +85,23 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     notes: string[];
   }>(null);
 
+  // Entity lookup maps (reusing pre-computed maps from page.tsx when provided, memoized fallback)
+  const fallbackTeacherMap = useMemo(() => new Map(teachers.map((tc) => [tc.id, tc])), [teachers]);
+  const fallbackClassMap = useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes]);
+  const fallbackRoomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+  const fallbackSubjectMap = useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
+  const fallbackLessonMap = useMemo(() => new Map(lessons.map((l) => [l.id, l])), [lessons]);
+
+  const teacherMap = propTeacherMap ?? fallbackTeacherMap;
+  const classMap = propClassMap ?? fallbackClassMap;
+  const roomMap = propRoomMap ?? fallbackRoomMap;
+  const subjectMap = propSubjectMap ?? fallbackSubjectMap;
+  const lessonMap = propLessonMap ?? fallbackLessonMap;
+
   if (!isOpen) return null;
 
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
-
-  // Entity lookup maps
-  const teacherMap = new Map(teachers.map((tc) => [tc.id, tc]));
-  const classMap = new Map(classes.map((c) => [c.id, c]));
-  const roomMap = new Map(rooms.map((r) => [r.id, r]));
-  const subjectMap = new Map(subjects.map((s) => [s.id, s]));
-  const lessonMap = new Map(lessons.map((l) => [l.id, l]));
 
   const handleRunOverviewTest = () => {
     setIsRunning(true);

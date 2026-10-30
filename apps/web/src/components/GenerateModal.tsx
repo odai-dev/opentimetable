@@ -14,6 +14,7 @@ interface GenerateModalProps {
   progress?: SolverProgressPayload | null;
   onRunGenerate: (complexity: GenerationComplexity, options: { minimizeGaps: boolean; strictRooms: boolean; distributeSubjects: boolean }) => void;
   solveDurationMs?: number | null;
+  solveStatus?: string | null;
   unplacedCount: number;
   conflictsCount: number;
 }
@@ -26,6 +27,7 @@ export const GenerateModal: React.FC<GenerateModalProps> = ({
   progress,
   onRunGenerate,
   solveDurationMs,
+  solveStatus,
   unplacedCount,
   conflictsCount,
 }) => {
@@ -176,19 +178,35 @@ export const GenerateModal: React.FC<GenerateModalProps> = ({
               )}
             </div>
           ) : solveDurationMs != null ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <div>
-                  <div className="font-bold text-emerald-900 text-xs">
-                    {isRtl ? 'تم التوليد بنجاح (محقق 100%)' : 'Generation Successful (0 Hard Conflicts)'}
-                  </div>
-                  <div className="text-[10px] text-emerald-700">
-                    {t.generatorModal.duration}: <strong>{solveDurationMs} ms</strong> • {unplacedCount} {t.generatorModal.unplaced}
+            solveStatus?.includes('FALLBACK') || conflictsCount > 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  <div>
+                    <div className="font-bold text-amber-900 text-xs">
+                      {isRtl ? 'تسكين بديل غير مدقق (FALLBACK)' : 'Fallback Schedule (Unverified)'}
+                    </div>
+                    <div className="text-[10px] text-amber-700">
+                      {t.generatorModal.duration}: <strong>{solveDurationMs} ms</strong> • {conflictsCount} {isRtl ? 'تعارضات' : 'conflicts'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <div className="font-bold text-emerald-900 text-xs">
+                      {isRtl ? 'تم التوليد بنجاح (محقق 100%)' : 'Generation Successful (0 Hard Conflicts)'}
+                    </div>
+                    <div className="text-[10px] text-emerald-700">
+                      {t.generatorModal.duration}: <strong>{solveDurationMs} ms</strong> • {unplacedCount} {t.generatorModal.unplaced}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           ) : null}
         </div>
 

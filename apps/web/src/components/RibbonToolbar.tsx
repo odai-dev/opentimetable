@@ -61,6 +61,10 @@ interface RibbonToolbarProps {
   currentSampleId?: 'saudi' | 'demo1' | 'blank';
   zoomLevel: number;
   setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
+  schoolName?: string;
+  currentFileName?: string;
+  onSaveFile?: () => void;
+  onNewFile?: () => void;
 }
 
 export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
@@ -94,6 +98,10 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   currentSampleId,
   zoomLevel,
   setZoomLevel,
+  schoolName,
+  currentFileName,
+  onSaveFile,
+  onNewFile,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
@@ -108,7 +116,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
             📅
           </div>
           <span className="font-bold tracking-tight text-slate-100 hidden sm:inline">
-            {t.windowSubtitle}
+            {currentFileName ? `OpenTimetable 2026 - [${currentFileName}]` : t.windowSubtitle}
           </span>
 
           <div className="h-4 w-[1px] bg-slate-600 mx-1 hidden sm:block" />
@@ -116,7 +124,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
           {/* Quick Access Tools */}
           <div className="flex items-center gap-1">
             <button
-              onClick={() => alert(isRtl ? 'مشروع جديد' : 'New Project')}
+              onClick={onNewFile || (() => alert(isRtl ? 'مشروع جديد' : 'New Project'))}
               title={t.ribbon.tools.newFile}
               className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
             >
@@ -130,7 +138,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               <FolderOpen className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => alert(isRtl ? 'تم حفظ التغييرات محلياً' : 'Changes saved locally')}
+              onClick={onSaveFile || (() => alert(isRtl ? 'تم حفظ التغييرات محلياً' : 'Changes saved locally'))}
               title={t.ribbon.tools.saveFile}
               className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
             >
@@ -487,7 +495,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
             <div className="ribbon-group flex flex-col justify-between px-2">
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => alert(isRtl ? 'مشروع جديد' : 'New Project')}
+                  onClick={onNewFile || (() => alert(isRtl ? 'مشروع جديد' : 'New Project'))}
                   className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-14"
                 >
                   <FilePlus className="w-7 h-7 text-sky-600 mb-1" />
@@ -507,7 +515,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 </button>
 
                 <button
-                  onClick={() => alert(isRtl ? 'تم الحفظ' : 'Saved')}
+                  onClick={onSaveFile || (() => alert(isRtl ? 'تم الحفظ' : 'Saved'))}
                   className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-14"
                 >
                   <Save className="w-7 h-7 text-emerald-600 mb-1" />

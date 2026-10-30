@@ -46,6 +46,11 @@ interface BasicDataModalProps {
   onAddLesson?: (lesson: Lesson) => void;
   onEditLesson?: (lesson: Lesson) => void;
   onDeleteLesson?: (id: string) => void;
+  teacherMap?: Map<string, Teacher>;
+  classMap?: Map<string, ClassGroup>;
+  roomMap?: Map<string, Room>;
+  subjectMap?: Map<string, Subject>;
+  lessonMap?: Map<string, Lesson>;
 }
 
 type EntityType = 'subject' | 'class' | 'room' | 'teacher' | 'lesson';
@@ -60,6 +65,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   rooms,
   teachers,
   lessons,
+  teacherMap,
+  classMap,
+  roomMap,
+  subjectMap,
+  lessonMap,
   onAddSubject,
   onEditSubject,
   onDeleteSubject,
@@ -817,13 +827,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       <tr key={l.id} className="border-b border-slate-100 hover:bg-slate-50 group">
                         <td className="p-2 border-r border-slate-200 text-center font-mono font-bold text-slate-500">{l.id}</td>
                         <td className="p-2 border-r border-slate-200 font-bold text-slate-800">
-                          {subjects.find((s) => s.id === l.subjectId)?.name || l.subjectId}
+                          {subjectMap?.get(l.subjectId)?.name || subjects.find((s) => s.id === l.subjectId)?.name || l.subjectId}
                         </td>
                         <td className="p-2 border-r border-slate-200">
-                          {teachers.find((tc) => tc.id === l.teacherId)?.name || l.teacherId}
+                          {teacherMap?.get(l.teacherId)?.name || teachers.find((tc) => tc.id === l.teacherId)?.name || l.teacherId}
                         </td>
                         <td className="p-2 border-r border-slate-200 font-semibold">
-                          {classes.find((c) => c.id === l.classId)?.name || l.classId}
+                          {classMap?.get(l.classId)?.name || classes.find((c) => c.id === l.classId)?.name || l.classId}
                         </td>
                         <td className="p-2 border-r border-slate-200 text-center font-mono text-slate-600">{l.roomId || 'Auto'}</td>
                         <td className="p-2 text-center">

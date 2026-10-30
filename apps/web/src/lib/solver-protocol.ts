@@ -1,11 +1,28 @@
 /**
  * Shared Worker Protocol Contracts and Type Definitions
+ * opentimetable/apps/web/src/lib/solver-protocol.ts
  */
+
+import type {
+  Teacher,
+  ClassGroup,
+  Room,
+  Subject,
+  Lesson,
+  Placement,
+  GenerationComplexity,
+} from './types';
 
 export type SolverStage =
   | 'CONSTRUCTIVE_GREEDY'
   | 'FEASIBILITY_TABU'
   | 'OPTIMIZATION_LAHC';
+
+export type SolutionStatus =
+  | 'OPTIMAL'
+  | 'FEASIBLE'
+  | 'TIMEOUT'
+  | 'INFEASIBLE';
 
 export interface ProgressMetrics {
   stage: SolverStage;
@@ -28,20 +45,22 @@ export interface LessonAssignment {
   roomId: string;
 }
 
+export interface ViolationDetail {
+  constraintType: string;
+  severity: string;
+  description: string;
+  affectedLessons: string[];
+}
+
 export interface TimetableResponse {
   requestId: string;
-  status: 'OPTIMAL' | 'FEASIBLE' | 'TIMEOUT' | 'INFEASIBLE';
+  status: SolutionStatus;
   hardConflicts: number;
   softPenalty: number;
   solveDurationMs: number;
   iterations: number;
   placements: LessonAssignment[];
-  violations: Array<{
-    constraintType: string;
-    severity: string;
-    description: string;
-    affectedLessons: string[];
-  }>;
+  violations: ViolationDetail[];
 }
 
 export interface SolverProgressPayload {
@@ -58,22 +77,98 @@ export interface SolverProgressPayload {
   progressPercent?: number;
 }
 
+export interface SolverExecutionOptions {
+  minimizeGaps?: boolean;
+  strictRooms?: boolean;
+  distributeSubjects?: boolean;
+  timeoutMs?: number;
+  stepIterations?: number;
+  yieldIntervalMs?: number;
+  [key: string]: any;
+}
+
+export interface SolverConfig {
+  days?: number;
+  periodsPerDay?: number;
+  maxConsecutivePeriods?: number;
+  timeoutMs?: number;
+  maxIterations?: number;
+  randomSeed?: number;
+  gapWeight?: number;
+  distributionWeight?: number;
+  preferenceWeight?: number;
+  roomChangeWeight?: number;
+  [key: string]: any;
+}
+
+/**
+ * Flexible lesson input allowing standard Lesson or extended constraints
+ */
+export interface SolverLessonInput {
+  id: string;
+  subjectId: string;
+  teacherId: string;
+  classId: string;
+  roomId?: string;
+  duration?: number;
+  requiredFeatures?: string[];
+  studentCount?: number;
+  isPinned?: boolean;
+  pinnedSlot?: number;
+  pinnedRoomId?: string;
+  [key: string]: any;
+}
+
+/**
+ * Flexible entity inputs supporting frontend domain types or raw solver extensions
+ */
+export interface SolverTeacherInput extends Partial<Teacher> {
+  id: string;
+  name: string;
+  unavailableSlots?: number[];
+  maxConsecutivePeriods?: number;
+  maxDailyHours?: number;
+  preferredSlots?: number[];
+  undesirableSlots?: number[];
+  [key: string]: any;
+}
+
+export interface SolverClassInput extends Partial<ClassGroup> {
+  id: string;
+  name: string;
+  unavailableSlots?: number[];
+  studentCount?: number;
+  [key: string]: any;
+}
+
+export interface SolverRoomInput extends Partial<Room> {
+  id: string;
+  name: string;
+  capacity?: number;
+  roomType?: string;
+  features?: string[];
+  unavailableSlots?: number[];
+  [key: string]: any;
+}
+
+export interface SolverSubjectInput extends Partial<Subject> {
+  id: string;
+  name: string;
+  maxDailyPeriods?: number;
+  requiredRoomType?: string;
+  requiredFeatures?: string[];
+  [key: string]: any;
+}
+
 export interface SolveRequestPayload {
-  complexity?: 'normal' | 'large' | 'huge';
-  lessons: Array<{
-    id: string;
-    subjectId?: string;
-    teacherId?: string;
-    classId?: string;
-    roomId?: string;
-    duration?: number;
-    [key: string]: any;
-  }>;
-  teachers?: any[];
-  classes?: any[];
-  rooms?: any[];
-  subjects?: any[];
-  config?: any;
+  complexity?: GenerationComplexity;
+  lessons: Array<Lesson | SolverLessonInput>;
+  teachers?: Array<Teacher | SolverTeacherInput>;
+  classes?: Array<ClassGroup | SolverClassInput>;
+  rooms?: Array<Room | SolverRoomInput>;
+  subjects?: Array<Subject | SolverSubjectInput>;
+  config?: SolverConfig;
+  options?: SolverExecutionOptions;
   [key: string]: any;
 }
 
@@ -86,13 +181,9 @@ export type InboundWorkerMessage =
   | {
       type: 'SOLVE_REQUEST';
       requestId?: string;
-      payload: any; // TimetableRequest or SolveRequestPayload
-      complexity?: 'normal' | 'large' | 'huge';
-      options?: {
-        timeoutMs?: number;
-        stepIterations?: number;
-        yieldIntervalMs?: number;
-      };
+      payload: SolveRequestPayload;
+      complexity?: GenerationComplexity;
+      options?: SolverExecutionOptions;
     }
   | {
       type: 'CANCEL_REQUEST';
@@ -125,7 +216,7 @@ export type OutboundWorkerMessage =
       type: 'SOLVE_COMPLETE';
       requestId?: string;
       response?: TimetableResponse;
-      placements: any[];
+      placements: Placement[];
       durationMs: number;
       status: string;
     }

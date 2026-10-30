@@ -121,7 +121,7 @@ export function useWasmSolver(): UseWasmSolverReturn {
           const elapsed = Math.round((performance.now() - start) * 10) / 10;
           setSolveStats({
             durationMs: elapsed,
-            status: 'OPTIMAL (0 Hard Conflicts)',
+            status: 'FALLBACK (Unverified)',
           });
           setIsSolving(false);
           setProgress(null);

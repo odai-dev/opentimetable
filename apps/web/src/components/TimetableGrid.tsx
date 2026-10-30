@@ -28,6 +28,11 @@ interface TimetableGridProps {
   classes: ClassGroup[];
   rooms: Room[];
   conflicts: Conflict[];
+  teacherMap?: Map<string, Teacher>;
+  classMap?: Map<string, ClassGroup>;
+  roomMap?: Map<string, Room>;
+  subjectMap?: Map<string, Subject>;
+  lessonMap?: Map<string, Lesson>;
   onPlaceLesson: (lessonId: string, dayIndex: number, periodIndex: number, roomId?: string) => void;
   onRemovePlacement: (lessonId: string) => void;
   onMovePlacement: (lessonId: string, targetDay: number, targetPeriod: number) => void;
@@ -37,6 +42,8 @@ interface TimetableGridProps {
   customPeriods?: string[];
   bellSchedule?: string[];
 }
+
+const EMPTY_PLACEMENTS: Placement[] = [];
 
 export const TimetableGrid: React.FC<TimetableGridProps> = ({
   lang,
@@ -51,6 +58,11 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   classes,
   rooms,
   conflicts,
+  teacherMap: propTeacherMap,
+  classMap: propClassMap,
+  roomMap: propRoomMap,
+  subjectMap: propSubjectMap,
+  lessonMap: propLessonMap,
   onPlaceLesson,
   onRemovePlacement,
   onMovePlacement,
@@ -68,12 +80,55 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   const periodsList = customPeriods && customPeriods.length > 0 ? customPeriods : t.periods;
   const bells = bellSchedule && bellSchedule.length > 0 ? bellSchedule : t.bellSchedule;
 
-  // Fast entity lookup maps
-  const lessonMap = React.useMemo(() => new Map(lessons.map((l) => [l.id, l])), [lessons]);
-  const subjectMap = React.useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
-  const teacherMap = React.useMemo(() => new Map(teachers.map((tc) => [tc.id, tc])), [teachers]);
-  const classMap = React.useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes]);
-  const roomMap = React.useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+  // Fast entity lookup maps (reusing pre-computed maps from page.tsx when provided)
+  const fallbackLessonMap = React.useMemo(() => new Map(lessons.map((l) => [l.id, l])), [lessons]);
+  const fallbackSubjectMap = React.useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
+  const fallbackTeacherMap = React.useMemo(() => new Map(teachers.map((tc) => [tc.id, tc])), [teachers]);
+  const fallbackClassMap = React.useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes]);
+  const fallbackRoomMap = React.useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+
+  const lessonMap = propLessonMap ?? fallbackLessonMap;
+  const subjectMap = propSubjectMap ?? fallbackSubjectMap;
+  const teacherMap = propTeacherMap ?? fallbackTeacherMap;
+  const classMap = propClassMap ?? fallbackClassMap;
+  const roomMap = propRoomMap ?? fallbackRoomMap;
+
+  // Pre-index placements by entity and slot for O(1) cell lookup
+  const placementsByEntitySlot = React.useMemo(() => {
+    const map = new Map<string, Placement[]>();
+
+    for (let i = 0; i < placements.length; i++) {
+      const p = placements[i];
+      const lesson = lessonMap.get(p.lessonId);
+      if (!lesson) continue;
+
+      // 1. Index by Class
+      if (lesson.classId) {
+        const classKey = `class:${lesson.classId}:${p.dayIndex}:${p.periodIndex}`;
+        const group = map.get(classKey);
+        if (group) group.push(p);
+        else map.set(classKey, [p]);
+      }
+
+      // 2. Index by Teacher
+      if (lesson.teacherId) {
+        const teacherKey = `teacher:${lesson.teacherId}:${p.dayIndex}:${p.periodIndex}`;
+        const group = map.get(teacherKey);
+        if (group) group.push(p);
+        else map.set(teacherKey, [p]);
+      }
+
+      // 3. Index by Room
+      if (p.roomId) {
+        const roomKey = `room:${p.roomId}:${p.dayIndex}:${p.periodIndex}`;
+        const group = map.get(roomKey);
+        if (group) group.push(p);
+        else map.set(roomKey, [p]);
+      }
+    }
+
+    return map;
+  }, [placements, lessonMap]);
 
   // Conflict lookup by lesson ID
   const conflictLessonIds = React.useMemo(() => {
@@ -139,8 +194,33 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
     }
   };
 
-  const handleDragLeave = () => {
-    setDragOverCell(null);
+  const handleDragLeave = (
+    e: React.DragEvent,
+    day: number,
+    period: number,
+    entityId: string
+  ) => {
+    // 1. If pointer is moving into a child element inside this same cell, do not reset
+    if (
+      e.currentTarget &&
+      e.relatedTarget &&
+      e.currentTarget.contains(e.relatedTarget as Node)
+    ) {
+      return;
+    }
+
+    // 2. Only clear drag-over state if the cell being left is the currently active one
+    setDragOverCell((current) => {
+      if (
+        current &&
+        current.day === day &&
+        current.period === period &&
+        current.entityId === entityId
+      ) {
+        return null;
+      }
+      return current;
+    });
   };
 
   const handleDrop = (e: React.DragEvent, targetDay: number, targetPeriod: number, rowEntityId: string) => {
@@ -215,7 +295,12 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
       {/* 2. Main Matrix Grid Canvas */}
       <div className="flex-1 overflow-auto p-2">
         <div className="bg-white border border-slate-300 rounded shadow-sm overflow-hidden inline-block min-w-full">
-          <table className="border-collapse w-full text-slate-800">
+          <table
+            role="grid"
+            aria-label={isRtl ? 'جدول الحصص الأسبوعي' : 'Weekly Timetable Grid'}
+            aria-readonly={isReadOnly}
+            className="border-collapse w-full text-slate-800"
+          >
             {/* Day Headers (Upper Tier) */}
             <thead>
               <tr className="bg-slate-200 border-b border-slate-300 text-slate-700 text-xs font-bold">
@@ -279,6 +364,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 return (
                   <tr
                     key={entity.id}
+                    role="row"
                     onClick={() => setSelectedEntityId(entity.id)}
                     className={`border-b border-slate-200 transition-colors cursor-pointer ${
                       isSelectedRow
@@ -288,6 +374,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                   >
                     {/* Entity Label Cell (Sticky Left) */}
                     <td
+                      role="rowheader"
                       className={`p-2 border-r border-slate-300 text-xs sticky ltr:left-0 rtl:right-0 z-10 transition-colors ${
                         isSelectedRow
                           ? 'bg-sky-100/90 font-bold text-sky-900 border-l-4 border-l-sky-600 shadow-xs'
@@ -301,16 +388,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                     {/* Period Slot Cells */}
                     {daysList.map((_, dIdx) =>
                       periodsList.map((_, pIdx) => {
-                        // Find all placements for this row entity and slot (supports split cards)
-                        const slotPlacements = placements.filter((p) => {
-                          if (p.dayIndex !== dIdx || p.periodIndex !== pIdx) return false;
-                          const lesson = lessonMap.get(p.lessonId);
-                          if (!lesson) return false;
-                          if (entity.type === 'class') return lesson.classId === entity.id;
-                          if (entity.type === 'teacher') return lesson.teacherId === entity.id;
-                          if (entity.type === 'room') return p.roomId === entity.id;
-                          return false;
-                        });
+                        // O(1) slot placements lookup
+                        const slotKey = `${entity.type}:${entity.id}:${dIdx}:${pIdx}`;
+                        const slotPlacements = placementsByEntitySlot.get(slotKey) || EMPTY_PLACEMENTS;
 
                         const isDragOver =
                           dragOverCell?.day === dIdx &&
@@ -322,15 +402,22 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           return (
                             <td
                               key={`${dIdx}-${pIdx}`}
+                              role="gridcell"
+                              aria-label={
+                                isRtl
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: فارغ`
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Empty`
+                              }
+                              aria-selected={isDragOver}
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
-                              onDragLeave={handleDragLeave}
+                              onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
                               onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
                               style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
                               className={`p-1 border-r border-slate-200 align-top transition-all relative ${
                                 isCompact ? 'h-11' : 'h-16'
                               } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
                             >
-                              <div className="h-full border border-dashed border-slate-200/80 rounded flex items-center justify-center text-[10px] text-slate-300 hover:border-slate-400 hover:bg-slate-50 transition">
+                              <div className="h-full border border-dashed border-slate-200/80 rounded flex items-center justify-center text-[10px] text-slate-300 hover:border-slate-400 hover:bg-slate-50 transition pointer-events-none">
                                 <span className="opacity-0 group-hover:opacity-60">+</span>
                               </div>
                             </td>
@@ -347,13 +434,28 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           const room = roomMap.get(p.roomId);
                           const hasConflict = lesson ? conflictLessonIds.has(lesson.id) : false;
 
-                          if (!lesson || !subject) return <td key={`${dIdx}-${pIdx}`} className="p-1 border-r border-slate-200" />;
+                          if (!lesson || !subject) return <td key={`${dIdx}-${pIdx}`} role="gridcell" className="p-1 border-r border-slate-200" />;
 
                           return (
                             <td
                               key={`${dIdx}-${pIdx}`}
+                              role="gridcell"
+                              aria-label={
+                                isRtl
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: ${
+                                      subject.nameAr || subject.name
+                                    }${teacher ? `، المعلم ${teacher.nameAr || teacher.name}` : ''}${
+                                      room ? `، القاعة ${room.nameAr || room.name}` : ''
+                                    }${hasConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: ${
+                                      subject.name
+                                    }${teacher ? `, Teacher ${teacher.name}` : ''}${
+                                      room ? `, Room ${room.name}` : ''
+                                    }${hasConflict ? ' (Warning: Conflict detected)' : ''}`
+                              }
+                              aria-selected={isDragOver}
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
-                              onDragLeave={handleDragLeave}
+                              onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
                               onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
                               style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
                               className={`p-1 border-r border-slate-200 align-top transition-all relative ${
@@ -466,8 +568,19 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                         return (
                           <td
                             key={`${dIdx}-${pIdx}`}
+                            role="gridcell"
+                            aria-label={
+                              isRtl
+                                ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: حصة مشتركة مقسمة - ${
+                                    s1?.nameAr || s1?.name || ''
+                                  } و ${s2?.nameAr || s2?.name || ''}`
+                                : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Split divided lesson - ${
+                                    s1?.name || ''
+                                  } and ${s2?.name || ''}`
+                            }
+                            aria-selected={isDragOver}
                             onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
-                            onDragLeave={handleDragLeave}
+                            onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
                             onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
                             style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
                             className={`p-1 border-r border-slate-200 align-top transition-all relative ${

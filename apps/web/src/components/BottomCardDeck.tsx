@@ -32,6 +32,10 @@ interface BottomCardDeckProps {
   teachers: Teacher[];
   classes: ClassGroup[];
   rooms: Room[];
+  teacherMap?: Map<string, Teacher>;
+  classMap?: Map<string, ClassGroup>;
+  roomMap?: Map<string, Room>;
+  subjectMap?: Map<string, Subject>;
   selectedEntityId: string;
   onPlaceLesson: (lessonId: string, dayIndex?: number, periodIndex?: number) => void;
   onRemovePlacement: (lessonId: string) => void;
@@ -48,6 +52,10 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
   teachers,
   classes,
   rooms,
+  teacherMap: propTeacherMap,
+  classMap: propClassMap,
+  roomMap: propRoomMap,
+  subjectMap: propSubjectMap,
   selectedEntityId,
   onPlaceLesson,
   onRemovePlacement,
@@ -63,10 +71,15 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
 
   // Maps
   const placedLessonIds = React.useMemo(() => new Set(placements.map((p) => p.lessonId)), [placements]);
-  const subjectMap = React.useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
-  const teacherMap = React.useMemo(() => new Map(teachers.map((tc) => [tc.id, tc])), [teachers]);
-  const classMap = React.useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes]);
-  const roomMap = React.useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+  const fallbackSubjectMap = React.useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
+  const fallbackTeacherMap = React.useMemo(() => new Map(teachers.map((tc) => [tc.id, tc])), [teachers]);
+  const fallbackClassMap = React.useMemo(() => new Map(classes.map((c) => [c.id, c])), [classes]);
+  const fallbackRoomMap = React.useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms]);
+
+  const subjectMap = propSubjectMap ?? fallbackSubjectMap;
+  const teacherMap = propTeacherMap ?? fallbackTeacherMap;
+  const classMap = propClassMap ?? fallbackClassMap;
+  const roomMap = propRoomMap ?? fallbackRoomMap;
 
   // Selected Entity Name
   const selectedEntityName = React.useMemo(() => {

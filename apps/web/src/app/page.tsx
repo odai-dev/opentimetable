@@ -87,6 +87,8 @@ const defaultAdvancedRules: AdvancedRelationRule[] = [
 
 type ScheduleCycleKind = 'saudi' | 'seven_day' | 'standard';
 
+const MAX_HISTORY = 50;
+
 export default function TimetableStudioPage() {
   const [lang, setLang] = useState<Language>('ar');
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTab>('main');
@@ -143,6 +145,8 @@ export default function TimetableStudioPage() {
 
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
+  const isRtlRef = useRef(isRtl);
+  isRtlRef.current = isRtl;
 
   // Memoize dynamic days, periods, and bellSchedule:
   // - Saudi Arabia 1: 5 days (Saturday–Wednesday) and 12 periods (1 to 12) with bells from 08:00 to 19:00.
@@ -290,10 +294,10 @@ export default function TimetableStudioPage() {
         }
       } catch (err) {
         console.error('Failed to parse .roz file:', err);
-        alert(isRtl ? `فشل في قراءة ملف .roz: ${err}` : `Failed to parse .roz file: ${err}`);
+        alert(isRtlRef.current ? `فشل في قراءة ملف .roz: ${err}` : `Failed to parse .roz file: ${err}`);
       }
     },
-    [isRtl]
+    []
   );
 
   const loadRozFile = useCallback(
@@ -303,10 +307,10 @@ export default function TimetableStudioPage() {
         loadRozBuffer(arrayBuffer, file.name);
       } catch (err) {
         console.error('Failed reading file:', err);
-        alert(isRtl ? `خطأ أثناء قراءة الملف: ${err}` : `Error reading file: ${err}`);
+        alert(isRtlRef.current ? `خطأ أثناء قراءة الملف: ${err}` : `Error reading file: ${err}`);
       }
     },
-    [loadRozBuffer, isRtl]
+    [loadRozBuffer]
   );
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +362,7 @@ export default function TimetableStudioPage() {
         setHistory([]);
         setRedoStack([]);
         setTimeOffMatrix({});
-        setSchoolName(isRtl ? 'مدرسة جديدة' : 'New School');
+        setSchoolName(isRtlRef.current ? 'مدرسة جديدة' : 'New School');
         setCurrentFileName('untitled.roz');
         setSchemaVersion(314);
         setSelectedEntityId('');
@@ -367,7 +371,7 @@ export default function TimetableStudioPage() {
         setPeriodsPerDay(7);
       }
     },
-    [loadRozBuffer, isRtl]
+    [loadRozBuffer]
   );
 
   // Pre-load Saudi Arabia 1 demo school on initial mount so npm run dev boots with full-scale school data
@@ -394,6 +398,47 @@ export default function TimetableStudioPage() {
       isMounted = false;
     };
   }, [loadRozBuffer]);
+
+  // Auto-save timetable state to localStorage on modifications
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (lessons.length === 0 && teachers.length === 0) return;
+    try {
+      const stateToSave = {
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+        timeOffMatrix,
+        schoolName,
+        currentFileName,
+        schemaVersion,
+        scheduleCycleKind,
+        cycleDays,
+        periodsPerDay,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem('opentimetable_autosave_state', JSON.stringify(stateToSave));
+    } catch {
+      // Ignore quota errors silently
+    }
+  }, [
+    teachers,
+    classes,
+    rooms,
+    subjects,
+    lessons,
+    placements,
+    timeOffMatrix,
+    schoolName,
+    currentFileName,
+    schemaVersion,
+    scheduleCycleKind,
+    cycleDays,
+    periodsPerDay,
+  ]);
 
   // Window Drag & Drop ingestion handlers
   useEffect(() => {
@@ -453,12 +498,27 @@ export default function TimetableStudioPage() {
   const conflicts = useMemo(() => {
     const list: Conflict[] = [];
 
-    // 1. Direct pairwise clashes: Teacher, Room, Class
+    // 1. Direct pairwise clashes using slot-indexed bucket map: Map<number, Placement[]>
+    const slotBuckets = new Map<number, Placement[]>();
     for (let i = 0; i < placements.length; i++) {
-      for (let j = i + 1; j < placements.length; j++) {
-        const p1 = placements[i];
-        const p2 = placements[j];
-        if (p1.dayIndex === p2.dayIndex && p1.periodIndex === p2.periodIndex) {
+      const p = placements[i];
+      const slotIndex = p.dayIndex * periodsPerDay + p.periodIndex;
+      const bucket = slotBuckets.get(slotIndex);
+      if (bucket) {
+        bucket.push(p);
+      } else {
+        slotBuckets.set(slotIndex, [p]);
+      }
+    }
+
+    for (const slotPlacements of slotBuckets.values()) {
+      const bucketLen = slotPlacements.length;
+      if (bucketLen <= 1) continue;
+
+      for (let i = 0; i < bucketLen; i++) {
+        for (let j = i + 1; j < bucketLen; j++) {
+          const p1 = slotPlacements[i];
+          const p2 = slotPlacements[j];
           const l1 = lessonMap.get(p1.lessonId);
           const l2 = lessonMap.get(p2.lessonId);
           if (!l1 || !l2) continue;
@@ -529,11 +589,16 @@ export default function TimetableStudioPage() {
     return list;
   }, [placements, lessonMap, teacherMap, roomMap, classMap, timeOffMatrix, periodsPerDay]);
 
-  // Undo / Redo operations
+  // Undo / Redo operations (capped at MAX_HISTORY = 50 snapshots)
   const handleUndo = useCallback(() => {
     if (history.length === 0 || isReadOnly) return;
     const prev = history[history.length - 1];
-    setRedoStack((r) => [...r, placements]);
+    setRedoStack((r) => {
+      const nextRedo = [...r, placements];
+      return nextRedo.length > MAX_HISTORY
+        ? nextRedo.slice(nextRedo.length - MAX_HISTORY)
+        : nextRedo;
+    });
     setPlacements(prev);
     setHistory((h) => h.slice(0, -1));
   }, [history, placements, isReadOnly]);
@@ -541,7 +606,12 @@ export default function TimetableStudioPage() {
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0 || isReadOnly) return;
     const next = redoStack[redoStack.length - 1];
-    setHistory((h) => [...h, placements]);
+    setHistory((h) => {
+      const nextHistory = [...h, placements];
+      return nextHistory.length > MAX_HISTORY
+        ? nextHistory.slice(nextHistory.length - MAX_HISTORY)
+        : nextHistory;
+    });
     setPlacements(next);
     setRedoStack((r) => r.slice(0, -1));
   }, [redoStack, placements, isReadOnly]);
@@ -570,9 +640,14 @@ export default function TimetableStudioPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo, canRunSolver, isReadOnly]);
 
-  // Record history helper
+  // Record history helper (capped at MAX_HISTORY = 50 snapshots)
   const recordHistory = useCallback(() => {
-    setHistory((prev) => [...prev, placements]);
+    setHistory((prev) => {
+      const nextHistory = [...prev, placements];
+      return nextHistory.length > MAX_HISTORY
+        ? nextHistory.slice(nextHistory.length - MAX_HISTORY)
+        : nextHistory;
+    });
     setRedoStack([]);
   }, [placements]);
 
@@ -718,11 +793,72 @@ export default function TimetableStudioPage() {
     setPlacements(newPlacements);
   };
 
-  // Clear all placements (returns all cards to bottom deck)
+  // Clear all placements (returns all cards to bottom deck) with user confirmation
   const handleClearPlacements = () => {
     if (isReadOnly) return;
+    if (
+      placements.length > 0 &&
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        isRtl
+          ? 'هل أنت متأكد من تفريغ كافة الحصص المسكنة في الجدول؟'
+          : 'Are you sure you want to clear all placed lessons in the timetable?'
+      )
+    ) {
+      return;
+    }
     recordHistory();
     setPlacements([]);
+  };
+
+  // Create clean new timetable with confirmation if data exists
+  const handleNewFile = () => {
+    if (isReadOnly) return;
+    if (
+      (lessons.length > 0 || placements.length > 0) &&
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        isRtl
+          ? 'هل أنت متأكد من إنشاء جدول جديد؟ سيتم مسح البيانات الحالية.'
+          : 'Are you sure you want to create a new timetable? Current data will be cleared.'
+      )
+    ) {
+      return;
+    }
+    loadNamedSample('blank');
+  };
+
+  // Manual save to localStorage with user feedback
+  const handleSaveFile = () => {
+    try {
+      const stateToSave = {
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+        timeOffMatrix,
+        schoolName,
+        currentFileName,
+        schemaVersion,
+        scheduleCycleKind,
+        cycleDays,
+        periodsPerDay,
+        timestamp: Date.now(),
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('opentimetable_saved_state', JSON.stringify(stateToSave));
+      }
+      alert(
+        isRtl
+          ? 'تم حفظ بيانات الجدول بنجاح في المتصفح محلياً (Local Storage)'
+          : 'Timetable data successfully saved to local browser storage!'
+      );
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+      alert(isRtl ? 'تعذر حفظ البيانات محلياً' : 'Failed to save timetable locally');
+    }
   };
 
   // Clear placements for a single row entity
@@ -762,8 +898,13 @@ export default function TimetableStudioPage() {
 
       setPlacements(solvedPlacements);
       setIsGenerateModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('WASM Solver execution encountered error:', err);
+      alert(
+        isRtl
+          ? `حدث خطأ أثناء معالجة وتوليد الجدول: ${err?.message || err}`
+          : `WASM Solver execution encountered error: ${err?.message || err}`
+      );
     }
   };
 
@@ -811,10 +952,12 @@ export default function TimetableStudioPage() {
     setRooms((prev) => prev.map((r) => (r.id === room.id ? room : r)));
   };
   const handleDeleteRoom = (id: string) => {
-    setRooms((prev) => prev.filter((r) => r.id !== id));
+    const remainingRooms = rooms.filter((r) => r.id !== id);
+    const fallbackRoomId = remainingRooms[0]?.id || '';
+    setRooms(remainingRooms);
     setLessons((prev) => prev.map((l) => (l.roomId === id ? { ...l, roomId: undefined } : l)));
     setPlacements((prev) =>
-      prev.map((p) => (p.roomId === id ? { ...p, roomId: rooms[0]?.id || '' } : p))
+      prev.map((p) => (p.roomId === id ? { ...p, roomId: fallbackRoomId } : p))
     );
   };
 
@@ -890,19 +1033,80 @@ export default function TimetableStudioPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Export iCal
+  // Export iCal with full RFC 5545 compliance (DTSTAMP, DTSTART, DTEND, SUMMARY, LOCATION, DESCRIPTION)
   const handleExportIcal = () => {
-    let ical = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenTimetable//Enterprise//EN\r\n';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const now = new Date();
+    const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+
+    // Reference base date (Monday of current week)
+    const baseDate = new Date();
+    const currentDay = baseDate.getDay();
+    const diffToMonday = currentDay === 0 ? 1 : 1 - currentDay;
+    baseDate.setDate(baseDate.getDate() + diffToMonday);
+
+    let ical = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenTimetable//Enterprise Studio//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
+
     for (const p of placements) {
       const lesson = lessonMap.get(p.lessonId);
-      ical += `BEGIN:VEVENT\r\nUID:${p.lessonId}-${p.dayIndex}-${p.periodIndex}@opentimetable.org\r\nSUMMARY:Lesson ${lesson?.subjectId || ''}\r\nLOCATION:${p.roomId}\r\nEND:VEVENT\r\n`;
+      if (!lesson) continue;
+
+      const sub = subjectMap.get(lesson.subjectId);
+      const subName = (isRtl ? sub?.nameAr || sub?.name : sub?.name) || lesson.subjectId;
+      const tc = teacherMap.get(lesson.teacherId);
+      const tcName = (isRtl ? tc?.nameAr || tc?.name : tc?.name) || 'Faculty';
+      const cls = classMap.get(lesson.classId);
+      const clsName = (isRtl ? cls?.nameAr || cls?.name : cls?.name) || 'Class';
+      const rm = roomMap.get(p.roomId);
+      const rmName = (isRtl ? rm?.nameAr || rm?.name : rm?.name) || p.roomId;
+
+      const eventDate = new Date(baseDate);
+      eventDate.setDate(baseDate.getDate() + p.dayIndex);
+      const yearStr = eventDate.getFullYear();
+      const monthStr = pad(eventDate.getMonth() + 1);
+      const dayStr = pad(eventDate.getDate());
+
+      const bell = dynamicBells[p.periodIndex] || '';
+      let startH = 8, startM = 0, endH = 8, endM = 45;
+      if (bell.includes('-')) {
+        const parts = bell.split('-');
+        const sParts = parts[0].trim().split(':');
+        const eParts = parts[1].trim().split(':');
+        if (sParts.length === 2) {
+          startH = parseInt(sParts[0], 10) || 8;
+          startM = parseInt(sParts[1], 10) || 0;
+        }
+        if (eParts.length === 2) {
+          endH = parseInt(eParts[0], 10) || 8;
+          endM = parseInt(eParts[1], 10) || 45;
+        }
+      } else {
+        startH = 8 + p.periodIndex;
+        endH = 8 + p.periodIndex;
+        endM = 45;
+      }
+
+      const dtstart = `${yearStr}${monthStr}${dayStr}T${pad(startH)}${pad(startM)}00`;
+      const dtend = `${yearStr}${monthStr}${dayStr}T${pad(endH)}${pad(endM)}00`;
+
+      ical += 'BEGIN:VEVENT\r\n';
+      ical += `UID:${p.lessonId}-${p.dayIndex}-${p.periodIndex}@opentimetable.org\r\n`;
+      ical += `DTSTAMP:${dtstamp}\r\n`;
+      ical += `DTSTART:${dtstart}\r\n`;
+      ical += `DTEND:${dtend}\r\n`;
+      ical += `SUMMARY:${subName} (${clsName})\r\n`;
+      ical += `DESCRIPTION:${isRtl ? 'المعلم' : 'Teacher'}: ${tcName}\\n${isRtl ? 'الشعبة' : 'Class'}: ${clsName}\r\n`;
+      ical += `LOCATION:${rmName}\r\n`;
+      ical += 'STATUS:CONFIRMED\r\n';
+      ical += 'END:VEVENT\r\n';
     }
+
     ical += 'END:VCALENDAR\r\n';
     const blob = new Blob([ical], { type: 'text/calendar;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `opentimetable-${selectedEntityId}.ics`;
+    a.download = `opentimetable-${selectedEntityId || 'all'}.ics`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -971,6 +1175,10 @@ export default function TimetableStudioPage() {
         currentSampleId={currentSampleId}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
+        schoolName={schoolName}
+        currentFileName={currentFileName}
+        onSaveFile={handleSaveFile}
+        onNewFile={handleNewFile}
       />
 
       {/* Dismissible Bilingual Welcome & Sample Switcher Banner */}
@@ -1074,6 +1282,11 @@ export default function TimetableStudioPage() {
         classes={classes}
         rooms={rooms}
         conflicts={conflicts}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
         onPlaceLesson={handlePlaceLesson}
         onRemovePlacement={handleRemovePlacement}
         onMovePlacement={handleMovePlacement}
@@ -1093,6 +1306,10 @@ export default function TimetableStudioPage() {
         teachers={teachers}
         classes={classes}
         rooms={rooms}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
         selectedEntityId={selectedEntityId}
         onPlaceLesson={handlePlaceLesson}
         onRemovePlacement={handleRemovePlacement}
@@ -1140,6 +1357,7 @@ export default function TimetableStudioPage() {
         progress={solverProgress}
         onRunGenerate={handleRunGenerate}
         solveDurationMs={solveStats?.durationMs}
+        solveStatus={solveStats?.status}
         unplacedCount={unplacedCount}
         conflictsCount={conflicts.length}
       />
@@ -1169,6 +1387,11 @@ export default function TimetableStudioPage() {
         rooms={rooms}
         teachers={teachers}
         lessons={lessons}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
         onAddSubject={handleAddSubject}
         onEditSubject={handleEditSubject}
         onDeleteSubject={handleDeleteSubject}
@@ -1197,6 +1420,11 @@ export default function TimetableStudioPage() {
         lessons={lessons}
         placements={placements}
         conflicts={conflicts}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
       />
 
       <AdvancedRelationsModal
