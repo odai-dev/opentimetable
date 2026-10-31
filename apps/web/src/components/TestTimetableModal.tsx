@@ -365,7 +365,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-3xl overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3.5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-teal-300" />
             <div>
@@ -382,10 +382,10 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-100 px-4 pt-2 flex items-center gap-1 border-b border-slate-300 text-xs">
+        <div className="bg-slate-100 px-4 pt-2 flex items-center gap-1 border-b border-slate-300 text-xs shrink-0">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'overview'
                 ? 'bg-white text-teal-800 border-t-2 border-t-teal-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -397,7 +397,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
 
           <button
             onClick={() => setActiveTab('clashes')}
-            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'clashes'
                 ? 'bg-white text-rose-800 border-t-2 border-t-rose-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -411,7 +411,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
 
           <button
             onClick={() => setActiveTab('single')}
-            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'single'
                 ? 'bg-white text-indigo-800 border-t-2 border-t-indigo-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -423,7 +423,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 overflow-y-auto flex-1 text-xs text-slate-700">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0 text-xs text-slate-700">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="flex flex-col gap-4">
@@ -786,7 +786,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-slate-500">
             {conflicts.length === 0
               ? `✓ ${isRtl ? 'الجدول خالٍ من أي تعارضات' : '100% Conflict-free'}`

@@ -198,7 +198,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-4xl overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-gradient-to-r from-violet-700 to-indigo-800 text-white px-5 py-3.5 flex items-center justify-between border-b border-indigo-900">
+        <div className="bg-gradient-to-r from-violet-700 to-indigo-800 text-white px-5 py-3.5 flex items-center justify-between border-b border-indigo-900 shrink-0">
           <div className="flex items-center gap-2.5">
             <Sliders className="w-5 h-5 text-indigo-300" />
             <div>
@@ -221,7 +221,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
         </div>
 
         {/* Toolbar Bar */}
-        <div className="bg-slate-50 px-5 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs">
+        <div className="bg-slate-50 px-5 py-2.5 border-b border-slate-200 flex items-center justify-between text-xs shrink-0">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -239,7 +239,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
         </div>
 
         {/* Rules List Body */}
-        <div className="p-5 overflow-y-auto flex-1 text-xs text-slate-800 space-y-3">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0 text-xs text-slate-800 space-y-3">
           {localRules.length === 0 ? (
             <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300">
               <Sliders className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -352,7 +352,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2">
+        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}

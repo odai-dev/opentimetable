@@ -461,7 +461,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 select-none">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-700">
+        <div className="bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <School className="w-5 h-5 text-sky-400" />
             <h2 className="font-bold text-sm">{t.basicDataModal.title}</h2>
@@ -475,13 +475,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         </div>
 
         {/* Tab Strip */}
-        <div className="bg-slate-100 px-3 pt-2 flex items-center gap-1 border-b border-slate-300 overflow-x-auto text-xs">
+        <div className="bg-slate-100 px-3 pt-2 flex items-center gap-1 border-b border-slate-300 overflow-x-auto text-xs shrink-0">
           <button
             onClick={() => {
               setActiveTab('school');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'school'
                 ? 'bg-white text-sky-700 border-t-2 border-t-sky-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -496,7 +496,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               setActiveTab('subjects');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'subjects'
                 ? 'bg-white text-emerald-700 border-t-2 border-t-emerald-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -511,7 +511,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               setActiveTab('classes');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'classes'
                 ? 'bg-white text-indigo-700 border-t-2 border-t-indigo-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -526,7 +526,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               setActiveTab('rooms');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'rooms'
                 ? 'bg-white text-amber-700 border-t-2 border-t-amber-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -541,7 +541,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               setActiveTab('teachers');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'teachers'
                 ? 'bg-white text-violet-700 border-t-2 border-t-violet-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -556,7 +556,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               setActiveTab('lessons');
               setSearchQuery('');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'lessons'
                 ? 'bg-white text-rose-700 border-t-2 border-t-rose-600 border-x border-slate-300'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -569,7 +569,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
 
         {/* Tab Controls Bar (Add button + Search bar for non-school tabs) */}
         {activeTab !== 'school' && (
-          <div className="bg-slate-50 px-5 py-2.5 border-b border-slate-200 flex items-center justify-between gap-3 text-xs">
+          <div className="bg-slate-50 px-5 py-2.5 border-b border-slate-200 flex items-center justify-between gap-3 text-xs shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -627,7 +627,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         )}
 
         {/* Tab Content Body */}
-        <div className="p-5 overflow-y-auto flex-1 text-xs text-slate-800">
+        <div className="p-5 overflow-y-auto flex-1 min-h-0 text-xs text-slate-800">
           {/* 1. School Tab */}
           {activeTab === 'school' && (
             <div className="flex flex-col gap-4">
@@ -1091,7 +1091,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-end">
+        <div className="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
