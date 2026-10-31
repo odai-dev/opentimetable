@@ -31,6 +31,7 @@ import { TimeOffModal } from '../components/TimeOffModal';
 import { BasicDataModal } from '../components/BasicDataModal';
 import { TestTimetableModal } from '../components/TestTimetableModal';
 import { AdvancedRelationsModal } from '../components/AdvancedRelationsModal';
+import { StartupWelcomeModal } from '../components/StartupWelcomeModal';
 import { useWasmSolver } from '../lib/useWasmSolver';
 import { FolderOpen } from 'lucide-react';
 
@@ -107,17 +108,17 @@ export default function TimetableStudioPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [schoolName, setSchoolName] = useState<string>('Saudi Arabia 1');
-  const [currentFileName, setCurrentFileName] = useState<string>('Saudi Arabia 1.roz');
-  const [schemaVersion, setSchemaVersion] = useState<number>(115);
+  const [schoolName, setSchoolName] = useState<string>('My School');
+  const [currentFileName, setCurrentFileName] = useState<string>('untitled.roz');
+  const [schemaVersion, setSchemaVersion] = useState<number>(314);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   // Dynamic cycle days & multi-period grid scaling state
-  const [scheduleCycleKind, setScheduleCycleKind] = useState<ScheduleCycleKind>('saudi');
+  const [scheduleCycleKind, setScheduleCycleKind] = useState<ScheduleCycleKind>('standard');
   const [cycleDays, setCycleDays] = useState<number>(5);
-  const [periodsPerDay, setPeriodsPerDay] = useState<number>(12);
-  const [currentSampleId, setCurrentSampleId] = useState<'saudi' | 'demo1' | 'blank'>('saudi');
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState<boolean>(true);
+  const [periodsPerDay, setPeriodsPerDay] = useState<number>(7);
+  const [currentSampleId, setCurrentSampleId] = useState<'saudi' | 'demo1' | 'blank'>('blank');
+  const [isStartupModalOpen, setIsStartupModalOpen] = useState<boolean>(false);
 
   // Time-Off Matrix state: `${entityId}-${dayIndex}-${periodIndex}` -> AvailabilityState (1=Avail, 0=Blocked, 2=Disfavored)
   const [timeOffMatrix, setTimeOffMatrix] = useState<Record<string, AvailabilityState>>({});
@@ -486,7 +487,6 @@ export default function TimetableStudioPage() {
               if (targetState.selectedEntityId) setSelectedEntityId(targetState.selectedEntityId);
               if (targetState.viewMode) setViewMode(targetState.viewMode);
 
-              setShowWelcomeBanner(false);
               isHydratedRef.current = true;
               return;
             }
@@ -496,22 +496,13 @@ export default function TimetableStudioPage() {
         }
       }
 
-      try {
-        let res = await fetch('/demos/Saudi_Arabia_1.roz');
-        let fname = 'Saudi Arabia 1.roz';
-        if (!res.ok) {
-          res = await fetch('/demos/Demo1.roz');
-          fname = 'Demo1.roz';
-        }
-        if (res.ok && isMounted) {
-          const buf = await res.arrayBuffer();
-          loadRozBuffer(buf, fname);
-        }
-      } catch (err) {
-        console.warn('Initial demo pre-load error:', err);
-      } finally {
-        if (isMounted) {
-          isHydratedRef.current = true;
+      if (isMounted) {
+        isHydratedRef.current = true;
+        const skipStartup =
+          typeof window !== 'undefined' &&
+          localStorage.getItem('opentimetable_skip_startup_dialog') === 'true';
+        if (!skipStartup) {
+          setIsStartupModalOpen(true);
         }
       }
     };
@@ -519,7 +510,7 @@ export default function TimetableStudioPage() {
     return () => {
       isMounted = false;
     };
-  }, [loadRozBuffer]);
+  }, []);
 
   // Auto-save timetable state to localStorage on modifications
   useEffect(() => {
@@ -996,6 +987,24 @@ export default function TimetableStudioPage() {
       return;
     }
     loadNamedSample('blank');
+  };
+
+  // Startup Welcome Dialog Handlers
+  const handleCreateNewFromStartup = () => {
+    setIsStartupModalOpen(false);
+    loadNamedSample('blank');
+    setBasicDataInitialTab('school');
+    setIsBasicDataModalOpen(true);
+  };
+
+  const handleOpenFileFromStartup = () => {
+    setIsStartupModalOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleLoadSampleFromStartup = (sample: 'saudi' | 'demo1') => {
+    setIsStartupModalOpen(false);
+    loadNamedSample(sample);
   };
 
   // Manual save to localStorage with user feedback
@@ -1484,79 +1493,9 @@ export default function TimetableStudioPage() {
           onSaveFile={handleSaveFile}
           onSaveAs={handleSaveAs}
           onNewFile={handleNewFile}
+          onOpenStartupModal={() => setIsStartupModalOpen(true)}
         />
       </div>
-
-      {/* Dismissible Bilingual Welcome & Sample Switcher Banner */}
-      {showWelcomeBanner && (
-        <div className="print:hidden bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-900 text-white px-3.5 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-700/50 shadow-xs text-xs select-none">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-xs shrink-0" />
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-slate-100">
-                {isRtl
-                  ? 'برنامج الجداول المدرسية OpenTimetable'
-                  : 'OpenTimetable Studio'}
-              </span>
-              <span className="text-indigo-400">|</span>
-              <span className="text-slate-300 text-[11px]">
-                {isRtl
-                  ? 'تم تحميل مدرسة نموذجية حقيقية (82 معلماً، 12 حصة من السبت للأربعاء)'
-                  : 'Full real-school dataset active (82 teachers, 12 periods Saturday–Wednesday)'}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-indigo-200 font-semibold hidden md:inline">
-              {isRtl ? 'تبديل النموذج:' : 'Sample:'}
-            </span>
-            <button
-              onClick={() => loadNamedSample('saudi')}
-              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
-                currentSampleId === 'saudi'
-                  ? 'bg-emerald-600 text-white border-emerald-400 shadow-xs'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
-              }`}
-              title={isRtl ? 'تحميل جدول السعودية 1' : 'Load Saudi Arabia 1'}
-            >
-              <span>🇸🇦</span>
-              <span>{isRtl ? 'السعودية 1 (12 حصة)' : 'Saudi Arabia 1 (12p)'}</span>
-            </button>
-            <button
-              onClick={() => loadNamedSample('demo1')}
-              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
-                currentSampleId === 'demo1'
-                  ? 'bg-sky-600 text-white border-sky-400 shadow-xs'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
-              }`}
-              title={isRtl ? 'تحميل جدول Demo 1' : 'Load Demo 1'}
-            >
-              <span>🌍</span>
-              <span>{isRtl ? 'عرض 1 (7 أيام)' : 'Demo 1 (7d)'}</span>
-            </button>
-            <button
-              onClick={() => loadNamedSample('blank')}
-              className={`px-2 py-0.5 rounded font-semibold text-[10px] transition border flex items-center gap-1 ${
-                currentSampleId === 'blank'
-                  ? 'bg-slate-700 text-white border-slate-500 shadow-xs'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/20'
-              }`}
-              title={isRtl ? 'جدول جديد فارغ' : 'Empty New Timetable'}
-            >
-              <span>📄</span>
-              <span>{isRtl ? 'فارغ' : 'Blank'}</span>
-            </button>
-            <button
-              onClick={() => setShowWelcomeBanner(false)}
-              className="p-1 rounded hover:bg-white/20 text-slate-400 hover:text-white transition ml-1"
-              title={isRtl ? 'إخفاء الإشعار' : 'Dismiss banner'}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 2. Sub-Toolbar: View Navigator & Metrics Bar */}
       <div className="print:hidden">
@@ -1663,8 +1602,8 @@ export default function TimetableStudioPage() {
           <span className="text-slate-400">|</span>
           <span className="text-slate-600">
             {isRtl
-              ? `المدرسة: ${schoolName} (${currentFileName})`
-              : `School: ${schoolName} (${currentFileName})`}
+              ? `المدرسة: ${schoolName || 'مشروع جديد'} (${currentFileName || 'غير محفوظ'})`
+              : `School: ${schoolName || 'New Project'} (${currentFileName || 'Unsaved'})`}
           </span>
         </div>
 
@@ -1779,6 +1718,16 @@ export default function TimetableStudioPage() {
         subjects={subjects}
         teachers={teachers}
         classes={classes}
+      />
+
+      {/* Startup Welcome & Project Creator Dialog */}
+      <StartupWelcomeModal
+        isOpen={isStartupModalOpen}
+        onClose={() => setIsStartupModalOpen(false)}
+        lang={lang}
+        onCreateNew={handleCreateNewFromStartup}
+        onOpenFile={handleOpenFileFromStartup}
+        onLoadSample={handleLoadSampleFromStartup}
       />
     </div>
   );
