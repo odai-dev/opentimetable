@@ -106,14 +106,18 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
       // If selected entity is a class, filter by it; otherwise show all class cards
       const isSelectedClass = classMap.has(selectedEntityId);
       if (isSelectedClass) {
-        return unplacedLessons.filter((l) => l.classId === selectedEntityId);
+        return unplacedLessons.filter(
+          (l) => l.classId === selectedEntityId || Boolean(l.classIds?.includes(selectedEntityId))
+        );
       }
       return unplacedLessons;
     }
     if (deckCategory === 'teacher') {
       const isSelectedTeacher = teacherMap.has(selectedEntityId);
       if (isSelectedTeacher) {
-        return unplacedLessons.filter((l) => l.teacherId === selectedEntityId);
+        return unplacedLessons.filter(
+          (l) => l.teacherId === selectedEntityId || Boolean(l.teacherIds?.includes(selectedEntityId))
+        );
       }
       return unplacedLessons;
     }
@@ -269,6 +273,28 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
             const targetClass = classMap.get(lesson.classId);
             const room = lesson.roomId ? roomMap.get(lesson.roomId) : null;
 
+            const effectiveClassIds = lesson.classIds?.length ? lesson.classIds : (lesson.classId ? [lesson.classId] : []);
+            const classShortLabel = effectiveClassIds.length > 1
+              ? effectiveClassIds.map((cId) => classMap.get(cId)?.name.split('-')[0].trim() || cId).join('+')
+              : (targetClass?.name.split('-')[0].trim() || '');
+
+            const classFullLabel = effectiveClassIds.length > 1
+              ? effectiveClassIds.map((cId) => {
+                  const c = classMap.get(cId);
+                  return isRtl ? c?.nameAr || c?.name || cId : c?.name || cId;
+                }).join(' + ')
+              : (targetClass ? (isRtl ? targetClass.nameAr || targetClass.name : targetClass.name) : '');
+
+            const effectiveTeacherIds = lesson.teacherIds?.length ? lesson.teacherIds : (lesson.teacherId ? [lesson.teacherId] : []);
+            const teacherLabel = effectiveTeacherIds.length > 1
+              ? effectiveTeacherIds.map((tId) => {
+                  const tc = teacherMap.get(tId);
+                  return isRtl ? tc?.nameAr?.split(' ')[0] || tc?.name || tId : tc?.name?.split(' ').slice(-1)[0] || tId;
+                }).join('/')
+              : (teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : '');
+
+            const groupBadge = lesson.groupName || (lesson.entireClass === false && lesson.groupId ? lesson.groupId : undefined);
+
             return (
               <div
                 key={lesson.id}
@@ -277,7 +303,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
                 onClick={() => {
                   if (!isReadOnly) onPlaceLesson(lesson.id);
                 }}
-                title={t.deck.placeCard}
+                title={`${subject?.name || ''} - ${classFullLabel} - ${teacher?.name || ''}${groupBadge ? ` [${groupBadge}]` : ''}`}
                 className="lesson-card flex-shrink-0 w-28 h-20 rounded border border-slate-300 bg-white p-1.5 flex flex-col justify-between cursor-grab active:cursor-grabbing hover:border-sky-400 select-none transition-all group"
                 style={{
                   borderTop: `4px solid ${subject?.color || '#3b82f6'}`,
@@ -289,20 +315,27 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
                   <span className="font-extrabold text-xs text-slate-900 truncate">
                     {subject?.code || (isRtl ? subject?.nameAr || subject?.name : subject?.name)}
                   </span>
-                  <span className="text-[9px] px-1 rounded bg-slate-200/80 font-bold text-slate-700">
-                    {targetClass?.name.split('-')[0].trim()}
-                  </span>
+                  <div className="flex items-center gap-0.5">
+                    {groupBadge && (
+                      <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300/60 truncate max-w-[38px]" title={groupBadge}>
+                        {groupBadge}
+                      </span>
+                    )}
+                    <span className="text-[9px] px-1 rounded bg-slate-200/80 font-bold text-slate-700 truncate max-w-[42px]" title={classFullLabel}>
+                      {classShortLabel}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Teacher Name */}
-                <div className="text-[10px] text-slate-600 font-medium truncate">
-                  👨‍🏫 {isRtl ? teacher?.nameAr?.split(' ')[0] || teacher?.name : teacher?.name.split(' ').slice(-1)[0]}
+                <div className="text-[10px] text-slate-600 font-medium truncate" title={teacherLabel}>
+                  👨‍🏫 {teacherLabel}
                 </div>
 
                 {/* Footer Badges */}
                 <div className="flex items-center justify-between text-[9px] text-slate-500 pt-0.5 border-t border-slate-300/40">
-                  <span className="truncate max-w-[50px] font-semibold text-slate-700">
-                    {isRtl ? targetClass?.nameAr || targetClass?.name : targetClass?.name}
+                  <span className="truncate max-w-[50px] font-semibold text-slate-700" title={classFullLabel}>
+                    {classFullLabel}
                   </span>
                   <span className="px-1 rounded bg-white border border-slate-300 text-[8px] font-mono text-slate-800">
                     {room ? room.id : 'Auto'}

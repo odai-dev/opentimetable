@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   School,
   BookOpen,
@@ -20,6 +20,38 @@ import {
 import { BasicDataTab, Subject, ClassGroup, Room, Teacher, Lesson } from '../lib/types';
 import { translations } from '../lib/i18n';
 
+export interface SchoolDataUpdate {
+  schoolName: string;
+  academicYear: string;
+  cycleDays: number;
+  periodsPerDay: number;
+  bellSchedule?: string[];
+}
+
+function generateDefaultBells(count: number): string[] {
+  const bells: string[] = [];
+  let currentHour = 8;
+  let currentMinute = 0;
+  for (let i = 0; i < count; i++) {
+    const startH = String(currentHour).padStart(2, '0');
+    const startM = String(currentMinute).padStart(2, '0');
+    currentMinute += 45;
+    if (currentMinute >= 60) {
+      currentHour += Math.floor(currentMinute / 60);
+      currentMinute %= 60;
+    }
+    const endH = String(currentHour).padStart(2, '0');
+    const endM = String(currentMinute).padStart(2, '0');
+    bells.push(`${startH}:${startM} - ${endH}:${endM}`);
+    currentMinute += 5; // 5 min passing period
+    if (currentMinute >= 60) {
+      currentHour += Math.floor(currentMinute / 60);
+      currentMinute %= 60;
+    }
+  }
+  return bells;
+}
+
 interface BasicDataModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,6 +62,12 @@ interface BasicDataModalProps {
   rooms: Room[];
   teachers: Teacher[];
   lessons: Lesson[];
+  schoolName?: string;
+  academicYear?: string;
+  cycleDays?: number;
+  periodsPerDay?: number;
+  bellSchedule?: string[];
+  onUpdateSchool?: (data: SchoolDataUpdate) => void;
   // CRUD Callbacks
   onAddSubject?: (subject: Subject) => void;
   onEditSubject?: (subject: Subject) => void;
@@ -85,9 +123,78 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  schoolName: propSchoolName = 'Saudi Arabia 1',
+  academicYear: propAcademicYear = '2025 - 2026',
+  cycleDays: propCycleDays = 5,
+  periodsPerDay: propPeriodsPerDay = 12,
+  bellSchedule: propBellSchedule,
+  onUpdateSchool,
 }) => {
   const [activeTab, setActiveTab] = useState<BasicDataTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // School Tab State
+  const [localSchoolName, setLocalSchoolName] = useState(propSchoolName);
+  const [localAcademicYear, setLocalAcademicYear] = useState(propAcademicYear);
+  const [localCycleDays, setLocalCycleDays] = useState(propCycleDays);
+  const [localPeriodsPerDay, setLocalPeriodsPerDay] = useState(propPeriodsPerDay);
+  const [localBellSchedule, setLocalBellSchedule] = useState<string[]>(
+    propBellSchedule && propBellSchedule.length > 0
+      ? propBellSchedule
+      : generateDefaultBells(propPeriodsPerDay)
+  );
+  const [schoolSavedFeedback, setSchoolSavedFeedback] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalSchoolName(propSchoolName);
+      setLocalAcademicYear(propAcademicYear);
+      setLocalCycleDays(propCycleDays);
+      setLocalPeriodsPerDay(propPeriodsPerDay);
+      if (propBellSchedule && propBellSchedule.length > 0) {
+        setLocalBellSchedule(propBellSchedule);
+      } else {
+        setLocalBellSchedule(generateDefaultBells(propPeriodsPerDay));
+      }
+      setSchoolSavedFeedback(false);
+    }
+  }, [isOpen, propSchoolName, propAcademicYear, propCycleDays, propPeriodsPerDay, propBellSchedule]);
+
+  const handlePeriodsChange = (newPeriods: number) => {
+    setLocalPeriodsPerDay(newPeriods);
+    setLocalBellSchedule((prev) => {
+      if (newPeriods === prev.length) return prev;
+      if (newPeriods < prev.length) return prev.slice(0, newPeriods);
+      const extended = [...prev];
+      const defaults = generateDefaultBells(newPeriods);
+      for (let i = prev.length; i < newPeriods; i++) {
+        extended.push(defaults[i]);
+      }
+      return extended;
+    });
+  };
+
+  const handleBellChange = (index: number, value: string) => {
+    setLocalBellSchedule((prev) => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    });
+  };
+
+  const handleApplySchoolSettings = () => {
+    if (onUpdateSchool) {
+      onUpdateSchool({
+        schoolName: localSchoolName.trim() || 'School',
+        academicYear: localAcademicYear.trim() || '2025 - 2026',
+        cycleDays: localCycleDays,
+        periodsPerDay: localPeriodsPerDay,
+        bellSchedule: localBellSchedule,
+      });
+    }
+    setSchoolSavedFeedback(true);
+    setTimeout(() => setSchoolSavedFeedback(false), 2500);
+  };
 
   // Editing state
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | null>(null);
@@ -130,6 +237,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
     classId: '',
     roomId: '',
     duration: 1,
+    entireClass: true,
+    isSplitGroup: false,
+    groupName: '',
+    jointClassIds: [],
+    coTeacherIds: [],
   });
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -196,6 +308,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         classId: classes[0]?.id || '',
         roomId: rooms[0]?.id || '',
         duration: 1,
+        entireClass: true,
+        isSplitGroup: false,
+        groupName: '',
+        jointClassIds: [],
+        coTeacherIds: [],
       });
     }
   };
@@ -288,6 +405,12 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         classId: formLesson.classId,
         roomId: formLesson.roomId || undefined,
         duration: Number(formLesson.duration) || 1,
+        entireClass: formLesson.entireClass !== false,
+        isSplitGroup: Boolean(formLesson.isSplitGroup),
+        groupName: formLesson.groupName?.trim() || undefined,
+        groupId: formLesson.groupId || undefined,
+        jointClassIds: formLesson.jointClassIds || [],
+        coTeacherIds: formLesson.coTeacherIds || [],
       };
       if (dialogMode === 'add') onAddLesson?.(item);
       else onEditLesson?.(item);
@@ -515,7 +638,9 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    defaultValue={isRtl ? 'ثانوية الريادة النموذجية' : 'Al-Riyada Model High School'}
+                    value={localSchoolName}
+                    onChange={(e) => setLocalSchoolName(e.target.value)}
+                    placeholder={isRtl ? 'اسم المدرسة' : 'School Name'}
                     className="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
@@ -525,7 +650,9 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   </label>
                   <input
                     type="text"
-                    defaultValue="2025 - 2026"
+                    value={localAcademicYear}
+                    onChange={(e) => setLocalAcademicYear(e.target.value)}
+                    placeholder="2025 - 2026"
                     className="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
@@ -533,23 +660,104 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
 
               <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <div>
-                  <span className="text-slate-500 block">{isRtl ? 'أيام الأسبوع' : 'Days/Week'}</span>
-                  <span className="font-bold text-sm text-slate-800">5 {isRtl ? 'أيام' : 'Days'}</span>
+                  <label className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'أيام الأسبوع' : 'Days/Week'}</label>
+                  <select
+                    value={localCycleDays}
+                    onChange={(e) => setLocalCycleDays(Number(e.target.value))}
+                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  >
+                    <option value={5}>5 {isRtl ? 'أيام' : 'Days'}</option>
+                    <option value={6}>6 {isRtl ? 'أيام' : 'Days'}</option>
+                    <option value={7}>7 {isRtl ? 'أيام (أسبوع كامل)' : 'Days'}</option>
+                  </select>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">{isRtl ? 'الحصص باليوم' : 'Periods/Day'}</span>
-                  <span className="font-bold text-sm text-slate-800">7 {isRtl ? 'حصص' : 'Periods'}</span>
+                  <label className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'الحصص باليوم' : 'Periods/Day'}</label>
+                  <select
+                    value={localPeriodsPerDay}
+                    onChange={(e) => handlePeriodsChange(Number(e.target.value))}
+                    className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  >
+                    {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((p) => (
+                      <option key={p} value={p}>
+                        {p} {isRtl ? 'حصص' : 'Periods'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">{isRtl ? 'إجمالي الحصص' : 'Weekly Capacity'}</span>
-                  <span className="font-bold text-sm text-slate-800">35 {isRtl ? 'حصة' : 'Slots'}</span>
+                  <span className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'إجمالي الحصص الأسبوعية' : 'Weekly Capacity'}</span>
+                  <div className="font-bold text-sm text-sky-700 bg-sky-100 border border-sky-300 rounded px-3 py-1.5 inline-block w-full text-center">
+                    {localCycleDays * localPeriodsPerDay} {isRtl ? 'حصة' : 'Slots'}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-sky-50 p-3 rounded-lg border border-sky-200 text-sky-800 text-[11px] leading-relaxed">
-                {isRtl
-                  ? '💡 تتيح نافذة البيانات الأساسية إدارة كافة الكيانات التعليمية (المواد، الشعب، القاعات، المعلمون، الحصص) مع إمكانية الإضافة والتعديل والحذف المباشر.'
-                  : '💡 Basic Data dialog allows full live CRUD modifications for all scheduling entities. Changes are instantly synchronized across matrix grids, card deck, solver, and exports.'}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700">
+                    {isRtl ? 'أوقات الحصص (جدول الأجراس)' : 'Bell Schedule (Period Times)'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setLocalBellSchedule(generateDefaultBells(localPeriodsPerDay))}
+                    className="text-[11px] text-sky-600 hover:text-sky-800 underline font-semibold"
+                  >
+                    {isRtl ? 'إعادة تعيين الأوقات الافتراضية' : 'Reset to Default Times'}
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                        <th className="p-2 w-20 text-center">{isRtl ? 'الحصة' : 'Period'}</th>
+                        <th className="p-2">{isRtl ? 'التوقيت (البدء - الانتهاء)' : 'Time Range (Start - End)'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: localPeriodsPerDay }).map((_, idx) => (
+                        <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="p-2 text-center font-bold text-slate-600">
+                            {idx + 1}
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              value={localBellSchedule[idx] || ''}
+                              onChange={(e) => handleBellChange(idx, e.target.value)}
+                              placeholder="08:00 - 08:45"
+                              className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <div className="text-sky-800 text-[11px]">
+                  {isRtl
+                    ? '💡 احرص على تطبيق إعدادات المدرسة لحفظ وتحديث أبعاد الجدول.'
+                    : '💡 Click Apply School Settings to update active timetable dimensions and bells.'}
+                </div>
+                <div className="flex items-center gap-3">
+                  {schoolSavedFeedback && (
+                    <span className="text-emerald-600 font-bold text-xs flex items-center gap-1 animate-in fade-in">
+                      <Check className="w-4 h-4" />
+                      {isRtl ? 'تم تطبيق إعدادات المدرسة بنجاح!' : 'School settings applied successfully!'}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleApplySchoolSettings}
+                    className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-1.5 rounded-lg shadow-sm text-xs transition flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    {isRtl ? 'تطبيق إعدادات المدرسة' : 'Apply School Settings'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -811,6 +1019,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     <th className="p-2 border-r border-slate-200">{isRtl ? 'المادة' : 'Subject'}</th>
                     <th className="p-2 border-r border-slate-200">{isRtl ? 'المعلم' : 'Teacher'}</th>
                     <th className="p-2 border-r border-slate-200">{isRtl ? 'الفصل' : 'Class'}</th>
+                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'المجموعة / التقسيم' : 'Group / Split'}</th>
                     <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'القاعة' : 'Room'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
@@ -818,7 +1027,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 <tbody>
                   {filteredLessons.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-center text-slate-400">
+                      <td colSpan={7} className="p-4 text-center text-slate-400">
                         {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching lessons'}
                       </td>
                     </tr>
@@ -834,6 +1043,22 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                         </td>
                         <td className="p-2 border-r border-slate-200 font-semibold">
                           {classMap?.get(l.classId)?.name || classes.find((c) => c.id === l.classId)?.name || l.classId}
+                        </td>
+                        <td className="p-2 border-r border-slate-200 text-center text-xs">
+                          {l.isSplitGroup || (l.groupName && l.groupName.toLowerCase() !== 'entire class' && l.groupName !== 'كامل الفصل') ? (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold border border-amber-300">
+                              {l.groupName || (isRtl ? 'مجموعة مقسمة' : 'Split Group')}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">
+                              {isRtl ? 'كامل الفصل' : 'Entire Class'}
+                            </span>
+                          )}
+                          {Boolean(l.jointClassIds && l.jointClassIds.length > 0) && (
+                            <span className="ms-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">
+                              +{l.jointClassIds!.length} {isRtl ? 'مشترك' : 'joint'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-2 border-r border-slate-200 text-center font-mono text-slate-600">{l.roomId || 'Auto'}</td>
                         <td className="p-2 text-center">
@@ -1258,6 +1483,89 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       onChange={(e) => setFormLesson({ ...formLesson, duration: parseInt(e.target.value) || 1 })}
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
+                  </div>
+
+                  {/* Split Group / Division */}
+                  <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 flex flex-col gap-2">
+                    <label className="font-bold text-xs text-slate-700 flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formLesson.isSplitGroup)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormLesson({
+                            ...formLesson,
+                            isSplitGroup: checked,
+                            entireClass: !checked,
+                            groupName: checked ? formLesson.groupName || (isRtl ? 'مجموعة 1' : 'Group 1') : '',
+                          });
+                        }}
+                        className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
+                      />
+                      <span>{isRtl ? 'تقسيم الفصل / مجموعة فرعية (Split Group)' : 'Divided Class / Split Group'}</span>
+                    </label>
+                    {Boolean(formLesson.isSplitGroup) && (
+                      <div>
+                        <label className="font-semibold block mb-1 text-[11px] text-slate-600">
+                          {isRtl ? 'اسم المجموعة (مثل: بنين، بنات، مجموعة 1، فرنسي)' : 'Group Name (e.g. Group 1, Group 2, Boys, Girls)'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={isRtl ? 'أدخل اسم المجموعة' : 'Enter group name'}
+                          value={formLesson.groupName || ''}
+                          onChange={(e) => setFormLesson({ ...formLesson, groupName: e.target.value })}
+                          className="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Joint Classes & Co-Teachers (Grid) */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">
+                        {isRtl ? 'فصول مشتركة' : 'Joint Classes'}
+                      </label>
+                      <select
+                        multiple
+                        value={formLesson.jointClassIds || []}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, (opt) => opt.value);
+                          setFormLesson({ ...formLesson, jointClassIds: selected });
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 h-14 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      >
+                        {classes
+                          .filter((c) => c.id !== formLesson.classId)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {isRtl ? c.nameAr || c.name : c.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">
+                        {isRtl ? 'معلمون مشتركون' : 'Co-Teachers'}
+                      </label>
+                      <select
+                        multiple
+                        value={formLesson.coTeacherIds || []}
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.selectedOptions, (opt) => opt.value);
+                          setFormLesson({ ...formLesson, coTeacherIds: selected });
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1 h-14 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      >
+                        {teachers
+                          .filter((tc) => tc.id !== formLesson.teacherId)
+                          .map((tc) => (
+                            <option key={tc.id} value={tc.id}>
+                              {isRtl ? tc.nameAr || tc.name : tc.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 </>
               )}

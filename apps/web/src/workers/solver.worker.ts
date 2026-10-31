@@ -5,6 +5,7 @@ import type {
   ProgressMetrics,
   TimetableResponse,
 } from '../lib/solver-protocol';
+import { extractSlotsFromTimeOffMatrix } from '../lib/domain';
 
 interface WorkerContext {
   postMessage(message: any, transfer?: Transferable[]): void;
@@ -122,13 +123,73 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
     }
 
     const { payload, complexity, options } = msg;
+    const resolvedDays =
+      Number(payload?.config?.days) ||
+      Number(payload?.config?.days_count) ||
+      Number(payload?.days) ||
+      Number(payload?.cycleDays) ||
+      5;
+
+    const resolvedPeriodsPerDay =
+      Number(payload?.config?.periodsPerDay) ||
+      Number(payload?.config?.periods_per_day) ||
+      Number(payload?.periodsPerDay) ||
+      Number(payload?.periods_per_day) ||
+      7;
+
+    const timeOffMatrix = payload?.timeOffMatrix;
+    let normalizedTeachers = payload?.teachers || [];
+    let normalizedClasses = payload?.classes || [];
+
+    if (timeOffMatrix && typeof timeOffMatrix === 'object') {
+      normalizedTeachers = normalizedTeachers.map((tc: any) => {
+        const { unavailableSlots, undesirableSlots } = extractSlotsFromTimeOffMatrix(
+          tc.id,
+          timeOffMatrix,
+          resolvedPeriodsPerDay,
+          tc.unavailableSlots
+        );
+        return {
+          ...tc,
+          unavailableSlots,
+          undesirableSlots,
+        };
+      });
+
+      normalizedClasses = normalizedClasses.map((c: any) => {
+        const { unavailableSlots } = extractSlotsFromTimeOffMatrix(
+          c.id,
+          timeOffMatrix,
+          resolvedPeriodsPerDay,
+          c.unavailableSlots || []
+        );
+        return {
+          ...c,
+          unavailableSlots,
+        };
+      });
+    }
+
+    const normalizedPayload = {
+      ...payload,
+      days: resolvedDays,
+      periodsPerDay: resolvedPeriodsPerDay,
+      teachers: normalizedTeachers,
+      classes: normalizedClasses,
+      config: {
+        ...payload?.config,
+        days: resolvedDays,
+        periodsPerDay: resolvedPeriodsPerDay,
+      },
+    };
+
     const resolvedComplexity = complexity || payload?.complexity || 'normal';
     const timeoutMs = options?.timeoutMs ?? (resolvedComplexity === 'normal' ? 800 : resolvedComplexity === 'large' ? 1800 : 2500);
     const stepIterations = options?.stepIterations ?? 200;
     const startTime = performance.now();
 
     try {
-      activeSession = new WasmSolverSession(JSON.stringify(payload));
+      activeSession = new WasmSolverSession(JSON.stringify(normalizedPayload));
     } catch (err: any) {
       ctx.postMessage({
         type: 'SOLVE_ERROR',
@@ -201,12 +262,24 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
           const solutionJson = activeSession.get_solution();
           const response: TimetableResponse = JSON.parse(solutionJson);
 
-          const mappedPlacements = (response.placements || []).map((p: any) => ({
-            lessonId: p.lessonId || p.lesson_id,
-            dayIndex: p.dayIndex ?? p.day_index ?? (p.slot !== undefined ? p.slot % 5 : 0),
-            periodIndex: p.periodIndex ?? p.period_index ?? (p.slot !== undefined ? Math.floor(p.slot / 5) : 0),
-            roomId: p.roomId || p.room_id || 'R101',
-          }));
+          const lessonMap = new Map((payload?.lessons || []).map((l: any) => [l.id, l]));
+          const mappedPlacements = (response.placements || []).map((p: any) => {
+            const lessonId = p.lessonId || p.lesson_id;
+            const lesson = lessonMap.get(lessonId);
+            const fallbackRoom = lesson?.roomId || (payload?.rooms && payload.rooms[0]?.id) || '';
+            return {
+              lessonId,
+              dayIndex:
+                p.dayIndex ??
+                p.day_index ??
+                (p.slot !== undefined ? Math.floor(p.slot / resolvedPeriodsPerDay) : 0),
+              periodIndex:
+                p.periodIndex ??
+                p.period_index ??
+                (p.slot !== undefined ? p.slot % resolvedPeriodsPerDay : 0),
+              roomId: p.roomId || p.room_id || fallbackRoom,
+            };
+          });
 
           ctx.postMessage({
             type: 'SOLVE_COMPLETE',

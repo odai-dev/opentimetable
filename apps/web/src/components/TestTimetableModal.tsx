@@ -18,8 +18,19 @@ import {
   Sparkles,
   Lightbulb,
 } from 'lucide-react';
-import { Teacher, ClassGroup, Room, Lesson, Placement, Conflict, Subject } from '../lib/types';
+import {
+  Teacher,
+  ClassGroup,
+  Room,
+  Lesson,
+  Placement,
+  Conflict,
+  Subject,
+  AvailabilityState,
+  AdvancedRelationRule,
+} from '../lib/types';
 import { translations } from '../lib/i18n';
+import { extractSlotsFromTimeOffMatrix } from '../lib/domain';
 
 interface TestTimetableModalProps {
   isOpen: boolean;
@@ -37,6 +48,10 @@ interface TestTimetableModalProps {
   roomMap?: Map<string, Room>;
   subjectMap?: Map<string, Subject>;
   lessonMap?: Map<string, Lesson>;
+  cycleDays?: number;
+  periodsPerDay?: number;
+  timeOffMatrix?: Record<string, AvailabilityState>;
+  advancedRules?: AdvancedRelationRule[];
 }
 
 type TestTab = 'overview' | 'clashes' | 'single';
@@ -57,7 +72,13 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
   roomMap: propRoomMap,
   subjectMap: propSubjectMap,
   lessonMap: propLessonMap,
+  cycleDays = 5,
+  periodsPerDay = 7,
+  timeOffMatrix = {},
+  advancedRules = [],
 }) => {
+  const totalCapacity = (cycleDays || 5) * (periodsPerDay || 7);
+  const highWorkloadThreshold = Math.round(totalCapacity * 0.85);
   const [activeTab, setActiveTab] = useState<TestTab>('overview');
   const [isRunning, setIsRunning] = useState(false);
   const [testResult, setTestResult] = useState<null | {
@@ -80,6 +101,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     entityName: string;
     load: number;
     maxCapacity: number;
+    effectiveCapacity: number;
+    blockedCount: number;
     feasible: boolean;
     clashesCount: number;
     notes: string[];
@@ -108,13 +131,37 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     setTestResult(null);
 
     setTimeout(() => {
-      const maxTeacherLoad = Math.max(
-        ...teachers.map((tc) => lessons.filter((l) => l.teacherId === tc.id).length),
-        0
-      );
-
+      let isFeasible = conflicts.length === 0;
       const notes: string[] = [];
-      if (maxTeacherLoad > 30) {
+
+      // 1. Check Teacher Workloads and Time-Off Limits
+      const teacherWorkloads = teachers.map((tc) => {
+        const load = lessons.filter(
+          (l) => l.teacherId === tc.id || Boolean(l.teacherIds?.includes(tc.id))
+        ).length;
+        const { unavailableSlots } = extractSlotsFromTimeOffMatrix(
+          tc.id,
+          timeOffMatrix,
+          periodsPerDay,
+          tc.unavailableSlots
+        );
+        const effectiveCap = Math.max(0, totalCapacity - unavailableSlots.length);
+        return { teacher: tc, load, effectiveCap, blocked: unavailableSlots.length };
+      });
+
+      const maxTeacherLoad = Math.max(...teacherWorkloads.map((tw) => tw.load), 0);
+
+      const overloadedTeachers = teacherWorkloads.filter((tw) => tw.load > tw.effectiveCap);
+      if (overloadedTeachers.length > 0) {
+        isFeasible = false;
+        for (const ot of overloadedTeachers) {
+          notes.push(
+            isRtl
+              ? `تعذر التسكين: المعلم ${ot.teacher.nameAr || ot.teacher.name} مسند إليه (${ot.load}) حصة بينما المتاح له (${ot.effectiveCap}) فقط بعد حسم (${ot.blocked}) فترات تفرغ`
+              : `Infeasible: Teacher ${ot.teacher.name} has ${ot.load} assigned lessons but only ${ot.effectiveCap} available slots after deducting ${ot.blocked} time-off slots`
+          );
+        }
+      } else if (maxTeacherLoad > highWorkloadThreshold) {
         notes.push(
           isRtl
             ? 'تنبيه: بعض المعلمين لديهم أنصبة مرتفعة تقترب من الحد الأقصى'
@@ -123,9 +170,47 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
       } else {
         notes.push(
           isRtl
-            ? 'أنصبة المعلمين متوازنة وقابلة للتسكين دون اختناق'
+            ? 'أنصبة المعلمين متوازنة وقابلة للتسكين ضمن الطاقة الاستيعابية'
             : 'All teacher workloads are well-balanced within weekly limits'
         );
+      }
+
+      // 2. Check Class Workloads and Time-Off Limits
+      for (const cls of classes) {
+        const load = lessons.filter(
+          (l) => l.classId === cls.id || Boolean(l.classIds?.includes(cls.id))
+        ).length;
+        const { unavailableSlots } = extractSlotsFromTimeOffMatrix(
+          cls.id,
+          timeOffMatrix,
+          periodsPerDay,
+          cls.unavailableSlots || []
+        );
+        const effectiveCap = Math.max(0, totalCapacity - unavailableSlots.length);
+        if (load > effectiveCap) {
+          isFeasible = false;
+          notes.push(
+            isRtl
+              ? `تعذر التسكين: الفصل ${cls.nameAr || cls.name} لديه (${load}) حصة بينما الفترات المتاحة له (${effectiveCap}) فقط`
+              : `Infeasible: Class ${cls.name} has ${load} lessons but only ${effectiveCap} open slots`
+          );
+        }
+      }
+
+      // 3. Check Advanced Rules (e.g. MAX_DAILY_HOURS)
+      const dailyRule = advancedRules.find((r) => r.enabled && r.type === 'MAX_DAILY_HOURS');
+      if (dailyRule) {
+        const maxDaily = Number(dailyRule.parameterValue) || 5;
+        const maxWeeklyFromDaily = cycleDays * maxDaily;
+        for (const tw of teacherWorkloads) {
+          if (tw.load > maxWeeklyFromDaily) {
+            notes.push(
+              isRtl
+                ? `تنبيه قيود متقدمة: المعلم ${tw.teacher.nameAr || tw.teacher.name} يتجاوز الحد اليومي (${maxDaily} حصص/يوم)`
+                : `Advanced Rule Notice: Teacher ${tw.teacher.name} exceeds daily period limit (${maxDaily} periods/day)`
+            );
+          }
+        }
       }
 
       const labsCount = rooms.filter((r) => r.type === 'LAB').length;
@@ -150,7 +235,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
       }
 
       setTestResult({
-        passed: conflicts.length === 0,
+        passed: isFeasible,
         totalLessons: lessons.length,
         maxTeacherWorkload: maxTeacherLoad,
         roomSufficiency: true,
@@ -170,24 +255,52 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
       : selectedEntityId;
 
     const assignedLessons = lessons.filter((l) =>
-      isTeacher ? l.teacherId === selectedEntityId : l.classId === selectedEntityId
+      isTeacher
+        ? l.teacherId === selectedEntityId || Boolean(l.teacherIds?.includes(selectedEntityId))
+        : l.classId === selectedEntityId || Boolean(l.classIds?.includes(selectedEntityId))
     );
     const assignedIds = new Set(assignedLessons.map((l) => l.id));
 
     const entityClashes = conflicts.filter((c) => assignedIds.has(c.lessonId));
 
+    const initialUnavail = isTeacher
+      ? teacherMap.get(selectedEntityId)?.unavailableSlots || []
+      : classMap.get(selectedEntityId)?.unavailableSlots || [];
+    const { unavailableSlots } = extractSlotsFromTimeOffMatrix(
+      selectedEntityId,
+      timeOffMatrix,
+      periodsPerDay,
+      initialUnavail
+    );
+    const blockedCount = unavailableSlots.length;
+    const effectiveCapacity = Math.max(0, totalCapacity - blockedCount);
+
     const notes: string[] = [];
-    if (assignedLessons.length > 30) {
+    if (blockedCount > 0) {
       notes.push(
         isRtl
-          ? `العبء الأسبوعي (${assignedLessons.length}/35) مرتفع ويتطلب توزيعاً دقيقاً`
-          : `High weekly workload (${assignedLessons.length}/35 slots) requires careful distribution`
+          ? `تم حسم (${blockedCount}) فترة تفرغ مغلقة — الطاقة المتاحة الفعلية هي (${effectiveCapacity}) حصة`
+          : `Deducted (${blockedCount}) blocked time-off slots — effective available capacity is (${effectiveCapacity}) slots`
+      );
+    }
+
+    if (assignedLessons.length > effectiveCapacity) {
+      notes.push(
+        isRtl
+          ? `تعذر التسكين: إجمالي الحصص المسندة (${assignedLessons.length}) يتجاوز الطاقة الفعلية المتاحة (${effectiveCapacity})`
+          : `Infeasible: Assigned lessons (${assignedLessons.length}) exceed effective available capacity (${effectiveCapacity})`
+      );
+    } else if (assignedLessons.length > highWorkloadThreshold) {
+      notes.push(
+        isRtl
+          ? `العبء الأسبوعي (${assignedLessons.length}/${effectiveCapacity}) مرتفع ويتطلب توزيعاً دقيقاً`
+          : `High weekly workload (${assignedLessons.length}/${effectiveCapacity} slots) requires careful distribution`
       );
     } else {
       notes.push(
         isRtl
-          ? `العبء الأسبوعي (${assignedLessons.length}/35 حصة) مناسب ومتوازن`
-          : `Weekly workload (${assignedLessons.length}/35 slots) is well within feasible parameters`
+          ? `العبء الأسبوعي (${assignedLessons.length}/${effectiveCapacity} حصة) مناسب ومتوازن`
+          : `Weekly workload (${assignedLessons.length}/${effectiveCapacity} slots) is well within feasible parameters`
       );
     }
 
@@ -208,8 +321,10 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     setSingleTestResult({
       entityName: name,
       load: assignedLessons.length,
-      maxCapacity: 35,
-      feasible: entityClashes.length === 0 && assignedLessons.length <= 35,
+      maxCapacity: totalCapacity,
+      effectiveCapacity,
+      blockedCount,
+      feasible: entityClashes.length === 0 && assignedLessons.length <= effectiveCapacity,
       clashesCount: entityClashes.length,
       notes,
     });
@@ -639,11 +754,11 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                   <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-lg border border-slate-200 text-[11px]">
                     <div>
                       <span className="text-slate-500 block">{isRtl ? 'إجمالي الحصص المسندة' : 'Assigned Lessons'}</span>
-                      <strong className="text-slate-800">{singleTestResult.load} / 35</strong>
+                      <strong className="text-slate-800">{singleTestResult.load} / {singleTestResult.maxCapacity}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">{isRtl ? 'الفترات الشاغرة' : 'Free Slots'}</span>
-                      <strong className="text-indigo-700">{35 - singleTestResult.load} {isRtl ? 'حصة' : 'slots'}</strong>
+                      <strong className="text-indigo-700">{Math.max(0, singleTestResult.maxCapacity - singleTestResult.load)} {isRtl ? 'حصة' : 'slots'}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">{isRtl ? 'التعارضات المباشرة' : 'Active Conflicts'}</span>

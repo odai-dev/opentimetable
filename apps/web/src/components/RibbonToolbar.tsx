@@ -18,6 +18,7 @@ import {
   Printer,
   FileDown,
   FileSpreadsheet,
+  FileCode,
   RotateCcw,
   RotateCw,
   Trash2,
@@ -52,6 +53,7 @@ interface RibbonToolbarProps {
   onAutoPlaceAll: () => void;
   onClearPlacements: () => void;
   onExportCsv: () => void;
+  onExportXml?: () => void;
   onExportIcal: () => void;
   onExportPdf: () => void;
   onImportRoz: () => void;
@@ -64,6 +66,7 @@ interface RibbonToolbarProps {
   schoolName?: string;
   currentFileName?: string;
   onSaveFile?: () => void;
+  onSaveAs?: () => void;
   onNewFile?: () => void;
 }
 
@@ -89,6 +92,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   onAutoPlaceAll,
   onClearPlacements,
   onExportCsv,
+  onExportXml,
   onExportIcal,
   onExportPdf,
   onImportRoz,
@@ -101,6 +105,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   schoolName,
   currentFileName,
   onSaveFile,
+  onSaveAs,
   onNewFile,
 }) => {
   const t = translations[lang];
@@ -523,6 +528,17 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     {t.ribbon.tools.saveFile}
                   </span>
                 </button>
+
+                <button
+                  onClick={onSaveAs || (() => alert(isRtl ? 'حفظ باسم' : 'Save As'))}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-14"
+                  title={isRtl ? 'حفظ باسم (تنزيل ملف المشروع)' : 'Save As (Download project file)'}
+                >
+                  <FileDown className="w-7 h-7 text-teal-600 mb-1" />
+                  <span className="text-[10px] font-semibold text-center leading-tight">
+                    {isRtl ? 'حفظ باسم' : 'Save As'}
+                  </span>
+                </button>
               </div>
               <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                 {t.ribbon.groups.fileExport}
@@ -559,6 +575,17 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <FileSpreadsheet className="w-7 h-7 text-emerald-600 mb-1" />
                   <span className="text-[10px] font-semibold text-center leading-tight">
                     {t.ribbon.tools.exportExcel}
+                  </span>
+                </button>
+
+                <button
+                  onClick={onExportXml || (() => alert(isRtl ? 'تصدير XML غير متاح' : 'Export XML not available'))}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-slate-700 transition w-14"
+                  title={isRtl ? 'تصدير بتنسيق aSc Timetables XML (2012)' : 'Export as aSc Timetables XML (2012)'}
+                >
+                  <FileCode className="w-7 h-7 text-indigo-600 mb-1" />
+                  <span className="text-[10px] font-semibold text-center leading-tight">
+                    {t.ribbon.tools.exportXml}
                   </span>
                 </button>
 

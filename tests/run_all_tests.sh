@@ -29,6 +29,15 @@ node --test tests/test_dynamic_scaling_adversarial.mjs
 echo "==> Running Dataset Loading & Sample Switching Resilience Suite (R1)..."
 node --test tests/test_dataset_switching_resilience.mjs
 
+echo "==> Running Persistence & Dual Storage Adversarial Suite..."
+node --test tests/test_persistence_autosave_adversarial.mjs
+
+echo "==> Running Dynamic Dimensions Scaling Challenger Suite..."
+node --test tests/test_m1_dynamic_dimensions_challenger.mjs
+
+echo "==> Running Parity, Conflict & aSc XML Export Suite (M2)..."
+node --test tests/test_m2_features.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="

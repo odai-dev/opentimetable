@@ -26,6 +26,9 @@ export interface Teacher {
   speciality: string;
   color: string;
   unavailableSlots: number[];
+  undesirableSlots?: number[];
+  maxConsecutivePeriods?: number;
+  maxDailyHours?: number;
 }
 
 export interface ClassGroup {
@@ -33,6 +36,7 @@ export interface ClassGroup {
   name: string;
   nameAr?: string;
   grade: number;
+  unavailableSlots?: number[];
 }
 
 export interface Room {
@@ -50,6 +54,18 @@ export interface Subject {
   code: string;
   color: string;
   requiredRoomType?: string;
+  maxDailyPeriods?: number;
+}
+
+export interface SolverPayloadConfig {
+  days: number;
+  periodsPerDay: number;
+  maxConsecutivePeriods?: number;
+  gapWeight?: number;
+  distributionWeight?: number;
+  preferenceWeight?: number;
+  roomChangeWeight?: number;
+  timeoutMs?: number;
 }
 
 export interface Lesson {
@@ -59,6 +75,14 @@ export interface Lesson {
   classId: string;
   roomId?: string;
   duration: number;
+  groupName?: string;
+  groupId?: string;
+  entireClass?: boolean;
+  isSplitGroup?: boolean;
+  teacherIds?: string[];
+  classIds?: string[];
+  jointClassIds?: string[];
+  coTeacherIds?: string[];
 }
 
 export interface Placement {

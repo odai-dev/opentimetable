@@ -102,28 +102,51 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
       const lesson = lessonMap.get(p.lessonId);
       if (!lesson) continue;
 
-      // 1. Index by Class
-      if (lesson.classId) {
-        const classKey = `class:${lesson.classId}:${p.dayIndex}:${p.periodIndex}`;
+      // 1. Index by Class (supporting joint classes via classIds)
+      const targetClassIds =
+        lesson.classIds && lesson.classIds.length > 0
+          ? lesson.classIds
+          : lesson.classId
+          ? [lesson.classId]
+          : [];
+      for (const cId of targetClassIds) {
+        if (!cId) continue;
+        const classKey = `class:${cId}:${p.dayIndex}:${p.periodIndex}`;
         const group = map.get(classKey);
         if (group) group.push(p);
         else map.set(classKey, [p]);
       }
 
-      // 2. Index by Teacher
-      if (lesson.teacherId) {
-        const teacherKey = `teacher:${lesson.teacherId}:${p.dayIndex}:${p.periodIndex}`;
+      // 2. Index by Teacher (supporting co-teachers via teacherIds)
+      const targetTeacherIds =
+        lesson.teacherIds && lesson.teacherIds.length > 0
+          ? lesson.teacherIds
+          : lesson.teacherId
+          ? [lesson.teacherId]
+          : [];
+      for (const tId of targetTeacherIds) {
+        if (!tId) continue;
+        const teacherKey = `teacher:${tId}:${p.dayIndex}:${p.periodIndex}`;
         const group = map.get(teacherKey);
         if (group) group.push(p);
         else map.set(teacherKey, [p]);
       }
 
       // 3. Index by Room
-      if (p.roomId) {
-        const roomKey = `room:${p.roomId}:${p.dayIndex}:${p.periodIndex}`;
+      const rId = p.roomId?.trim();
+      if (rId) {
+        const roomKey = `room:${rId}:${p.dayIndex}:${p.periodIndex}`;
         const group = map.get(roomKey);
         if (group) group.push(p);
         else map.set(roomKey, [p]);
+      }
+
+      // 4. Index by Subject
+      if (lesson.subjectId) {
+        const subjectKey = `subject:${lesson.subjectId}:${p.dayIndex}:${p.periodIndex}`;
+        const group = map.get(subjectKey);
+        if (group) group.push(p);
+        else map.set(subjectKey, [p]);
       }
     }
 
@@ -431,10 +454,31 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           const subject = lesson ? subjectMap.get(lesson.subjectId) : null;
                           const teacher = lesson ? teacherMap.get(lesson.teacherId) : null;
                           const targetClass = lesson ? classMap.get(lesson.classId) : null;
-                          const room = roomMap.get(p.roomId);
+                          const room = p.roomId ? roomMap.get(p.roomId) : null;
                           const hasConflict = lesson ? conflictLessonIds.has(lesson.id) : false;
 
                           if (!lesson || !subject) return <td key={`${dIdx}-${pIdx}`} role="gridcell" className="p-1 border-r border-slate-200" />;
+
+                          const targetClassIds = lesson.classIds?.length ? lesson.classIds : (lesson.classId ? [lesson.classId] : []);
+                          const classShortCode = targetClassIds.length > 1
+                            ? targetClassIds.map((cId) => classMap.get(cId)?.name?.split('-')[0].trim() || cId).join('+')
+                            : (targetClass?.name.split('-')[0].trim() || '');
+                          const classFullName = targetClassIds.length > 1
+                            ? targetClassIds.map((cId) => {
+                                const c = classMap.get(cId);
+                                return isRtl ? c?.nameAr || c?.name || cId : c?.name || cId;
+                              }).join(' + ')
+                            : (targetClass ? (isRtl ? targetClass.nameAr || targetClass.name : targetClass.name) : '');
+
+                          const targetTeacherIds = lesson.teacherIds?.length ? lesson.teacherIds : (lesson.teacherId ? [lesson.teacherId] : []);
+                          const teacherShortName = targetTeacherIds.length > 1
+                            ? targetTeacherIds.map((tId) => {
+                                const tc = teacherMap.get(tId);
+                                return isRtl ? tc?.nameAr?.split(' ')[0] || tc?.name || tId : tc?.name?.split(' ').slice(-1)[0] || tId;
+                              }).join('/')
+                            : (teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : '');
+
+                          const groupBadge = lesson.groupName || (lesson.entireClass === false && lesson.groupId ? lesson.groupId : undefined);
 
                           return (
                             <td
@@ -444,14 +488,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 isRtl
                                   ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: ${
                                       subject.nameAr || subject.name
-                                    }${teacher ? `، المعلم ${teacher.nameAr || teacher.name}` : ''}${
+                                    }${teacherShortName ? `، المعلم ${teacherShortName}` : ''}${
                                       room ? `، القاعة ${room.nameAr || room.name}` : ''
-                                    }${hasConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
+                                    }${groupBadge ? ` [${groupBadge}]` : ''}${hasConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
                                   : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: ${
                                       subject.name
-                                    }${teacher ? `, Teacher ${teacher.name}` : ''}${
+                                    }${teacherShortName ? `, Teacher ${teacherShortName}` : ''}${
                                       room ? `, Room ${room.name}` : ''
-                                    }${hasConflict ? ' (Warning: Conflict detected)' : ''}`
+                                    }${groupBadge ? ` [${groupBadge}]` : ''}${hasConflict ? ' (Warning: Conflict detected)' : ''}`
                               }
                               aria-selected={isDragOver}
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
@@ -475,19 +519,17 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                     backgroundColor: hasConflict ? undefined : subject.color + '26',
                                     borderTop: `3px solid ${subject.color}`,
                                   }}
-                                  title={`${subject.name} - ${teacher?.name || ''} (${room?.name || ''})`}
+                                  title={`${subject.name} - ${teacherShortName} (${room?.name || ''})${groupBadge ? ` [${groupBadge}]` : ''}`}
                                 >
                                   <span className="font-bold text-[10px] text-slate-900 leading-tight truncate w-full">
                                     {subject.code || subject.name.slice(0, 3)}
                                   </span>
                                   <span className="text-[8px] text-slate-600 truncate w-full leading-none mt-0.5">
                                     {entity.type === 'teacher'
-                                      ? targetClass?.name.split('-')[0].trim() || ''
+                                      ? classShortCode
                                       : entity.type === 'room'
-                                      ? targetClass?.name.split('-')[0].trim() || ''
-                                      : isRtl
-                                      ? teacher?.nameAr?.slice(0, 3) || teacher?.name.slice(0, 3) || ''
-                                      : teacher?.name.slice(0, 3) || ''}
+                                      ? classShortCode
+                                      : teacherShortName}
                                   </span>
                                 </div>
                               ) : (
@@ -505,9 +547,16 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                   }}
                                 >
                                   <div className="flex items-center justify-between gap-0.5">
-                                    <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
-                                      {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
-                                    </span>
+                                    <div className="flex items-center gap-0.5 truncate">
+                                      <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
+                                        {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
+                                      </span>
+                                      {groupBadge && (
+                                        <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300/60 truncate max-w-[36px]" title={groupBadge}>
+                                          {groupBadge}
+                                        </span>
+                                      )}
+                                    </div>
 
                                     <div className="flex items-center gap-0.5">
                                       {hasConflict && (
@@ -532,18 +581,18 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                                   <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
                                     <span
-                                      className="truncate max-w-[45px]"
-                                      title={entity.type === 'teacher' ? targetClass?.name : teacher?.name}
+                                      className="truncate max-w-[48px]"
+                                      title={entity.type === 'teacher' ? classFullName : teacherShortName}
                                     >
                                       {entity.type === 'teacher'
-                                        ? targetClass ? (isRtl ? targetClass.nameAr || targetClass.name : targetClass.name) : ''
-                                        : teacher ? (isRtl ? teacher.nameAr?.split(' ')[0] || teacher.name : teacher.name.split(' ').slice(-1)[0]) : ''}
+                                        ? classFullName
+                                        : teacherShortName}
                                     </span>
                                     <span
                                       className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
-                                      title={entity.type === 'room' ? targetClass?.name : room?.name}
+                                      title={entity.type === 'room' ? classFullName : room?.name}
                                     >
-                                      {entity.type === 'room' ? (targetClass?.name.split('-')[0].trim() || 'Cls') : (room ? room.id : 'N/A')}
+                                      {entity.type === 'room' ? (classShortCode || 'Cls') : (room ? room.id : 'N/A')}
                                     </span>
                                   </div>
                                 </div>
@@ -552,32 +601,128 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           );
                         }
 
-                        // Case 3: Multiple lessons in one slot -> Authentic Desktop Diagonal Split Card (/)
-                        const p1 = slotPlacements[0];
-                        const p2 = slotPlacements[1];
-                        const l1 = lessonMap.get(p1.lessonId);
-                        const l2 = lessonMap.get(p2.lessonId);
-                        const s1 = l1 ? subjectMap.get(l1.subjectId) : null;
-                        const s2 = l2 ? subjectMap.get(l2.subjectId) : null;
-                        const t1 = l1 ? teacherMap.get(l1.teacherId) : null;
-                        const t2 = l2 ? teacherMap.get(l2.teacherId) : null;
+                        // Case 3: Multiple lessons in one slot -> Split Card with conflict highlighting
+                        const hasAnyConflict = slotPlacements.some((sp) => conflictLessonIds.has(sp.lessonId));
 
-                        const color1 = s1?.color || '#3b82f6';
-                        const color2 = s2?.color || '#10b981';
+                        if (slotPlacements.length === 2) {
+                          const p1 = slotPlacements[0];
+                          const p2 = slotPlacements[1];
+                          const l1 = lessonMap.get(p1.lessonId);
+                          const l2 = lessonMap.get(p2.lessonId);
+                          const s1 = l1 ? subjectMap.get(l1.subjectId) : null;
+                          const s2 = l2 ? subjectMap.get(l2.subjectId) : null;
+                          const t1 = l1 ? teacherMap.get(l1.teacherId) : null;
+                          const t2 = l2 ? teacherMap.get(l2.teacherId) : null;
 
+                          const color1 = s1?.color || '#3b82f6';
+                          const color2 = s2?.color || '#10b981';
+
+                          const g1 = l1?.groupName || (l1?.entireClass === false && l1?.groupId ? l1.groupId : undefined);
+                          const g2 = l2?.groupName || (l2?.entireClass === false && l2?.groupId ? l2.groupId : undefined);
+
+                          return (
+                            <td
+                              key={`${dIdx}-${pIdx}`}
+                              role="gridcell"
+                              aria-label={
+                                isRtl
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: حصة مشتركة مقسمة - ${
+                                      s1?.nameAr || s1?.name || ''
+                                    } و ${s2?.nameAr || s2?.name || ''}${hasAnyConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Split divided lesson - ${
+                                      s1?.name || ''
+                                    } and ${s2?.name || ''}${hasAnyConflict ? ' (Warning: Conflict detected)' : ''}`
+                              }
+                              aria-selected={isDragOver}
+                              onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
+                              onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
+                              onDrop={(e) => handleDrop(e, dIdx, pIdx, entity.id)}
+                              style={{ minWidth: `${colMinWidth}px`, maxWidth: `${colMaxWidth}px` }}
+                              className={`p-1 border-r border-slate-200 align-top transition-all relative ${
+                                isCompact ? 'h-11' : 'h-16'
+                              } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
+                            >
+                              <div className={`relative h-full w-full rounded border overflow-hidden select-none transition ${
+                                hasAnyConflict
+                                  ? 'border-rose-500 ring-2 ring-rose-400 bg-rose-50/60 shadow-xs'
+                                  : 'border-slate-300 shadow-xs'
+                              }`}>
+                                {hasAnyConflict && (
+                                  <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه الحصص المقسمة' : 'Conflict in split lessons'}>
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 animate-bounce" />
+                                  </div>
+                                )}
+
+                                {/* Top-Left Half (Diagonal Split) */}
+                                <div
+                                  draggable={!isReadOnly && !!l1}
+                                  onDragStart={(e) => l1 && handleDragStart(e, l1.id, dIdx, pIdx)}
+                                  className="absolute inset-0 cursor-grab active:cursor-grabbing p-1"
+                                  style={{
+                                    clipPath: 'polygon(0 0, 100% 0, 0 100%)',
+                                    backgroundColor: color1 + '33',
+                                    borderTop: `3px solid ${color1}`,
+                                  }}
+                                >
+                                  <div className="flex items-center gap-0.5 max-w-[50%]">
+                                    <span className="font-extrabold text-[10px] text-slate-900 block truncate">
+                                      {s1?.code || s1?.name}
+                                    </span>
+                                    {g1 && (
+                                      <span className="text-[7px] px-0.5 rounded bg-amber-200 text-amber-900 font-bold truncate max-w-[28px]" title={g1}>
+                                        {g1}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[8px] text-slate-700 block truncate max-w-[45%] font-medium">
+                                    {t1 ? (isRtl ? t1.nameAr?.split(' ')[0] || t1.name : t1.name.split(' ').slice(-1)[0]) : ''}
+                                  </span>
+                                </div>
+
+                                {/* Bottom-Right Half (Diagonal Split) */}
+                                <div
+                                  draggable={!isReadOnly && !!l2}
+                                  onDragStart={(e) => l2 && handleDragStart(e, l2.id, dIdx, pIdx)}
+                                  className="absolute inset-0 cursor-grab active:cursor-grabbing flex flex-col justify-end items-end p-1 text-right"
+                                  style={{
+                                    clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                                    backgroundColor: color2 + '33',
+                                    borderBottom: `3px solid ${color2}`,
+                                  }}
+                                >
+                                  <span className="text-[8px] text-slate-700 block truncate max-w-[50%] font-medium">
+                                    {t2 ? (isRtl ? t2.nameAr?.split(' ')[0] || t2.name : t2.name.split(' ').slice(-1)[0]) : ''}
+                                  </span>
+                                  <div className="flex items-center gap-0.5 max-w-[50%] justify-end">
+                                    {g2 && (
+                                      <span className="text-[7px] px-0.5 rounded bg-amber-200 text-amber-900 font-bold truncate max-w-[28px]" title={g2}>
+                                        {g2}
+                                      </span>
+                                    )}
+                                    <span className="font-extrabold text-[10px] text-slate-900 block truncate">
+                                      {s2?.code || s2?.name}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Diagonal Dividing Line */}
+                                <div
+                                  className="absolute inset-0 pointer-events-none"
+                                  style={{
+                                    background: 'linear-gradient(to top right, transparent calc(50% - 0.75px), #94a3b8 calc(50% - 0.75px), #94a3b8 calc(50% + 0.75px), transparent calc(50% + 0.75px))',
+                                  }}
+                                />
+                              </div>
+                            </td>
+                          );
+                        }
+
+                        // Case 3b: 3 or more lessons in one slot (Multi-split grid)
                         return (
                           <td
                             key={`${dIdx}-${pIdx}`}
                             role="gridcell"
-                            aria-label={
-                              isRtl
-                                ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: حصة مشتركة مقسمة - ${
-                                    s1?.nameAr || s1?.name || ''
-                                  } و ${s2?.nameAr || s2?.name || ''}`
-                                : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Split divided lesson - ${
-                                    s1?.name || ''
-                                  } and ${s2?.name || ''}`
-                            }
+                            aria-label={`${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Multi-split (${slotPlacements.length} lessons)${hasAnyConflict ? ' (Conflict)' : ''}`}
                             aria-selected={isDragOver}
                             onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
                             onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
@@ -587,52 +732,50 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               isCompact ? 'h-11' : 'h-16'
                             } ${isDragOver ? 'bg-sky-100 ring-2 ring-sky-500 ring-inset' : ''}`}
                           >
-                            <div className="relative h-full w-full rounded border border-slate-300 overflow-hidden shadow-xs select-none">
-                              {/* Top-Left Half (Diagonal Split) */}
-                              <div
-                                draggable={!isReadOnly && !!l1}
-                                onDragStart={(e) => l1 && handleDragStart(e, l1.id, dIdx, pIdx)}
-                                className="absolute inset-0 cursor-grab active:cursor-grabbing p-1"
-                                style={{
-                                  clipPath: 'polygon(0 0, 100% 0, 0 100%)',
-                                  backgroundColor: color1 + '33',
-                                  borderTop: `3px solid ${color1}`,
-                                }}
-                              >
-                                <span className="font-extrabold text-[10px] text-slate-900 block truncate max-w-[50%]">
-                                  {s1?.code || s1?.name}
-                                </span>
-                                <span className="text-[8px] text-slate-700 block truncate max-w-[45%] font-medium">
-                                  {t1 ? (isRtl ? t1.nameAr?.split(' ')[0] || t1.name : t1.name.split(' ').slice(-1)[0]) : ''}
-                                </span>
-                              </div>
-
-                              {/* Bottom-Right Half (Diagonal Split) */}
-                              <div
-                                draggable={!isReadOnly && !!l2}
-                                onDragStart={(e) => l2 && handleDragStart(e, l2.id, dIdx, pIdx)}
-                                className="absolute inset-0 cursor-grab active:cursor-grabbing flex flex-col justify-end items-end p-1 text-right"
-                                style={{
-                                  clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
-                                  backgroundColor: color2 + '33',
-                                  borderBottom: `3px solid ${color2}`,
-                                }}
-                              >
-                                <span className="text-[8px] text-slate-700 block truncate max-w-[50%] font-medium">
-                                  {t2 ? (isRtl ? t2.nameAr?.split(' ')[0] || t2.name : t2.name.split(' ').slice(-1)[0]) : ''}
-                                </span>
-                                <span className="font-extrabold text-[10px] text-slate-900 block truncate max-w-[50%]">
-                                  {s2?.code || s2?.name}
-                                </span>
-                              </div>
-
-                              {/* Diagonal Dividing Line */}
-                              <div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                  background: 'linear-gradient(to top right, transparent calc(50% - 0.75px), #94a3b8 calc(50% - 0.75px), #94a3b8 calc(50% + 0.75px), transparent calc(50% + 0.75px))',
-                                }}
-                              />
+                            <div className={`relative h-full w-full rounded border overflow-hidden select-none grid grid-cols-2 gap-0.5 p-0.5 ${
+                              hasAnyConflict
+                                ? 'border-rose-500 ring-2 ring-rose-400 bg-rose-50/60 shadow-xs'
+                                : 'border-slate-300 shadow-xs bg-slate-50'
+                            }`}>
+                              {hasAnyConflict && (
+                                <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه الحصص المقسمة' : 'Conflict in split lessons'}>
+                                  <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
+                                </div>
+                              )}
+                              {slotPlacements.slice(0, 4).map((sp) => {
+                                const l = lessonMap.get(sp.lessonId);
+                                const s = l ? subjectMap.get(l.subjectId) : null;
+                                const tc = l ? teacherMap.get(l.teacherId) : null;
+                                const gb = l?.groupName || (l?.entireClass === false && l?.groupId ? l.groupId : undefined);
+                                const clr = s?.color || '#3b82f6';
+                                return (
+                                  <div
+                                    key={sp.lessonId}
+                                    draggable={!isReadOnly && !!l}
+                                    onDragStart={(e) => l && handleDragStart(e, l.id, dIdx, pIdx)}
+                                    className="rounded p-0.5 flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing text-[8px]"
+                                    style={{
+                                      backgroundColor: clr + '30',
+                                      borderTop: `2px solid ${clr}`,
+                                    }}
+                                    title={`${s?.name || ''} - ${tc?.name || ''}${gb ? ` [${gb}]` : ''}`}
+                                  >
+                                    <div className="flex items-center justify-between gap-0.5">
+                                      <span className="font-bold text-slate-900 truncate">
+                                        {s?.code || s?.name.slice(0, 3)}
+                                      </span>
+                                      {gb && (
+                                        <span className="text-[6px] px-0.5 rounded bg-amber-200 text-amber-900 font-bold truncate max-w-[20px]">
+                                          {gb}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-slate-600 truncate text-[7px]">
+                                      {tc ? (isRtl ? tc.nameAr?.split(' ')[0] || tc.name : tc.name.split(' ').slice(-1)[0]) : ''}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </td>
                         );

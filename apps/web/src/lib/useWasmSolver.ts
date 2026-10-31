@@ -103,18 +103,30 @@ export function useWasmSolver(): UseWasmSolverReturn {
         // High-speed fallback if Worker is unavailable
         const start = performance.now();
         setTimeout(() => {
-          const days = 5;
-          const periods = 7;
+          const days =
+            Number(payload.config?.days) ||
+            Number((payload as any).days) ||
+            Number((payload as any).cycleDays) ||
+            5;
+          const periods =
+            Number(payload.config?.periodsPerDay) ||
+            Number((payload.config as any)?.periods_per_day) ||
+            Number((payload as any).periodsPerDay) ||
+            Number((payload as any).periods_per_day) ||
+            7;
+          const totalCapacity = Math.max(1, days * periods);
+
           let slot = 0;
           const solvedPlacements: Placement[] = payload.lessons.map((lesson) => {
-            const d = slot % days;
-            const p = Math.floor(slot / days) % periods;
+            const currentSlot = slot % totalCapacity;
+            const d = Math.floor(currentSlot / periods);
+            const p = currentSlot % periods;
             slot++;
             return {
               lessonId: lesson.id,
               dayIndex: d,
               periodIndex: p,
-              roomId: lesson.roomId || (payload.rooms && payload.rooms[0]?.id) || 'R101',
+              roomId: lesson.roomId || (payload.rooms && payload.rooms[0]?.id) || '',
             };
           });
 

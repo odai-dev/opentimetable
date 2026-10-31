@@ -26,7 +26,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   lang,
   teachers,
   classes,
-  initialMatrix = { 'T2-0-0': 0 },
+  initialMatrix = {},
   onSaveTimeOff,
   customDays,
   customPeriods,
@@ -49,13 +49,11 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
   );
 
   // Matrix state: map key `${entityId}-${day}-${period}` -> AvailabilityState (1 = Available, 0 = Blocked, 2 = Disfavored)
-  const [matrix, setMatrix] = useState<Record<string, AvailabilityState>>(initialMatrix);
+  const [matrix, setMatrix] = useState<Record<string, AvailabilityState>>(initialMatrix || {});
 
   useEffect(() => {
-    if (initialMatrix) {
-      setMatrix((prev) => ({ ...prev, ...initialMatrix }));
-    }
-  }, [initialMatrix]);
+    setMatrix(initialMatrix || {});
+  }, [isOpen, initialMatrix]);
 
   useEffect(() => {
     if (isOpen) {

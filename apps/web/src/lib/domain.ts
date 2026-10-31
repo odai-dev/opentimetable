@@ -249,3 +249,87 @@ export function mapRozToFrontend(parsed: Omit<RozParseResult, 'mapped'>): RozPar
     placements,
   };
 }
+
+/**
+ * Extracts slot indices from timeOffMatrix (Record<string, AvailabilityState>)
+ * for an entity (Teacher, Class, Room), sorting into unavailableSlots (state 0)
+ * and undesirableSlots (state 2).
+ */
+export function extractSlotsFromTimeOffMatrix(
+  entityId: string,
+  timeOffMatrix: Record<string, AvailabilityState> = {},
+  periodsPerDay: number = 7,
+  initialUnavailable: number[] = []
+): { unavailableSlots: number[]; undesirableSlots: number[] } {
+  const unavailSet = new Set<number>(initialUnavailable || []);
+  const undesirSet = new Set<number>();
+
+  for (const [key, state] of Object.entries(timeOffMatrix || {})) {
+    const lastDash = key.lastIndexOf('-');
+    const secondLastDash = key.lastIndexOf('-', lastDash - 1);
+    if (secondLastDash === -1 || lastDash === -1) continue;
+
+    const id = key.substring(0, secondLastDash);
+    if (id !== entityId) continue;
+
+    const day = Number(key.substring(secondLastDash + 1, lastDash));
+    const period = Number(key.substring(lastDash + 1));
+    if (isNaN(day) || isNaN(period)) continue;
+
+    const slotIndex = day * periodsPerDay + period;
+    if (slotIndex >= 64) continue; // Respect u64 mask boundary
+
+    if (state === 0) {
+      unavailSet.add(slotIndex);
+      undesirSet.delete(slotIndex);
+    } else if (state === 2) {
+      undesirSet.add(slotIndex);
+      unavailSet.delete(slotIndex);
+    } else if (state === 1) {
+      unavailSet.delete(slotIndex);
+      undesirSet.delete(slotIndex);
+    }
+  }
+
+  return {
+    unavailableSlots: Array.from(unavailSet).sort((a, b) => a - b),
+    undesirableSlots: Array.from(undesirSet).sort((a, b) => a - b),
+  };
+}
+
+/**
+ * Checks if two lessons belonging to the same class are divided/split groups
+ * and should be exempted from CLASS_CLASH.
+ */
+export function isSplitExempt(l1: Lesson, l2: Lesson): boolean {
+  const g1 = l1.groupName?.trim().toLowerCase();
+  const g2 = l2.groupName?.trim().toLowerCase();
+
+  const isL1Split =
+    l1.entireClass === false ||
+    Boolean(l1.isSplitGroup) ||
+    Boolean(l1.groupId) ||
+    (Boolean(g1) && g1 !== 'entire class' && l1.groupName?.trim() !== 'كامل الفصل');
+
+  const isL2Split =
+    l2.entireClass === false ||
+    Boolean(l2.isSplitGroup) ||
+    Boolean(l2.groupId) ||
+    (Boolean(g2) && g2 !== 'entire class' && l2.groupName?.trim() !== 'كامل الفصل');
+
+  if (!isL1Split || !isL2Split) return false;
+
+  // If both specify group IDs, they must be distinct
+  if (l1.groupId && l2.groupId) {
+    return l1.groupId !== l2.groupId;
+  }
+
+  // If both specify group names, they must be distinct
+  if (g1 && g2) {
+    return g1 !== g2;
+  }
+
+  // If one or both are split lessons with distinct IDs
+  return l1.id !== l2.id;
+}
+

@@ -20,6 +20,8 @@ import {
   AdvancedRelationRule,
 } from '../lib/types';
 import { parseRozBinary } from '../lib/roz-parser';
+import { isSplitExempt, extractSlotsFromTimeOffMatrix } from '../lib/domain';
+import { downloadAscttXml } from '../lib/export-xml';
 import { RibbonToolbar } from '../components/RibbonToolbar';
 import { ViewNavigator } from '../components/ViewNavigator';
 import { TimetableGrid } from '../components/TimetableGrid';
@@ -122,8 +124,11 @@ export default function TimetableStudioPage() {
 
   // Advanced Relations Constraints state
   const [advancedRules, setAdvancedRules] = useState<AdvancedRelationRule[]>(defaultAdvancedRules);
+  const [academicYear, setAcademicYear] = useState<string>('2025 - 2026');
+  const [customBellSchedule, setCustomBellSchedule] = useState<string[] | undefined>(undefined);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const isHydratedRef = useRef<boolean>(false);
 
   // Background WASM Solver Hook
   const {
@@ -181,6 +186,9 @@ export default function TimetableStudioPage() {
   }, [periodsPerDay, isRtl]);
 
   const dynamicBells = useMemo(() => {
+    if (customBellSchedule && customBellSchedule.length === periodsPerDay) {
+      return customBellSchedule;
+    }
     if (periodsPerDay === 12) {
       return [
         '08:00 - 08:45',
@@ -217,7 +225,7 @@ export default function TimetableStudioPage() {
       const e = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
       return `${s} - ${e}`;
     });
-  }, [periodsPerDay]);
+  }, [periodsPerDay, customBellSchedule]);
 
   const isReadOnly = false;
   const canRunSolver = true;
@@ -302,6 +310,49 @@ export default function TimetableStudioPage() {
 
   const loadRozFile = useCallback(
     async (file: File) => {
+      const lowerName = file.name.toLowerCase();
+      if (lowerName.endsWith('.json')) {
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (parsed && (Array.isArray(parsed.teachers) || Array.isArray(parsed.classes))) {
+            setTeachers(parsed.teachers || []);
+            setClasses(parsed.classes || []);
+            setRooms(parsed.rooms || []);
+            setSubjects(parsed.subjects || []);
+            setLessons(parsed.lessons || []);
+            setPlacements(parsed.placements || []);
+            if (parsed.timeOffMatrix) setTimeOffMatrix(parsed.timeOffMatrix);
+            if (parsed.schoolName) setSchoolName(parsed.schoolName);
+            if (parsed.academicYear) setAcademicYear(parsed.academicYear);
+            if (typeof parsed.cycleDays === 'number') setCycleDays(parsed.cycleDays);
+            if (typeof parsed.periodsPerDay === 'number') setPeriodsPerDay(parsed.periodsPerDay);
+            if (Array.isArray(parsed.bellSchedule)) setCustomBellSchedule(parsed.bellSchedule);
+            setCurrentFileName(file.name);
+            setHistory([]);
+            setRedoStack([]);
+
+            if (parsed.classes && parsed.classes.length > 0) {
+              setSelectedEntityId(parsed.classes[0].id);
+              setViewMode('class');
+            } else if (parsed.teachers && parsed.teachers.length > 0) {
+              setSelectedEntityId(parsed.teachers[0].id);
+              setViewMode('teacher');
+            }
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('opentimetable_saved_state', JSON.stringify(parsed));
+              localStorage.setItem('opentimetable_autosave_state', JSON.stringify(parsed));
+            }
+            return;
+          }
+          throw new Error('File does not match OpenTimetable project schema');
+        } catch (jsonErr) {
+          console.error('Failed to parse project JSON:', jsonErr);
+          alert(isRtlRef.current ? `فشل في قراءة ملف المشروع JSON: ${jsonErr}` : `Failed to parse project JSON: ${jsonErr}`);
+          return;
+        }
+      }
+
       try {
         const arrayBuffer = await file.arrayBuffer();
         loadRozBuffer(arrayBuffer, file.name);
@@ -374,10 +425,77 @@ export default function TimetableStudioPage() {
     [loadRozBuffer]
   );
 
-  // Pre-load Saudi Arabia 1 demo school on initial mount so npm run dev boots with full-scale school data
+  // Pre-load saved timetable or fallback to Saudi Arabia 1 demo school on initial mount
   useEffect(() => {
     let isMounted = true;
     const initBoot = async () => {
+      // 1. Check saved state and autosave state in localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const rawSaved = localStorage.getItem('opentimetable_saved_state');
+          const rawAutosave = localStorage.getItem('opentimetable_autosave_state');
+
+          let savedState: any = null;
+          let autosaveState: any = null;
+
+          if (rawSaved) {
+            try {
+              savedState = JSON.parse(rawSaved);
+            } catch {}
+          }
+          if (rawAutosave) {
+            try {
+              autosaveState = JSON.parse(rawAutosave);
+            } catch {}
+          }
+
+          let targetState: any = null;
+          if (savedState && autosaveState) {
+            targetState =
+              (autosaveState.timestamp || 0) >= (savedState.timestamp || 0)
+                ? autosaveState
+                : savedState;
+          } else {
+            targetState = savedState || autosaveState;
+          }
+
+          if (
+            targetState &&
+            ((Array.isArray(targetState.teachers) && targetState.teachers.length > 0) ||
+              (Array.isArray(targetState.lessons) && targetState.lessons.length > 0) ||
+              (Array.isArray(targetState.classes) && targetState.classes.length > 0) ||
+              (targetState.schoolName && targetState.schoolName !== 'Saudi Arabia 1'))
+          ) {
+            if (isMounted) {
+              if (Array.isArray(targetState.teachers)) setTeachers(targetState.teachers);
+              if (Array.isArray(targetState.classes)) setClasses(targetState.classes);
+              if (Array.isArray(targetState.rooms)) setRooms(targetState.rooms);
+              if (Array.isArray(targetState.subjects)) setSubjects(targetState.subjects);
+              if (Array.isArray(targetState.lessons)) setLessons(targetState.lessons);
+              if (Array.isArray(targetState.placements)) setPlacements(targetState.placements);
+              if (targetState.timeOffMatrix) setTimeOffMatrix(targetState.timeOffMatrix);
+              if (targetState.schoolName) setSchoolName(targetState.schoolName);
+              if (targetState.academicYear) setAcademicYear(targetState.academicYear);
+              if (Array.isArray(targetState.bellSchedule)) setCustomBellSchedule(targetState.bellSchedule);
+              if (targetState.currentFileName) setCurrentFileName(targetState.currentFileName);
+              if (targetState.schemaVersion) setSchemaVersion(targetState.schemaVersion);
+              if (targetState.scheduleCycleKind) setScheduleCycleKind(targetState.scheduleCycleKind);
+              if (typeof targetState.cycleDays === 'number') setCycleDays(targetState.cycleDays);
+              if (typeof targetState.periodsPerDay === 'number') setPeriodsPerDay(targetState.periodsPerDay);
+              if (targetState.currentSampleId) setCurrentSampleId(targetState.currentSampleId);
+              if (targetState.selectedEntityId) setSelectedEntityId(targetState.selectedEntityId);
+              if (targetState.viewMode) setViewMode(targetState.viewMode);
+
+              setShowWelcomeBanner(false);
+              isHydratedRef.current = true;
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Error restoring state from localStorage:', err);
+        }
+      }
+
       try {
         let res = await fetch('/demos/Saudi_Arabia_1.roz');
         let fname = 'Saudi Arabia 1.roz';
@@ -391,6 +509,10 @@ export default function TimetableStudioPage() {
         }
       } catch (err) {
         console.warn('Initial demo pre-load error:', err);
+      } finally {
+        if (isMounted) {
+          isHydratedRef.current = true;
+        }
       }
     };
     initBoot();
@@ -402,6 +524,7 @@ export default function TimetableStudioPage() {
   // Auto-save timetable state to localStorage on modifications
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!isHydratedRef.current) return;
     if (lessons.length === 0 && teachers.length === 0) return;
     try {
       const stateToSave = {
@@ -413,11 +536,13 @@ export default function TimetableStudioPage() {
         placements,
         timeOffMatrix,
         schoolName,
+        academicYear,
         currentFileName,
         schemaVersion,
         scheduleCycleKind,
         cycleDays,
         periodsPerDay,
+        bellSchedule: dynamicBells,
         timestamp: Date.now(),
       };
       localStorage.setItem('opentimetable_autosave_state', JSON.stringify(stateToSave));
@@ -433,11 +558,13 @@ export default function TimetableStudioPage() {
     placements,
     timeOffMatrix,
     schoolName,
+    academicYear,
     currentFileName,
     schemaVersion,
     scheduleCycleKind,
     cycleDays,
     periodsPerDay,
+    dynamicBells,
   ]);
 
   // Window Drag & Drop ingestion handlers
@@ -470,7 +597,8 @@ export default function TimetableStudioPage() {
       const files = e.dataTransfer?.files;
       if (files && files.length > 0) {
         const file = files[0];
-        if (file.name.toLowerCase().endsWith('.roz')) {
+        const lowerName = file.name.toLowerCase();
+        if (lowerName.endsWith('.roz') || lowerName.endsWith('.json')) {
           await loadRozFile(file);
         }
       }
@@ -523,28 +651,70 @@ export default function TimetableStudioPage() {
           const l2 = lessonMap.get(p2.lessonId);
           if (!l1 || !l2) continue;
 
-          if (l1.teacherId === l2.teacherId) {
+          // 1. Teacher Clash (check all assigned teachers including co-teachers)
+          const t1Ids = [l1.teacherId, ...(l1.teacherIds || []), ...(l1.coTeacherIds || [])].filter(Boolean);
+          const t2Ids = [l2.teacherId, ...(l2.teacherIds || []), ...(l2.coTeacherIds || [])].filter(Boolean);
+          const commonTeacherId = t1Ids.find((id) => t2Ids.includes(id));
+
+          if (commonTeacherId) {
+            const tObj = teacherMap.get(commonTeacherId);
+            const teacherName = tObj?.name || commonTeacherId;
+            const teacherNameAr = tObj?.nameAr || teacherName;
             list.push({
               type: 'TEACHER_CLASH',
               lessonId: l1.id,
-              message: `Teacher conflict: ${teacherMap.get(l1.teacherId)?.name || l1.teacherId} assigned twice at Day ${p1.dayIndex + 1}, Period ${p1.periodIndex + 1}`,
-              messageAr: `تعارض معلم: ${teacherMap.get(l1.teacherId)?.nameAr || l1.teacherId} مسند لحصتين في نفس الوقت`,
+              message: `Teacher conflict: ${teacherName} assigned twice at Day ${p1.dayIndex + 1}, Period ${p1.periodIndex + 1}`,
+              messageAr: `تعارض معلم: ${teacherNameAr} مسند لحصتين في نفس الوقت`,
+            });
+            list.push({
+              type: 'TEACHER_CLASH',
+              lessonId: l2.id,
+              message: `Teacher conflict: ${teacherName} assigned twice at Day ${p2.dayIndex + 1}, Period ${p2.periodIndex + 1}`,
+              messageAr: `تعارض معلم: ${teacherNameAr} مسند لحصتين في نفس الوقت`,
             });
           }
-          if (p1.roomId === p2.roomId) {
+
+          // 2. Room Clash (only when both placements have a valid non-empty room assigned)
+          const r1 = p1.roomId?.trim();
+          const r2 = p2.roomId?.trim();
+          if (r1 && r2 && r1 === r2) {
+            const rObj = roomMap.get(r1);
+            const roomName = rObj?.name || r1;
+            const roomNameAr = rObj?.nameAr || roomName;
             list.push({
               type: 'ROOM_CLASH',
               lessonId: l1.id,
-              message: `Room clash: ${roomMap.get(p1.roomId)?.name || p1.roomId} occupied by two classes`,
-              messageAr: `تعارض قاعة: ${roomMap.get(p1.roomId)?.nameAr || p1.roomId} محجوزة لفصلين معاً`,
+              message: `Room clash: ${roomName} occupied by two classes`,
+              messageAr: `تعارض قاعة: ${roomNameAr} محجوزة لفصلين معاً`,
+            });
+            list.push({
+              type: 'ROOM_CLASH',
+              lessonId: l2.id,
+              message: `Room clash: ${roomName} occupied by two classes`,
+              messageAr: `تعارض قاعة: ${roomNameAr} محجوزة لفصلين معاً`,
             });
           }
-          if (l1.classId === l2.classId) {
+
+          // 3. Class Clash (check all assigned classes including joint classes, exempting split groups)
+          const c1Ids = [l1.classId, ...(l1.classIds || []), ...(l1.jointClassIds || [])].filter(Boolean);
+          const c2Ids = [l2.classId, ...(l2.classIds || []), ...(l2.jointClassIds || [])].filter(Boolean);
+          const commonClassId = c1Ids.find((id) => c2Ids.includes(id));
+
+          if (commonClassId && !isSplitExempt(l1, l2)) {
+            const cObj = classMap.get(commonClassId);
+            const className = cObj?.name || commonClassId;
+            const classNameAr = cObj?.nameAr || className;
             list.push({
               type: 'CLASS_CLASH',
               lessonId: l1.id,
-              message: `Class conflict: ${classMap.get(l1.classId)?.name || l1.classId} has two simultaneous lessons`,
-              messageAr: `تعارض فصل: ${classMap.get(l1.classId)?.nameAr || l1.classId} لديه مادتان في نفس الحصة`,
+              message: `Class conflict: ${className} has two simultaneous lessons`,
+              messageAr: `تعارض فصل: ${classNameAr} لديه مادتان في نفس الحصة`,
+            });
+            list.push({
+              type: 'CLASS_CLASH',
+              lessonId: l2.id,
+              message: `Class conflict: ${className} has two simultaneous lessons`,
+              messageAr: `تعارض فصل: ${classNameAr} لديه مادتان في نفس الحصة`,
             });
           }
         }
@@ -840,15 +1010,19 @@ export default function TimetableStudioPage() {
         placements,
         timeOffMatrix,
         schoolName,
+        academicYear,
         currentFileName,
         schemaVersion,
         scheduleCycleKind,
         cycleDays,
         periodsPerDay,
+        bellSchedule: dynamicBells,
         timestamp: Date.now(),
       };
       if (typeof window !== 'undefined') {
-        localStorage.setItem('opentimetable_saved_state', JSON.stringify(stateToSave));
+        const serialized = JSON.stringify(stateToSave);
+        localStorage.setItem('opentimetable_saved_state', serialized);
+        localStorage.setItem('opentimetable_autosave_state', serialized);
       }
       alert(
         isRtl
@@ -859,6 +1033,88 @@ export default function TimetableStudioPage() {
       console.error('Failed to save to localStorage:', err);
       alert(isRtl ? 'تعذر حفظ البيانات محلياً' : 'Failed to save timetable locally');
     }
+  };
+
+  // Save As: Persist to localStorage and download formatted project JSON
+  const handleSaveAs = () => {
+    try {
+      const stateToSave = {
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+        timeOffMatrix,
+        schoolName,
+        academicYear,
+        currentFileName,
+        schemaVersion,
+        scheduleCycleKind,
+        cycleDays,
+        periodsPerDay,
+        bellSchedule: dynamicBells,
+        timestamp: Date.now(),
+      };
+      if (typeof window !== 'undefined') {
+        const serialized = JSON.stringify(stateToSave, null, 2);
+        localStorage.setItem('opentimetable_saved_state', JSON.stringify(stateToSave));
+        localStorage.setItem('opentimetable_autosave_state', JSON.stringify(stateToSave));
+
+        const blob = new Blob([serialized], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const safeName = (schoolName || 'timetable').replace(/[^a-zA-Z0-9_\u0600-\u06FF-]/g, '_');
+        a.href = url;
+        a.download = `${safeName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to execute Save As:', err);
+      alert(isRtl ? 'تعذر تصدير وحفظ ملف المشروع' : 'Failed to export project file');
+    }
+  };
+
+  // Export aSc Timetables 2012 XML Format
+  const handleExportXml = () => {
+    try {
+      downloadAscttXml({
+        schoolName: schoolName || 'OpenTimetable School',
+        academicYear: academicYear || '2025/2026',
+        cycleDays,
+        periodsPerDay,
+        bellSchedule: dynamicBells,
+        daysList: dynamicDays,
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+      });
+    } catch (err) {
+      console.error('Failed to export XML:', err);
+      alert(isRtl ? 'تعذر تصدير ملف XML' : 'Failed to export XML file');
+    }
+  };
+
+  // Handle School tab configuration updates from BasicDataModal
+  const handleUpdateSchool = (data: {
+    schoolName: string;
+    academicYear: string;
+    cycleDays: number;
+    periodsPerDay: number;
+    bellSchedule?: string[];
+  }) => {
+    recordHistory();
+    if (data.schoolName) setSchoolName(data.schoolName);
+    if (data.academicYear) setAcademicYear(data.academicYear);
+    if (typeof data.cycleDays === 'number') setCycleDays(data.cycleDays);
+    if (typeof data.periodsPerDay === 'number') setPeriodsPerDay(data.periodsPerDay);
+    if (data.bellSchedule) setCustomBellSchedule(data.bellSchedule);
   };
 
   // Clear placements for a single row entity
@@ -886,14 +1142,60 @@ export default function TimetableStudioPage() {
     recordHistory();
 
     try {
+      // Extract teacher & class timeOff constraints using extractSlotsFromTimeOffMatrix
+      const enrichedTeachers = teachers.map((tc) => {
+        const slots = extractSlotsFromTimeOffMatrix(
+          tc.id,
+          timeOffMatrix,
+          periodsPerDay,
+          tc.unavailableSlots
+        );
+        return {
+          ...tc,
+          unavailableSlots: slots.unavailableSlots,
+          undesirableSlots: slots.undesirableSlots,
+        };
+      });
+
+      const enrichedClasses = classes.map((c) => {
+        const slots = extractSlotsFromTimeOffMatrix(
+          c.id,
+          timeOffMatrix,
+          periodsPerDay,
+          []
+        );
+        return {
+          ...c,
+          unavailableSlots: slots.unavailableSlots,
+        };
+      });
+
+      // Map advancedRules into solver configuration weights and limits
+      const maxConsecutiveRule = advancedRules.find(
+        (r) => r.type === 'MAX_CONSECUTIVE_PERIODS' && r.enabled
+      );
+      const gapLimitsRule = advancedRules.find(
+        (r) => r.type === 'TEACHER_GAP_LIMITS' && r.enabled
+      );
+      const distribRule = advancedRules.find(
+        (r) => r.type === 'DISTRIBUTION_ACROSS_DAYS' && r.enabled
+      );
+
       const solvedPlacements = await runWasmSolve({
         lessons: lessons,
-        teachers: teachers,
-        classes: classes,
+        teachers: enrichedTeachers,
+        classes: enrichedClasses,
         rooms: rooms,
         subjects: subjects,
         complexity,
         options,
+        config: {
+          days: cycleDays,
+          periodsPerDay: periodsPerDay,
+          maxConsecutivePeriods: maxConsecutiveRule?.parameterValue ?? 2,
+          gapWeight: gapLimitsRule ? 30 : 10,
+          distributionWeight: distribRule ? 25 : 10,
+        },
       });
 
       setPlacements(solvedPlacements);
@@ -1124,11 +1426,11 @@ export default function TimetableStudioPage() {
 
   return (
     <div dir={t.dir} className="h-screen w-screen flex flex-col overflow-hidden bg-slate-200">
-      {/* Hidden File Input for .roz Browsing */}
+      {/* Hidden File Input for .roz and .json Browsing */}
       <input
         type="file"
         ref={fileInputRef}
-        accept=".roz"
+        accept=".roz,.json"
         onChange={handleFileInputChange}
         className="hidden"
       />
@@ -1139,51 +1441,55 @@ export default function TimetableStudioPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8 border-4 border-dashed border-sky-500 flex flex-col items-center gap-3 text-center">
             <FolderOpen className="w-16 h-16 text-sky-600 animate-bounce" />
             <h2 className="text-xl font-bold text-slate-800">
-              {isRtl ? 'أفلت ملف .roz هنا للتحميل المباشر' : 'Drop .roz file here to load timetable'}
+              {isRtl ? 'أفلت ملف .roz أو .json هنا للتحميل المباشر' : 'Drop .roz or .json file here to load timetable'}
             </h2>
           </div>
         </div>
       )}
 
       {/* 1. Desktop Ribbon Toolbar */}
-      <RibbonToolbar
-        lang={lang}
-        setLang={setLang}
-        activeTab={activeRibbonTab}
-        setActiveTab={setActiveRibbonTab}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        canRunSolver={canRunSolver}
-        isReadOnly={isReadOnly}
-        canUndo={history.length > 0}
-        canRedo={redoStack.length > 0}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onOpenGenerate={() => setIsGenerateModalOpen(true)}
-        onOpenTimeOff={() => setIsTimeOffModalOpen(true)}
-        onOpenBasicData={handleOpenBasicData}
-        onOpenTest={() => setIsTestModalOpen(true)}
-        onOpenAdvancedRelations={() => setIsAdvancedRelationsModalOpen(true)}
-        onAutoPlaceAll={handleAutoPlaceAll}
-        onClearPlacements={handleClearPlacements}
-        onExportCsv={handleExportCsv}
-        onExportIcal={handleExportIcal}
-        onExportPdf={handlePrintPreview}
-        onImportRoz={() => fileInputRef.current?.click()}
-        onPrintPreview={handlePrintPreview}
-        onLoadSample={loadNamedSample}
-        currentSampleId={currentSampleId}
-        zoomLevel={zoomLevel}
-        setZoomLevel={setZoomLevel}
-        schoolName={schoolName}
-        currentFileName={currentFileName}
-        onSaveFile={handleSaveFile}
-        onNewFile={handleNewFile}
-      />
+      <div className="print:hidden">
+        <RibbonToolbar
+          lang={lang}
+          setLang={setLang}
+          activeTab={activeRibbonTab}
+          setActiveTab={setActiveRibbonTab}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          canRunSolver={canRunSolver}
+          isReadOnly={isReadOnly}
+          canUndo={history.length > 0}
+          canRedo={redoStack.length > 0}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onOpenGenerate={() => setIsGenerateModalOpen(true)}
+          onOpenTimeOff={() => setIsTimeOffModalOpen(true)}
+          onOpenBasicData={handleOpenBasicData}
+          onOpenTest={() => setIsTestModalOpen(true)}
+          onOpenAdvancedRelations={() => setIsAdvancedRelationsModalOpen(true)}
+          onAutoPlaceAll={handleAutoPlaceAll}
+          onClearPlacements={handleClearPlacements}
+          onExportCsv={handleExportCsv}
+          onExportXml={handleExportXml}
+          onExportIcal={handleExportIcal}
+          onExportPdf={handlePrintPreview}
+          onImportRoz={() => fileInputRef.current?.click()}
+          onPrintPreview={handlePrintPreview}
+          onLoadSample={loadNamedSample}
+          currentSampleId={currentSampleId}
+          zoomLevel={zoomLevel}
+          setZoomLevel={setZoomLevel}
+          schoolName={schoolName}
+          currentFileName={currentFileName}
+          onSaveFile={handleSaveFile}
+          onSaveAs={handleSaveAs}
+          onNewFile={handleNewFile}
+        />
+      </div>
 
       {/* Dismissible Bilingual Welcome & Sample Switcher Banner */}
       {showWelcomeBanner && (
-        <div className="bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-900 text-white px-3.5 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-700/50 shadow-xs text-xs select-none">
+        <div className="print:hidden bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-900 text-white px-3.5 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-700/50 shadow-xs text-xs select-none">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-xs shrink-0" />
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1253,20 +1559,47 @@ export default function TimetableStudioPage() {
       )}
 
       {/* 2. Sub-Toolbar: View Navigator & Metrics Bar */}
-      <ViewNavigator
-        lang={lang}
-        viewMode={viewMode}
-        selectedEntityId={selectedEntityId}
-        setSelectedEntityId={setSelectedEntityId}
-        classes={classes}
-        teachers={teachers}
-        rooms={rooms}
-        conflicts={conflicts}
-        totalLessons={lessons.length}
-        placedLessonsCount={placements.length}
-        unplacedCount={unplacedCount}
-        solveDurationMs={solveStats?.durationMs}
-      />
+      <div className="print:hidden">
+        <ViewNavigator
+          lang={lang}
+          viewMode={viewMode}
+          selectedEntityId={selectedEntityId}
+          setSelectedEntityId={setSelectedEntityId}
+          classes={classes}
+          teachers={teachers}
+          rooms={rooms}
+          conflicts={conflicts}
+          totalLessons={lessons.length}
+          placedLessonsCount={placements.length}
+          unplacedCount={unplacedCount}
+          solveDurationMs={solveStats?.durationMs}
+        />
+      </div>
+
+      {/* Dedicated Print Only Header */}
+      <div className="hidden print:flex flex-col py-3 px-4 mb-2 bg-white border-b-2 border-slate-800 text-slate-900 select-text">
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-xl font-bold">{schoolName || 'OpenTimetable School'}</h1>
+            <p className="text-xs text-slate-600">{academicYear || '2025/2026'}</p>
+          </div>
+          <div className="text-center">
+            <h2 className="text-lg font-bold">
+              {viewMode === 'class' && (classMap.get(selectedEntityId)?.name || 'Class Schedule')}
+              {viewMode === 'teacher' && (teacherMap.get(selectedEntityId)?.name || 'Teacher Schedule')}
+              {viewMode === 'room' && (roomMap.get(selectedEntityId)?.name || 'Room Schedule')}
+              {viewMode === 'wall' && (isRtl ? 'الجدول العام للمدرسة' : 'Master School Timetable')}
+            </h2>
+            <p className="text-xs text-slate-500">
+              {isRtl ? 'جدول الحصص الأسبوعي' : 'Weekly Timetable'}
+            </p>
+          </div>
+          <div className="text-end text-xs text-slate-500">
+            <div>{new Date().toLocaleDateString()}</div>
+            <div className="font-semibold text-slate-700">OpenTimetable Studio</div>
+          </div>
+        </div>
+      </div>
 
       {/* 3. Main Workspace: Timetable Matrix Grid Canvas */}
       <TimetableGrid
@@ -1298,28 +1631,30 @@ export default function TimetableStudioPage() {
       />
 
       {/* 4. Signature Bottom Lesson Card Deck ("بنك البطاقات") */}
-      <BottomCardDeck
-        lang={lang}
-        lessons={lessons}
-        placements={placements}
-        subjects={subjects}
-        teachers={teachers}
-        classes={classes}
-        rooms={rooms}
-        teacherMap={teacherMap}
-        classMap={classMap}
-        roomMap={roomMap}
-        subjectMap={subjectMap}
-        selectedEntityId={selectedEntityId}
-        onPlaceLesson={handlePlaceLesson}
-        onRemovePlacement={handleRemovePlacement}
-        onAutoPlaceAll={handleAutoPlaceAll}
-        onClearEntityPlacements={handleClearEntityPlacements}
-        isReadOnly={isReadOnly}
-      />
+      <div className="print:hidden">
+        <BottomCardDeck
+          lang={lang}
+          lessons={lessons}
+          placements={placements}
+          subjects={subjects}
+          teachers={teachers}
+          classes={classes}
+          rooms={rooms}
+          teacherMap={teacherMap}
+          classMap={classMap}
+          roomMap={roomMap}
+          subjectMap={subjectMap}
+          selectedEntityId={selectedEntityId}
+          onPlaceLesson={handlePlaceLesson}
+          onRemovePlacement={handleRemovePlacement}
+          onAutoPlaceAll={handleAutoPlaceAll}
+          onClearEntityPlacements={handleClearEntityPlacements}
+          isReadOnly={isReadOnly}
+        />
+      </div>
 
       {/* 5. Authentic Desktop Status Bar */}
-      <div className="bg-slate-300 border-t border-slate-400/80 px-3 py-1 flex items-center justify-between text-[11px] text-slate-700 select-none shrink-0 font-sans">
+      <div className="print:hidden bg-slate-300 border-t border-slate-400/80 px-3 py-1 flex items-center justify-between text-[11px] text-slate-700 select-none shrink-0 font-sans">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs"></span>
@@ -1387,6 +1722,12 @@ export default function TimetableStudioPage() {
         rooms={rooms}
         teachers={teachers}
         lessons={lessons}
+        schoolName={schoolName}
+        academicYear={academicYear}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        bellSchedule={dynamicBells}
+        onUpdateSchool={handleUpdateSchool}
         teacherMap={teacherMap}
         classMap={classMap}
         roomMap={roomMap}
@@ -1420,6 +1761,8 @@ export default function TimetableStudioPage() {
         lessons={lessons}
         placements={placements}
         conflicts={conflicts}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
         teacherMap={teacherMap}
         classMap={classMap}
         roomMap={roomMap}

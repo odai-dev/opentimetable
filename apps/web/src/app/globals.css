@@ -92,3 +92,53 @@ body {
   background-size: 1rem 1rem;
   animation: progress-stripe 1s linear infinite;
 }
+
+/* Dedicated Print Layout Styling */
+@media print {
+  @page {
+    size: landscape;
+    margin: 6mm;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    user-select: auto !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Left vertical tab strip inside TimetableGrid */
+  .w-9.bg-slate-300 {
+    display: none !important;
+  }
+
+  /* Grid wrapper expansions */
+  div[class*="overflow-hidden"], div[class*="overflow-auto"] {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
+  }
+
+  th, td {
+    border: 1px solid #64748b !important;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .lesson-card {
+    box-shadow: none !important;
+    border: 1px solid #475569 !important;
+  }
+}
