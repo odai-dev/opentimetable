@@ -27,6 +27,17 @@ import {
   ZoomIn,
   ZoomOut,
   HelpCircle,
+  Lock,
+  Unlock,
+  GitCompare,
+  BarChart3,
+  Lightbulb,
+  ShieldCheck,
+  SlidersHorizontal,
+  LayoutTemplate,
+  GraduationCap,
+  Network,
+  Upload,
 } from 'lucide-react';
 import { RibbonTab, Role, ViewMode, BasicDataTab } from '../lib/types';
 import { translations } from '../lib/i18n';
@@ -69,6 +80,21 @@ interface RibbonToolbarProps {
   onSaveAs?: () => void;
   onNewFile?: () => void;
   onOpenStartupModal?: () => void;
+  onOpenVerification?: () => void;
+  onOpenAdvisor?: () => void;
+  onOpenStatistics?: () => void;
+  onOpenRelatedTimetables?: () => void;
+  isRelatedTimetablesOpen?: boolean;
+  onOpenCardLayout?: () => void;
+  onOpenCompare?: () => void;
+  onOpenSpreadsheetImport?: () => void;
+  onOpenConstraintsLedger?: () => void;
+  onOpenSetupWizard?: () => void;
+  onOpenHelpShortcuts?: () => void;
+  onImproveTimetable?: () => void;
+  onAssignClassrooms?: () => void;
+  onLockAllPlacements?: () => void;
+  onUnlockAllPlacements?: () => void;
 }
 
 export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
@@ -109,6 +135,21 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
   onSaveAs,
   onNewFile,
   onOpenStartupModal,
+  onOpenVerification,
+  onOpenAdvisor,
+  onOpenStatistics,
+  onOpenRelatedTimetables,
+  isRelatedTimetablesOpen,
+  onOpenCardLayout,
+  onOpenCompare,
+  onOpenSpreadsheetImport,
+  onOpenConstraintsLedger,
+  onOpenSetupWizard,
+  onOpenHelpShortcuts,
+  onImproveTimetable,
+  onAssignClassrooms,
+  onLockAllPlacements,
+  onUnlockAllPlacements,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
@@ -191,14 +232,16 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
 
           {/* About / Help */}
           <button
-            onClick={() =>
-              alert(
-                isRtl
-                  ? 'برنامج الجداول المدرسية المفتوحة (OpenTimetable 2026)\nنظام متكامل مفتوح المصدر لإعداد وتوليد الجداول المدرسية والجامعية.\nمتوافق مع ملفات .roz ويعمل بكفاءة عالية بدون الحاجة لأي خوادم خارجية.'
-                  : 'OpenTimetable 2026 Studio\nStandalone open-source school and university timetable system.\nCompatible with .roz files with high-performance desktop parity.'
-              )
+            onClick={
+              onOpenHelpShortcuts ||
+              (() =>
+                alert(
+                  isRtl
+                    ? 'برنامج الجداول المدرسية المفتوحة (OpenTimetable 2026)\nنظام متكامل مفتوح المصدر لإعداد وتوليد الجداول المدرسية والجامعية.\nمتوافق مع ملفات .roz ويعمل بكفاءة عالية بدون الحاجة لأي خوادم خارجية.'
+                    : 'OpenTimetable 2026 Studio\nStandalone open-source school and university timetable system.\nCompatible with .roz files with high-performance desktop parity.'
+                ))
             }
-            title={isRtl ? 'حول البرنامج' : 'About OpenTimetable'}
+            title={isRtl ? 'المساعدة واختصارات لوحة المفاتيح' : 'Help & Keyboard Shortcuts'}
             className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition"
           >
             <HelpCircle className="w-3.5 h-3.5" />
@@ -315,6 +358,17 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     {t.ribbon.tools.lessons}
                   </span>
                 </button>
+
+                <button
+                  onClick={() => onOpenBasicData('students')}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-cyan-50 active:bg-cyan-100 border border-transparent hover:border-cyan-200 text-slate-700 hover:text-cyan-800 transition w-14"
+                  title={isRtl ? 'الطلاب والمجموعات الدراسية' : 'Students & Seminars'}
+                >
+                  <GraduationCap className="w-7 h-7 text-cyan-600 mb-1" />
+                  <span className="text-[10px] font-semibold text-center leading-tight">
+                    {isRtl ? 'الطلاب' : 'Students'}
+                  </span>
+                </button>
               </div>
               <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                 {t.ribbon.groups.basicData}
@@ -345,6 +399,59 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     {t.ribbon.tools.generate}
                   </span>
                 </button>
+
+                {onImproveTimetable && (
+                  <button
+                    onClick={onImproveTimetable}
+                    disabled={!canRunSolver || isReadOnly}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 active:bg-amber-100 border border-transparent hover:border-amber-200 text-slate-700 transition w-14 disabled:opacity-50"
+                    title={isRtl ? 'تحسين الجدول الحالي دون كسر التسكينات الثابتة' : 'Improve existing timetable with local search'}
+                  >
+                    <Wand2 className="w-7 h-7 text-amber-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'تحسين' : 'Improve'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenVerification && (
+                  <button
+                    onClick={onOpenVerification}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-emerald-50 active:bg-emerald-100 border border-transparent hover:border-emerald-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'سجل التدقيق الشامل للقيود والتعارضات' : 'Comprehensive constraints verification ledger'}
+                  >
+                    <ShieldCheck className="w-7 h-7 text-emerald-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'تدقيق' : 'Verify'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenAdvisor && (
+                  <button
+                    onClick={onOpenAdvisor}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 active:bg-amber-100 border border-transparent hover:border-amber-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'المستشار الذكي لتشخيص التوزيعات المستحيلة وحلولها' : 'Diagnostic constraint advisor'}
+                  >
+                    <Lightbulb className="w-7 h-7 text-amber-500 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'المستشار' : 'Advisor'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenStatistics && (
+                  <button
+                    onClick={onOpenStatistics}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'إحصائيات الجدول ومؤشرات عدالة الأنصبة' : 'Schedule statistics and teacher equity'}
+                  >
+                    <BarChart3 className="w-7 h-7 text-indigo-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'إحصائيات' : 'Statistics'}
+                    </span>
+                  </button>
+                )}
 
                 <button
                   onClick={onOpenTimeOff}
@@ -552,6 +659,40 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 </span>
               </div>
             )}
+
+            {/* 4. Import & Revision Diff */}
+            <div className="ribbon-group flex flex-col justify-between px-2">
+              <div className="flex items-center gap-1.5">
+                {onOpenSpreadsheetImport && (
+                  <button
+                    onClick={onOpenSpreadsheetImport}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-emerald-50 active:bg-emerald-100 border border-transparent hover:border-emerald-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'استيراد البيانات من Excel / CSV أو الحافظة' : 'Import from Excel / CSV / Clipboard'}
+                  >
+                    <Upload className="w-7 h-7 text-emerald-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'استيراد شيت' : 'Import Sheet'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenCompare && (
+                  <button
+                    onClick={onOpenCompare}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-purple-50 active:bg-purple-100 border border-transparent hover:border-purple-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'مقارنة نسختين من الجدول وإظهار الفروقات' : 'Compare two timetable revisions'}
+                  >
+                    <GitCompare className="w-7 h-7 text-purple-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'مقارنة جدولين' : 'Compare'}
+                    </span>
+                  </button>
+                )}
+              </div>
+              <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
+                {isRtl ? 'استيراد ومقارنة' : 'Import & Compare'}
+              </span>
+            </div>
           </div>
         )}
 
@@ -562,13 +703,41 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={onOpenGenerate}
-                  className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow transition w-20"
+                  disabled={!canRunSolver || isReadOnly}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow transition w-20 disabled:opacity-50"
                 >
                   <Sparkles className="w-7 h-7 text-amber-200 mb-1" />
                   <span className="text-[10px] font-bold text-center leading-tight">
                     {t.ribbon.tools.generate}
                   </span>
                 </button>
+
+                {onImproveTimetable && (
+                  <button
+                    onClick={onImproveTimetable}
+                    disabled={!canRunSolver || isReadOnly}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 active:bg-amber-100 border border-transparent hover:border-amber-200 text-slate-700 transition w-14 disabled:opacity-50"
+                    title={isRtl ? 'تحسين الجدول الحالي' : 'Improve Timetable'}
+                  >
+                    <Wand2 className="w-7 h-7 text-amber-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'تحسين' : 'Improve'}
+                    </span>
+                  </button>
+                )}
+
+                {onAssignClassrooms && (
+                  <button
+                    onClick={onAssignClassrooms}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-teal-50 active:bg-teal-100 border border-transparent hover:border-teal-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'توزيع القاعات آلياً باستخدام خوارزمية التطابق الثنائي (Bipartite Matching)' : 'Automated classroom allocation via bipartite matching'}
+                  >
+                    <DoorOpen className="w-7 h-7 text-teal-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'توزيع القاعات' : 'Assign Rooms'}
+                    </span>
+                  </button>
+                )}
 
                 <button
                   onClick={onOpenTest}
@@ -589,14 +758,80 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     {t.ribbon.tools.timeoff}
                   </span>
                 </button>
+
+                {onOpenVerification && (
+                  <button
+                    onClick={onOpenVerification}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-emerald-50 border border-transparent hover:border-emerald-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'تدقيق القيود والتعارضات' : 'Constraints Verification'}
+                  >
+                    <ShieldCheck className="w-7 h-7 text-emerald-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'تدقيق' : 'Verify'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenAdvisor && (
+                  <button
+                    onClick={onOpenAdvisor}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 border border-transparent hover:border-amber-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'المستشار الذكي' : 'Constraint Advisor'}
+                  >
+                    <Lightbulb className="w-7 h-7 text-amber-500 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'المستشار' : 'Advisor'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenStatistics && (
+                  <button
+                    onClick={onOpenStatistics}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'إحصائيات الجدول وعدالة الأنصبة' : 'Schedule Statistics'}
+                  >
+                    <BarChart3 className="w-7 h-7 text-indigo-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'إحصائيات' : 'Stats'}
+                    </span>
+                  </button>
+                )}
               </div>
               <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                 {t.ribbon.groups.timetableOps}
               </span>
             </div>
 
+            {/* Locking & Quick Placements */}
             <div className="ribbon-group flex flex-col justify-between px-2">
               <div className="flex items-center gap-1.5">
+                {onLockAllPlacements && (
+                  <button
+                    onClick={onLockAllPlacements}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 border border-transparent hover:border-amber-200 text-slate-700 transition w-14"
+                    title={isRtl ? 'تثبيت وقفل جميع الحصص المسكنة لمنع نقلها' : 'Lock all placed lessons'}
+                  >
+                    <Lock className="w-6 h-6 text-amber-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'قفل الكل' : 'Lock All'}
+                    </span>
+                  </button>
+                )}
+
+                {onUnlockAllPlacements && (
+                  <button
+                    onClick={onUnlockAllPlacements}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-14"
+                    title={isRtl ? 'إلغاء قفل جميع الحصص' : 'Unlock all placed lessons'}
+                  >
+                    <Unlock className="w-6 h-6 text-slate-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'فك القفل' : 'Unlock All'}
+                    </span>
+                  </button>
+                )}
+
                 <button
                   onClick={onAutoPlaceAll}
                   className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-emerald-50 border border-transparent hover:border-emerald-200 text-slate-700 transition w-14"
@@ -629,6 +864,19 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
           <div className="flex items-stretch gap-2">
             <div className="ribbon-group flex flex-col justify-between px-2">
               <div className="flex items-center gap-1.5">
+                {onOpenSetupWizard && (
+                  <button
+                    onClick={onOpenSetupWizard}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-sky-50 active:bg-sky-100 border border-transparent hover:border-sky-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'معالج إعداد بيانات المدرسة خطوة بخطوة' : 'Step-by-step school setup wizard'}
+                  >
+                    <Sparkles className="w-7 h-7 text-sky-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'المعالج' : 'Wizard'}
+                    </span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => onOpenBasicData('subjects')}
                   className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-16"
@@ -659,6 +907,17 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   </span>
                 </button>
 
+                <button
+                  onClick={() => onOpenBasicData('students')}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-cyan-50 border border-transparent hover:border-cyan-200 text-slate-700 transition w-16"
+                  title={isRtl ? 'الطلاب ومسارات المواد الاختيارية' : 'Students & Seminar Tracks'}
+                >
+                  <GraduationCap className="w-7 h-7 text-cyan-600 mb-1" />
+                  <span className="text-[10px] font-semibold text-center leading-tight">
+                    {isRtl ? 'الطلاب' : 'Students'}
+                  </span>
+                </button>
+
                 {onOpenAdvancedRelations && (
                   <button
                     onClick={onOpenAdvancedRelations}
@@ -667,6 +926,19 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                     <Sparkles className="w-7 h-7 text-indigo-600 mb-1" />
                     <span className="text-[10px] font-semibold text-center leading-tight">
                       {isRtl ? 'قيود متقدمة' : 'Relations'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenConstraintsLedger && (
+                  <button
+                    onClick={onOpenConstraintsLedger}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-teal-50 border border-transparent hover:border-teal-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'سجل كافة القيود والشروط المدخلة وحالة تطبيقها' : 'Central ledger of all active inputted constraints'}
+                  >
+                    <SlidersHorizontal className="w-7 h-7 text-teal-600 mb-1" />
+                    <span className="text-[10px] font-semibold text-center leading-tight">
+                      {isRtl ? 'سجل القيود' : 'Constraints'}
                     </span>
                   </button>
                 )}
@@ -702,6 +974,44 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               </div>
               <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                 {t.ribbon.groups.views}
+              </span>
+            </div>
+
+            {/* Customization & Synchronized Views */}
+            <div className="ribbon-group flex flex-col justify-between px-2">
+              <div className="flex items-center gap-1.5">
+                {onOpenCardLayout && (
+                  <button
+                    onClick={onOpenCardLayout}
+                    className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-slate-700 transition w-16"
+                    title={isRtl ? 'تخصيص أسطر وألوان بطاقات الحصص والخطوط' : 'Customize card layout, colors, and typography'}
+                  >
+                    <LayoutTemplate className="w-6 h-6 mb-1 text-indigo-600" />
+                    <span className="text-[10px] text-center leading-tight font-semibold">
+                      {isRtl ? 'شكل البطاقة' : 'Card Layout'}
+                    </span>
+                  </button>
+                )}
+
+                {onOpenRelatedTimetables && (
+                  <button
+                    onClick={onOpenRelatedTimetables}
+                    className={`flex flex-col items-center justify-center p-1.5 rounded-md border text-slate-700 transition w-16 ${
+                      isRelatedTimetablesOpen
+                        ? 'bg-sky-100 border-sky-300 text-sky-900 font-bold shadow-xs'
+                        : 'hover:bg-slate-100 border-transparent'
+                    }`}
+                    title={isRtl ? 'عرض الجداول المرتبطة المتزامنة (المعلم والقاعة والفصل معاً)' : 'Synchronized related timetables multi-pane dock'}
+                  >
+                    <Network className="w-6 h-6 mb-1 text-sky-600" />
+                    <span className="text-[10px] text-center leading-tight">
+                      {isRtl ? 'جداول مرتبطة' : 'Related'}
+                    </span>
+                  </button>
+                )}
+              </div>
+              <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
+                {isRtl ? 'التخصيص والتزامن' : 'Customization'}
               </span>
             </div>
 

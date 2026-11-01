@@ -16,8 +16,12 @@ import {
   Search,
   Save,
   AlertCircle,
+  GraduationCap,
+  Network,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
-import { BasicDataTab, Subject, ClassGroup, Room, Teacher, Lesson } from '../lib/types';
+import { BasicDataTab, Subject, ClassGroup, Room, Teacher, Lesson, Student, CourseGroup } from '../lib/types';
 import { translations } from '../lib/i18n';
 
 export interface SchoolDataUpdate {
@@ -84,6 +88,14 @@ interface BasicDataModalProps {
   onAddLesson?: (lesson: Lesson) => void;
   onEditLesson?: (lesson: Lesson) => void;
   onDeleteLesson?: (id: string) => void;
+  students?: Student[];
+  seminars?: CourseGroup[];
+  onAddStudent?: (student: Student) => void;
+  onDeleteStudent?: (id: string) => void;
+  onAddSeminar?: (seminar: CourseGroup) => void;
+  onDeleteSeminar?: (id: string) => void;
+  onBatchUpdateTeachersMaxHours?: (ids: string[], hours: number) => void;
+  onBatchDeleteTeachers?: (ids: string[]) => void;
   teacherMap?: Map<string, Teacher>;
   classMap?: Map<string, ClassGroup>;
   roomMap?: Map<string, Room>;
@@ -91,7 +103,7 @@ interface BasicDataModalProps {
   lessonMap?: Map<string, Lesson>;
 }
 
-type EntityType = 'subject' | 'class' | 'room' | 'teacher' | 'lesson';
+type EntityType = 'subject' | 'class' | 'room' | 'teacher' | 'lesson' | 'student' | 'seminar';
 
 export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   isOpen,
@@ -103,6 +115,14 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   rooms,
   teachers,
   lessons,
+  students = [],
+  seminars = [],
+  onAddStudent,
+  onDeleteStudent,
+  onAddSeminar,
+  onDeleteSeminar,
+  onBatchUpdateTeachersMaxHours,
+  onBatchDeleteTeachers,
   teacherMap,
   classMap,
   roomMap,
@@ -564,6 +584,36 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>{t.basicDataModal.tabs.lessons} ({lessons.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('students');
+              setSearchQuery('');
+            }}
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'students'
+                ? 'bg-white text-emerald-700 border-t-2 border-t-emerald-600 border-x border-slate-300'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>{isRtl ? 'الطلاب' : 'Students'} ({students.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('seminars');
+              setSearchQuery('');
+            }}
+            className={`px-3 py-1.5 font-bold rounded-t transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'seminars'
+                ? 'bg-white text-amber-700 border-t-2 border-t-amber-600 border-x border-slate-300'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            <span>{isRtl ? 'المقررات والسمينارات' : 'Seminars'} ({seminars.length})</span>
           </button>
         </div>
 
@@ -1080,6 +1130,136 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* STUDENTS TAB */}
+          {activeTab === 'students' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-start border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'رقم الطالب' : 'Student #'}
+                    </th>
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'اسم الطالب' : 'Student Name'}
+                    </th>
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'الصف / الفصل' : 'Grade / Class'}
+                    </th>
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'المقررات المسجلة' : 'Enrolled Courses'}
+                    </th>
+                    <th className="p-2.5 text-center w-20">
+                      {isRtl ? 'إجراءات' : 'Actions'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-slate-400">
+                        {isRtl
+                          ? 'لا يوجد طلاب مسجلون حالياً. يمكنك استيراد قائمة الطلاب من Excel.'
+                          : 'No students enrolled. You can import rosters via Excel/CSV.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    students.map((st) => (
+                      <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-2.5 border-r border-slate-200 font-mono text-slate-600">
+                          {st.studentNumber}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 font-bold text-slate-900">
+                          {st.name}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 text-slate-700">
+                          {classMap?.get(st.classId)?.name || st.gradeLevel}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 text-slate-600">
+                          {st.enrolledCourseIds?.length || 0} {isRtl ? 'مقررات' : 'courses'}
+                        </td>
+                        <td className="p-2.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => onDeleteStudent?.(st.id)}
+                            className="p-1 rounded hover:bg-rose-100 text-rose-700 transition"
+                            title={isRtl ? 'حذف' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* SEMINARS TAB */}
+          {activeTab === 'seminars' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-start border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'رمز المقرر' : 'Code'}
+                    </th>
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'اسم السمينار / المقرر' : 'Seminar / Course'}
+                    </th>
+                    <th className="p-2.5 text-start border-r border-slate-200">
+                      {isRtl ? 'المحاضر / المعلم' : 'Instructor'}
+                    </th>
+                    <th className="p-2.5 text-center border-r border-slate-200">
+                      {isRtl ? 'الطلاب المسجلون' : 'Enrollment'}
+                    </th>
+                    <th className="p-2.5 text-center w-20">
+                      {isRtl ? 'إجراءات' : 'Actions'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {seminars.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center text-slate-400">
+                        {isRtl
+                          ? 'لا توجد مجموعات سمينار أو مقررات اختيارية مسجلة.'
+                          : 'No seminar course sections currently created.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    seminars.map((sem) => (
+                      <tr key={sem.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-2.5 border-r border-slate-200 font-mono font-bold text-amber-700">
+                          {sem.code}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 font-bold text-slate-900">
+                          {sem.name}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 text-slate-700">
+                          {teacherMap?.get(sem.teacherId)?.name || 'Teacher'}
+                        </td>
+                        <td className="p-2.5 border-r border-slate-200 text-center font-bold text-slate-700">
+                          {sem.enrolledStudentIds?.length || 0} / {sem.capacity}
+                        </td>
+                        <td className="p-2.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => onDeleteSeminar?.(sem.id)}
+                            className="p-1 rounded hover:bg-rose-100 text-rose-700 transition"
+                            title={isRtl ? 'حذف' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))

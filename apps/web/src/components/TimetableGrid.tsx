@@ -11,9 +11,10 @@ import {
   Conflict,
   ViewMode,
   DragItem,
+  CardLayoutConfig,
 } from '../lib/types';
 import { translations } from '../lib/i18n';
-import { AlertTriangle, X, LayoutGrid, Users, DoorOpen, Eye } from 'lucide-react';
+import { AlertTriangle, X, LayoutGrid, Users, DoorOpen, Eye, Lock, Unlock } from 'lucide-react';
 
 interface TimetableGridProps {
   lang: 'en' | 'ar';
@@ -41,6 +42,10 @@ interface TimetableGridProps {
   customDays?: string[];
   customPeriods?: string[];
   bellSchedule?: string[];
+  cardLayout?: CardLayoutConfig;
+  onToggleLockPlacement?: (lessonId: string) => void;
+  selectedPlacement?: Placement | null;
+  onSelectPlacement?: (placement: Placement | null) => void;
 }
 
 const EMPTY_PLACEMENTS: Placement[] = [];
@@ -71,6 +76,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   customDays,
   customPeriods,
   bellSchedule,
+  cardLayout,
+  onToggleLockPlacement,
+  selectedPlacement,
+  onSelectPlacement,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
@@ -160,6 +169,24 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
   // Drag over tracking
   const [dragOverCell, setDragOverCell] = useState<{ day: number; period: number; entityId: string } | null>(null);
+
+  // Hovered lesson tracking for keyboard shortcuts (e.g. 'L' for lock/unlock)
+  const [hoveredLessonId, setHoveredLessonId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'l' || e.key === 'L') {
+        const targetId = hoveredLessonId || selectedPlacement?.lessonId;
+        if (targetId && onToggleLockPlacement && !isReadOnly) {
+          e.preventDefault();
+          onToggleLockPlacement(targetId);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hoveredLessonId, selectedPlacement, onToggleLockPlacement, isReadOnly]);
 
   // Entities displayed as rows in the matrix
   const rowEntities = React.useMemo(() => {
@@ -480,6 +507,40 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                           const groupBadge = lesson.groupName || (lesson.entireClass === false && lesson.groupId ? lesson.groupId : undefined);
 
+                          const isLocked = !!p.isLocked;
+                          const isSelected = selectedPlacement?.lessonId === lesson.id;
+
+                          // Dynamic card coloring based on cardLayout.colorBy
+                          const cardThemeColor = cardLayout?.colorBy === 'teacher'
+                            ? (teacher?.color || '#8b5cf6')
+                            : cardLayout?.colorBy === 'class'
+                            ? ((targetClass as any)?.color || '#3b82f6')
+                            : subject.color;
+
+                          const cardFontFamily = cardLayout?.fontFamily || 'inherit';
+
+                          // Field resolvers for customizable 3 lines
+                          const getFieldText = (field?: string): string => {
+                            switch (field) {
+                              case 'subject_name':
+                                return isRtl ? subject.nameAr || subject.name : subject.name;
+                              case 'subject_code':
+                                return subject.code || subject.name.slice(0, 4);
+                              case 'teacher_name':
+                                return teacherShortName;
+                              case 'room_name':
+                                return room ? (isRtl ? room.nameAr || room.name : room.name) : (p.roomId ?? 'N/A');
+                              case 'class_name':
+                                return classShortCode || classFullName;
+                              default:
+                                return '';
+                            }
+                          };
+
+                          const line1Text = cardLayout ? getFieldText(cardLayout.line1) : (subject.code || (isRtl ? subject.nameAr || subject.name : subject.name));
+                          const line2Text = cardLayout ? getFieldText(cardLayout.line2) : (entity.type === 'teacher' ? classFullName : teacherShortName);
+                          const line3Text = cardLayout ? getFieldText(cardLayout.line3) : (entity.type === 'room' ? (classShortCode || 'Cls') : (room ? room.id : 'N/A'));
+
                           return (
                             <td
                               key={`${dIdx}-${pIdx}`}
@@ -510,46 +571,59 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 <div
                                   draggable={!isReadOnly}
                                   onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
-                                  className={`lesson-card h-full rounded border select-none p-0.5 flex flex-col justify-center items-center text-center cursor-grab active:cursor-grabbing shadow-2xs overflow-hidden transition ${
-                                    hasConflict
+                                  onClick={() => onSelectPlacement?.(p)}
+                                  onMouseEnter={() => setHoveredLessonId(lesson.id)}
+                                  onMouseLeave={() => setHoveredLessonId(null)}
+                                  className={`lesson-card h-full rounded border select-none p-0.5 flex flex-col justify-center items-center text-center cursor-grab active:cursor-grabbing shadow-2xs overflow-hidden transition relative ${
+                                    isSelected
+                                      ? 'ring-2 ring-sky-500 shadow-md'
+                                      : hasConflict
                                       ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-400'
                                       : 'border-slate-300'
                                   }`}
                                   style={{
-                                    backgroundColor: hasConflict ? undefined : subject.color + '26',
-                                    borderTop: `3px solid ${subject.color}`,
+                                    fontFamily: cardFontFamily,
+                                    backgroundColor: hasConflict ? undefined : cardThemeColor + '26',
+                                    borderTop: `3px solid ${cardThemeColor}`,
                                   }}
-                                  title={`${subject.name} - ${teacherShortName} (${room?.name || ''})${groupBadge ? ` [${groupBadge}]` : ''}`}
+                                  title={`${subject.name} - ${teacherShortName} (${room?.name || ''})${isLocked ? ' [🔒 Locked]' : ''}${groupBadge ? ` [${groupBadge}]` : ''}`}
                                 >
+                                  {isLocked && (cardLayout?.showLockBadge ?? true) && (
+                                    <div className="absolute top-0.5 right-0.5 text-[8px] text-amber-600 font-bold pointer-events-none">
+                                      🔒
+                                    </div>
+                                  )}
                                   <span className="font-bold text-[10px] text-slate-900 leading-tight truncate w-full">
-                                    {subject.code || subject.name.slice(0, 3)}
+                                    {line1Text || subject.code || subject.name.slice(0, 3)}
                                   </span>
                                   <span className="text-[8px] text-slate-600 truncate w-full leading-none mt-0.5">
-                                    {entity.type === 'teacher'
-                                      ? classShortCode
-                                      : entity.type === 'room'
-                                      ? classShortCode
-                                      : teacherShortName}
+                                    {line2Text || (entity.type === 'teacher' ? classShortCode : teacherShortName)}
                                   </span>
                                 </div>
                               ) : (
                                 <div
                                   draggable={!isReadOnly}
                                   onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
-                                  className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs ${
-                                    hasConflict
+                                  onClick={() => onSelectPlacement?.(p)}
+                                  onMouseEnter={() => setHoveredLessonId(lesson.id)}
+                                  onMouseLeave={() => setHoveredLessonId(null)}
+                                  className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs transition ${
+                                    isSelected
+                                      ? 'ring-2 ring-sky-500 border-sky-400 shadow-md'
+                                      : hasConflict
                                       ? 'border-rose-500 bg-rose-50/90 ring-1 ring-rose-400'
-                                      : 'border-slate-300'
+                                      : 'border-slate-300 hover:border-slate-400'
                                   }`}
                                   style={{
-                                    backgroundColor: hasConflict ? undefined : subject.color + '26',
-                                    borderTop: `3px solid ${subject.color}`,
+                                    fontFamily: cardFontFamily,
+                                    backgroundColor: hasConflict ? undefined : cardThemeColor + '26',
+                                    borderTop: `3px solid ${cardThemeColor}`,
                                   }}
                                 >
                                   <div className="flex items-center justify-between gap-0.5">
                                     <div className="flex items-center gap-0.5 truncate">
                                       <span className="font-extrabold text-[11px] text-slate-900 tracking-tight truncate">
-                                        {subject.code || (isRtl ? subject.nameAr || subject.name : subject.name)}
+                                        {line1Text}
                                       </span>
                                       {groupBadge && (
                                         <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300/60 truncate max-w-[36px]" title={groupBadge}>
@@ -559,6 +633,34 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                     </div>
 
                                     <div className="flex items-center gap-0.5">
+                                      {/* Golden Lock Badge & Toggle */}
+                                      {isLocked && (cardLayout?.showLockBadge ?? true) && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleLockPlacement?.(lesson.id);
+                                          }}
+                                          title={isRtl ? 'حصة مقفلة (L لفك القفل)' : 'Locked lesson (Press L to unlock)'}
+                                          className="p-0.5 rounded hover:bg-amber-100 text-amber-600 transition"
+                                        >
+                                          <Lock className="w-3 h-3 text-amber-600 fill-amber-100" />
+                                        </button>
+                                      )}
+
+                                      {/* Hover to Lock */}
+                                      {!isLocked && onToggleLockPlacement && !isReadOnly && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onToggleLockPlacement(lesson.id);
+                                          }}
+                                          title={isRtl ? 'تثبيت وقفل الحصة (L)' : 'Lock lesson in place (Press L)'}
+                                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-amber-600 transition"
+                                        >
+                                          <Unlock className="w-3 h-3" />
+                                        </button>
+                                      )}
+
                                       {hasConflict && (
                                         <span title={isRtl ? 'تعارض في هذا التسكين' : 'Clash in this placement'}>
                                           <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
@@ -581,19 +683,19 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                                   <div className="flex items-center justify-between text-[9px] font-semibold text-slate-700 pt-0.5 border-t border-slate-300/40">
                                     <span
-                                      className="truncate max-w-[48px]"
-                                      title={entity.type === 'teacher' ? classFullName : teacherShortName}
+                                      className="truncate max-w-[54px]"
+                                      title={line2Text}
                                     >
-                                      {entity.type === 'teacher'
-                                        ? classFullName
-                                        : teacherShortName}
+                                      {line2Text}
                                     </span>
-                                    <span
-                                      className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800"
-                                      title={entity.type === 'room' ? classFullName : room?.name}
-                                    >
-                                      {entity.type === 'room' ? (classShortCode || 'Cls') : (room ? room.id : 'N/A')}
-                                    </span>
+                                    {line3Text && (
+                                      <span
+                                        className="px-1 rounded bg-white/80 border border-slate-300/60 font-mono text-[8px] text-slate-800 truncate max-w-[44px]"
+                                        title={line3Text}
+                                      >
+                                        {line3Text}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               )}

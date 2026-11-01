@@ -18,6 +18,10 @@ import {
   Subject,
   AvailabilityState,
   AdvancedRelationRule,
+  CardLayoutConfig,
+  Student,
+  CourseGroup,
+  AdvisorDiagnostic,
 } from '../lib/types';
 import { parseRozBinary } from '../lib/roz-parser';
 import { isSplitExempt, extractSlotsFromTimeOffMatrix } from '../lib/domain';
@@ -32,6 +36,16 @@ import { BasicDataModal } from '../components/BasicDataModal';
 import { TestTimetableModal } from '../components/TestTimetableModal';
 import { AdvancedRelationsModal } from '../components/AdvancedRelationsModal';
 import { StartupWelcomeModal } from '../components/StartupWelcomeModal';
+import { RelatedTimetablesDrawer } from '../components/RelatedTimetablesDrawer';
+import { VerificationModal } from '../components/VerificationModal';
+import { AdvisorModal } from '../components/AdvisorModal';
+import { StatisticsModal } from '../components/StatisticsModal';
+import { SpreadsheetImportModal } from '../components/SpreadsheetImportModal';
+import { CardLayoutModal } from '../components/CardLayoutModal';
+import { CompareTimetablesModal } from '../components/CompareTimetablesModal';
+import { ConstraintsLedgerModal } from '../components/ConstraintsLedgerModal';
+import { SetupWizardModal } from '../components/SetupWizardModal';
+import { HelpShortcutsModal } from '../components/HelpShortcutsModal';
 import { useWasmSolver } from '../lib/useWasmSolver';
 import { FolderOpen } from 'lucide-react';
 
@@ -138,16 +152,50 @@ export default function TimetableStudioPage() {
     progress: solverProgress,
     solveStats,
     solve: runWasmSolve,
+    allocateRooms: runWasmAllocateRooms,
     cancel: cancelWasmSolve,
   } = useWasmSolver();
 
-  // Dialog states
+  // Dialog & Tool states
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isTimeOffModalOpen, setIsTimeOffModalOpen] = useState(false);
   const [isBasicDataModalOpen, setIsBasicDataModalOpen] = useState(false);
   const [basicDataInitialTab, setBasicDataInitialTab] = useState<BasicDataTab>('school');
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isAdvancedRelationsModalOpen, setIsAdvancedRelationsModalOpen] = useState(false);
+
+  // New High-Value Features Modal States
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
+  const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
+  const [isStatisticsOpen, setIsStatisticsOpen] = useState(false);
+  const [isRelatedDrawerOpen, setIsRelatedDrawerOpen] = useState(false);
+  const [isCardLayoutOpen, setIsCardLayoutOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isConstraintsLedgerOpen, setIsConstraintsLedgerOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+  // Selected placement for synchronized inspection and lock controls
+  const [selectedPlacement, setSelectedPlacement] = useState<Placement | null>(null);
+
+  // Baseline placements for Revision Comparison
+  const [baselinePlacements, setBaselinePlacements] = useState<Placement[]>([]);
+
+  // Students & Seminars Academic Tracks State
+  const [students, setStudents] = useState<Student[]>([]);
+  const [seminars, setSeminars] = useState<CourseGroup[]>([]);
+
+  // Card Layout Configuration
+  const [cardLayout, setCardLayout] = useState<CardLayoutConfig>({
+    line1: 'subject_name',
+    line2: 'teacher_name',
+    line3: 'room_name',
+    colorBy: 'subject',
+    fontFamily: 'Tajawal',
+    density: 'normal',
+    showLockBadge: true,
+  });
 
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
@@ -1302,6 +1350,275 @@ export default function TimetableStudioPage() {
     setPlacements((prev) => prev.filter((p) => p.lessonId !== id));
   };
 
+  // ==========================================
+  // Placement Pinning & Locking Handlers (R1)
+  // ==========================================
+  const handleToggleLockPlacement = useCallback((lessonId: string) => {
+    setPlacements((prev) =>
+      prev.map((p) =>
+        p.lessonId === lessonId ? { ...p, isLocked: !p.isLocked } : p
+      )
+    );
+  }, []);
+
+  const handleLockAllPlacements = useCallback(() => {
+    setPlacements((prev) => prev.map((p) => ({ ...p, isLocked: true })));
+  }, []);
+
+  const handleUnlockAllPlacements = useCallback(() => {
+    setPlacements((prev) => prev.map((p) => ({ ...p, isLocked: false })));
+  }, []);
+
+  // ==========================================
+  // Local Search Improvement Solve Mode (R1)
+  // ==========================================
+  const handleImproveTimetable = async () => {
+    if (isReadOnly) return;
+    recordHistory();
+
+    try {
+      const enrichedTeachers = teachers.map((tc) => {
+        const slots = extractSlotsFromTimeOffMatrix(
+          tc.id,
+          timeOffMatrix,
+          periodsPerDay,
+          tc.unavailableSlots
+        );
+        return {
+          ...tc,
+          unavailableSlots: slots.unavailableSlots,
+          undesirableSlots: slots.undesirableSlots,
+        };
+      });
+
+      const enrichedClasses = classes.map((c) => {
+        const slots = extractSlotsFromTimeOffMatrix(
+          c.id,
+          timeOffMatrix,
+          periodsPerDay,
+          []
+        );
+        return {
+          ...c,
+          unavailableSlots: slots.unavailableSlots,
+        };
+      });
+
+      const maxConsecutiveRule = advancedRules.find(
+        (r) => r.type === 'MAX_CONSECUTIVE_PERIODS' && r.enabled
+      );
+      const gapLimitsRule = advancedRules.find(
+        (r) => r.type === 'TEACHER_GAP_LIMITS' && r.enabled
+      );
+      const distribRule = advancedRules.find(
+        (r) => r.type === 'DISTRIBUTION_ACROSS_DAYS' && r.enabled
+      );
+
+      const solvedPlacements = await runWasmSolve({
+        lessons,
+        teachers: enrichedTeachers,
+        classes: enrichedClasses,
+        rooms,
+        subjects,
+        placements, // Pinned placements are preserved as immutable anchors
+        complexity: 'normal',
+        options: {
+          minimizeGaps: true,
+          strictRooms: false,
+          distributeSubjects: true,
+        },
+        solveMode: 'IMPROVE',
+        config: {
+          days: cycleDays,
+          periodsPerDay: periodsPerDay,
+          maxConsecutivePeriods: maxConsecutiveRule?.parameterValue ?? 2,
+          gapWeight: gapLimitsRule ? 30 : 10,
+          distributionWeight: distribRule ? 25 : 10,
+          solveMode: 'IMPROVE',
+        },
+      });
+
+      setPlacements(solvedPlacements);
+    } catch (err: any) {
+      console.error('Improve solve failed:', err);
+      alert(
+        isRtl
+          ? `تعذر تحسين الجدول: ${err?.message || err}`
+          : `Failed to improve timetable: ${err?.message || err}`
+      );
+    }
+  };
+
+  // ==========================================
+  // Automated Classroom Allocation (R1)
+  // ==========================================
+  const handleAssignClassrooms = async () => {
+    if (isReadOnly || placements.length === 0) {
+      alert(isRtl ? 'لا توجد حصص مسكنة لتوزيع القاعات عليها' : 'No placed lessons to assign classrooms for');
+      return;
+    }
+    recordHistory();
+    try {
+      const allocated = await runWasmAllocateRooms({
+        placements,
+        lessons,
+        rooms,
+        classes,
+        days: cycleDays,
+        periodsPerDay,
+      });
+      setPlacements(allocated);
+    } catch (err: any) {
+      console.error('Classroom allocation failed:', err);
+      alert(
+        isRtl
+          ? `تعذر توزيع القاعات: ${err?.message || err}`
+          : `Classroom allocation failed: ${err?.message || err}`
+      );
+    }
+  };
+
+  // ==========================================
+  // Advisor 1-Click Fix Handler (R2)
+  // ==========================================
+  const handleApplyAdvisorFix = (diagnostic: AdvisorDiagnostic) => {
+    recordHistory();
+    if (diagnostic.actionPayload) {
+      const payload = diagnostic.actionPayload;
+      if (payload.type === 'UNBLOCK_TIMEOFF' && payload.teacherId && payload.slots) {
+        setTimeOffMatrix((prev) => {
+          const next = { ...prev };
+          for (const slot of payload.slots!) {
+            const d = Math.floor(slot / periodsPerDay);
+            const p = slot % periodsPerDay;
+            delete next[`${payload.teacherId}-${d}-${p}`];
+          }
+          return next;
+        });
+      } else if (payload.type === 'FALLBACK_ROOM') {
+        const newRoomId = `R_AUTO_${rooms.length + 1}`;
+        const newRoom: Room = {
+          id: newRoomId,
+          name: isRtl ? `قاعة عامة ${rooms.length + 1}` : `General Room ${rooms.length + 1}`,
+          nameAr: `قاعة عامة ${rooms.length + 1}`,
+          capacity: 40,
+          type: 'STANDARD',
+        };
+        setRooms((prev) => [...prev, newRoom]);
+      }
+    }
+  };
+
+  // ==========================================
+  // Spreadsheet / Clipboard Importer Handlers (R4)
+  // ==========================================
+  const handleImportTeachers = (imported: Partial<Teacher>[]) => {
+    recordHistory();
+    const newTeachers: Teacher[] = imported.map((item, idx) => ({
+      id: item.id || `T_IMP_${Date.now()}_${idx}`,
+      name: item.name || `Teacher ${idx + 1}`,
+      nameAr: item.nameAr || item.name || `معلم ${idx + 1}`,
+      speciality: item.speciality || 'General',
+      color: item.color || '#8b5cf6',
+      unavailableSlots: item.unavailableSlots || [],
+    }));
+    setTeachers((prev) => [...prev, ...newTeachers]);
+  };
+
+  const handleImportClasses = (imported: Partial<ClassGroup>[]) => {
+    recordHistory();
+    const newClasses: ClassGroup[] = imported.map((item, idx) => ({
+      id: item.id || `C_IMP_${Date.now()}_${idx}`,
+      name: item.name || `Class ${idx + 1}`,
+      nameAr: item.nameAr || item.name || `شعبة ${idx + 1}`,
+      grade: item.grade || 1,
+    }));
+    setClasses((prev) => [...prev, ...newClasses]);
+  };
+
+  const handleImportRooms = (imported: Partial<Room>[]) => {
+    recordHistory();
+    const newRooms: Room[] = imported.map((item, idx) => ({
+      id: item.id || `R_IMP_${Date.now()}_${idx}`,
+      name: item.name || `Room ${idx + 1}`,
+      nameAr: item.nameAr || item.name || `قاعة ${idx + 1}`,
+      capacity: item.capacity || 35,
+      type: (item as any).type || 'STANDARD',
+    }));
+    setRooms((prev) => [...prev, ...newRooms]);
+  };
+
+  const handleImportSubjects = (imported: Partial<Subject>[]) => {
+    recordHistory();
+    const newSubjects: Subject[] = imported.map((item, idx) => ({
+      id: item.id || `S_IMP_${Date.now()}_${idx}`,
+      name: item.name || `Subject ${idx + 1}`,
+      nameAr: item.nameAr || item.name || `مادة ${idx + 1}`,
+      code: item.code || (item.name ? item.name.slice(0, 4) : `S${idx + 1}`),
+      color: item.color || '#10b981',
+    }));
+    setSubjects((prev) => [...prev, ...newSubjects]);
+  };
+
+  // ==========================================
+  // Students & Seminars / Batch Operations Handlers (R4 & R5)
+  // ==========================================
+  const handleAddStudent = (student: Student) => {
+    setStudents((prev) => [...prev, student]);
+  };
+  const handleDeleteStudent = (id: string) => {
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+  };
+  const handleAddSeminar = (seminar: CourseGroup) => {
+    setSeminars((prev) => [...prev, seminar]);
+  };
+  const handleDeleteSeminar = (id: string) => {
+    setSeminars((prev) => prev.filter((s) => s.id !== id));
+  };
+  const handleBatchUpdateTeachersMaxHours = (ids: string[], hours: number) => {
+    setTeachers((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, maxHoursPerWeek: hours } : t))
+    );
+  };
+  const handleBatchDeleteTeachers = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setTeachers((prev) => prev.filter((t) => !idSet.has(t.id)));
+  };
+
+  // ==========================================
+  // Step-by-Step Setup Wizard Completion Handler (R6)
+  // ==========================================
+  const handleSetupWizardComplete = (wizardData: {
+    schoolName: string;
+    academicYear: string;
+    cycleDays: number;
+    periodsPerDay: number;
+    teachers: Teacher[];
+    classes: ClassGroup[];
+    rooms: Room[];
+    subjects: Subject[];
+    lessons: Lesson[];
+  }) => {
+    recordHistory();
+    setSchoolName(wizardData.schoolName);
+    setAcademicYear(wizardData.academicYear);
+    setCycleDays(wizardData.cycleDays);
+    setPeriodsPerDay(wizardData.periodsPerDay);
+    setTeachers(wizardData.teachers);
+    setClasses(wizardData.classes);
+    setRooms(wizardData.rooms);
+    setSubjects(wizardData.subjects);
+    setLessons(wizardData.lessons);
+    setPlacements([]);
+    setBaselinePlacements([]);
+    setSelectedPlacement(null);
+    if (wizardData.classes.length > 0) {
+      setSelectedEntityId(wizardData.classes[0].id);
+      setViewMode('class');
+    }
+    setIsWizardOpen(false);
+  };
+
   // Time-Off Save Callback
   const handleSaveTimeOff = (entityId: string, updatedMatrix: Record<string, AvailabilityState>) => {
     setTimeOffMatrix(updatedMatrix);
@@ -1494,6 +1811,21 @@ export default function TimetableStudioPage() {
           onSaveAs={handleSaveAs}
           onNewFile={handleNewFile}
           onOpenStartupModal={() => setIsStartupModalOpen(true)}
+          onOpenVerification={() => setIsVerificationOpen(true)}
+          onOpenAdvisor={() => setIsAdvisorOpen(true)}
+          onOpenStatistics={() => setIsStatisticsOpen(true)}
+          onOpenRelatedTimetables={() => setIsRelatedDrawerOpen((prev) => !prev)}
+          isRelatedTimetablesOpen={isRelatedDrawerOpen}
+          onOpenCardLayout={() => setIsCardLayoutOpen(true)}
+          onOpenCompare={() => setIsCompareOpen(true)}
+          onOpenSpreadsheetImport={() => setIsImportOpen(true)}
+          onOpenConstraintsLedger={() => setIsConstraintsLedgerOpen(true)}
+          onOpenSetupWizard={() => setIsWizardOpen(true)}
+          onOpenHelpShortcuts={() => setIsShortcutsOpen(true)}
+          onImproveTimetable={handleImproveTimetable}
+          onAssignClassrooms={handleAssignClassrooms}
+          onLockAllPlacements={handleLockAllPlacements}
+          onUnlockAllPlacements={handleUnlockAllPlacements}
         />
       </div>
 
@@ -1567,6 +1899,10 @@ export default function TimetableStudioPage() {
         customDays={dynamicDays}
         customPeriods={dynamicPeriods}
         bellSchedule={dynamicBells}
+        cardLayout={cardLayout}
+        onToggleLockPlacement={handleToggleLockPlacement}
+        selectedPlacement={selectedPlacement}
+        onSelectPlacement={(p) => setSelectedPlacement(p)}
       />
 
       {/* 4. Signature Bottom Lesson Card Deck ("بنك البطاقات") */}
@@ -1687,6 +2023,14 @@ export default function TimetableStudioPage() {
         onAddLesson={handleAddLesson}
         onEditLesson={handleEditLesson}
         onDeleteLesson={handleDeleteLesson}
+        students={students}
+        seminars={seminars}
+        onAddStudent={handleAddStudent}
+        onDeleteStudent={handleDeleteStudent}
+        onAddSeminar={handleAddSeminar}
+        onDeleteSeminar={handleDeleteSeminar}
+        onBatchUpdateTeachersMaxHours={handleBatchUpdateTeachersMaxHours}
+        onBatchDeleteTeachers={handleBatchDeleteTeachers}
       />
 
       <TestTimetableModal
@@ -1728,6 +2072,177 @@ export default function TimetableStudioPage() {
         onCreateNew={handleCreateNewFromStartup}
         onOpenFile={handleOpenFileFromStartup}
         onLoadSample={handleLoadSampleFromStartup}
+      />
+
+      {/* Synchronized Related Timetables Multi-Pane Dock (R3) */}
+      <RelatedTimetablesDrawer
+        isOpen={isRelatedDrawerOpen}
+        onClose={() => setIsRelatedDrawerOpen(false)}
+        lang={lang}
+        selectedPlacement={selectedPlacement}
+        selectedLesson={selectedPlacement ? (lessonMap.get(selectedPlacement.lessonId) || null) : null}
+        placements={placements}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        customDays={dynamicDays}
+        customPeriods={dynamicPeriods}
+        onSelectSlot={(dayIndex: number, periodIndex: number) => {
+          // If clicked a slot in related timetable, highlight or inspect
+        }}
+      />
+
+      {/* Comprehensive Constraint Verification Ledger (R2) */}
+      <VerificationModal
+        isOpen={isVerificationOpen}
+        onClose={() => setIsVerificationOpen(false)}
+        lang={lang}
+        placements={placements}
+        lessons={lessons}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        timeOffMatrix={timeOffMatrix}
+        advancedRules={advancedRules}
+        onNavigateToCard={(lessonId: string) => {
+          const target = placements.find((p) => p.lessonId === lessonId);
+          if (target) {
+            setSelectedPlacement(target);
+            const lesson = lessonMap.get(lessonId);
+            if (lesson && lesson.classId) {
+              setSelectedEntityId(lesson.classId);
+              setViewMode('class');
+            }
+          }
+          setIsVerificationOpen(false);
+        }}
+      />
+
+      {/* Diagnostic Constraint Advisor (R2) */}
+      <AdvisorModal
+        isOpen={isAdvisorOpen}
+        onClose={() => setIsAdvisorOpen(false)}
+        lang={lang}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        lessons={lessons}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        timeOffMatrix={timeOffMatrix}
+        onApplyFix={handleApplyAdvisorFix}
+      />
+
+      {/* Schedule Statistics & Teacher Equity Dashboard (R2) */}
+      <StatisticsModal
+        isOpen={isStatisticsOpen}
+        onClose={() => setIsStatisticsOpen(false)}
+        lang={lang}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        lessons={lessons}
+        placements={placements}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
+      />
+
+      {/* Spreadsheet / Clipboard Data Importer (R4) */}
+      <SpreadsheetImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        lang={lang}
+        onImportTeachers={handleImportTeachers}
+        onImportClasses={handleImportClasses}
+        onImportRooms={handleImportRooms}
+        onImportSubjects={handleImportSubjects}
+      />
+
+      {/* Card Layout & Typography Customization Designer (R3) */}
+      <CardLayoutModal
+        isOpen={isCardLayoutOpen}
+        onClose={() => setIsCardLayoutOpen(false)}
+        lang={lang}
+        config={cardLayout}
+        onSaveConfig={(newConfig) => setCardLayout(newConfig)}
+      />
+
+      {/* Revision Comparison Visual Diff Modal (R3) */}
+      <CompareTimetablesModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        lang={lang}
+        currentPlacements={placements}
+        baselinePlacements={baselinePlacements.length > 0 ? baselinePlacements : placements}
+        lessons={lessons}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        customDays={dynamicDays}
+        customPeriods={dynamicPeriods}
+      />
+
+      {/* Central Inputted Constraints Ledger (R4) */}
+      <ConstraintsLedgerModal
+        isOpen={isConstraintsLedgerOpen}
+        onClose={() => setIsConstraintsLedgerOpen(false)}
+        lang={lang}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        lessons={lessons}
+        placements={placements}
+        timeOffMatrix={timeOffMatrix}
+        advancedRules={advancedRules}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+      />
+
+      {/* Step-by-Step Guided Setup Wizard (R6) */}
+      <SetupWizardModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        lang={lang}
+        onComplete={handleSetupWizardComplete}
+      />
+
+      {/* Keyboard Shortcuts & Help Hub (R6) */}
+      <HelpShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+        lang={lang}
       />
     </div>
   );
