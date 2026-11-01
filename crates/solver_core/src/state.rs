@@ -14,6 +14,9 @@ pub struct LessonData {
     pub is_pinned: bool,
     pub pinned_slot: Option<u8>,
     pub pinned_room_idx: Option<usize>,
+    pub initial_slot: Option<u8>,
+    pub initial_room_idx: Option<usize>,
+    pub is_retained: bool,
     pub candidate_slots: Vec<u8>,
     pub candidate_rooms: Vec<usize>,
 }
@@ -192,6 +195,10 @@ impl SolverState {
                 }
             }
 
+            let initial_room_idx = l.initial_room_id.as_ref()
+                .and_then(|rid| room_id_to_idx.get(rid).copied())
+                .or(pinned_room_idx);
+
             lessons_data.push(LessonData {
                 id: l.id.clone(),
                 teacher_idx,
@@ -203,6 +210,9 @@ impl SolverState {
                 is_pinned: l.is_pinned,
                 pinned_slot: l.pinned_slot,
                 pinned_room_idx,
+                initial_slot: l.initial_slot,
+                initial_room_idx,
+                is_retained: false,
                 candidate_slots,
                 candidate_rooms,
             });
@@ -258,6 +268,106 @@ impl SolverState {
             preference_weight: req.config.preference_weight.unwrap_or(10),
             room_change_weight: req.config.room_change_weight.unwrap_or(5),
         }
+    }
+
+    pub fn init_improve_mode(&mut self) {
+        // Clear any previous assignments
+        for l_idx in 0..self.lessons.len() {
+            if self.assignments[l_idx].is_some() {
+                self.unassign(l_idx);
+            }
+            self.lessons[l_idx].is_retained = false;
+        }
+
+        // 1. Pinned/locked lessons (is_pinned == true) are assigned to (pinned_slot, pinned_room_idx)
+        for l_idx in 0..self.lessons.len() {
+            if self.lessons[l_idx].is_pinned {
+                if let Some(slot) = self.lessons[l_idx].pinned_slot {
+                    let dur = self.lessons[l_idx].duration;
+                    if slot + dur <= self.total_slots && !crosses_day_boundary(slot, dur, self.periods_per_day) {
+                        let room_idx = self.lessons[l_idx].pinned_room_idx.unwrap_or(0);
+                        self.assign(l_idx, slot, room_idx);
+                        self.lessons[l_idx].is_retained = true;
+                    }
+                }
+            }
+        }
+
+        // 2. Unpinned lessons with initial_slot that produce 0 hard conflicts with already anchored assignments
+        //    and pass time-off masks are assigned and flagged as retained.
+        for l_idx in 0..self.lessons.len() {
+            if !self.lessons[l_idx].is_pinned {
+                if let Some(slot) = self.lessons[l_idx].initial_slot {
+                    let dur = self.lessons[l_idx].duration;
+                    if slot + dur <= self.total_slots && !crosses_day_boundary(slot, dur, self.periods_per_day) {
+                        let t_idx = self.lessons[l_idx].teacher_idx;
+                        let c_idx = self.lessons[l_idx].class_idx;
+                        let room_idx = self.lessons[l_idx].initial_room_idx
+                            .unwrap_or_else(|| self.lessons[l_idx].candidate_rooms.first().copied().unwrap_or(0));
+                        let mask = slot_mask(slot, dur);
+
+                        // Time-off masks
+                        let t_avail = (self.teacher_unavail_masks.get(t_idx).copied().unwrap_or(0) & mask) == 0;
+                        let c_avail = (self.class_unavail_masks.get(c_idx).copied().unwrap_or(0) & mask) == 0;
+                        let r_avail = if room_idx < self.rooms.len() {
+                            (self.room_unavail_masks.get(room_idx).copied().unwrap_or(0) & mask) == 0
+                        } else {
+                            true
+                        };
+
+                        // Resource double-booking with already anchored assignments
+                        let is_free = self.is_free_at(t_idx, c_idx, room_idx, mask);
+
+                        // Capacity & features check
+                        let mut room_ok = true;
+                        if room_idx < self.rooms.len() {
+                            let room = &self.rooms[room_idx];
+                            if let Some(cap) = room.capacity {
+                                if self.lessons[l_idx].student_count > cap {
+                                    room_ok = false;
+                                }
+                            }
+                            for req_f in &self.lessons[l_idx].required_features {
+                                if !room.has_feature_or_type(req_f) {
+                                    room_ok = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Max consecutive periods check for teacher
+                        let mut consec_ok = true;
+                        let max_allowed = self.teachers[t_idx].max_consecutive_periods
+                            .unwrap_or(self.max_consecutive_periods);
+                        let day = slot / self.periods_per_day;
+                        let hypothetical_t_mask = self.teacher_masks[t_idx] | mask;
+                        let day_bits = extract_day_bits(hypothetical_t_mask, day, self.periods_per_day);
+                        let consec = max_consecutive_ones(day_bits);
+                        if consec > max_allowed {
+                            consec_ok = false;
+                        }
+
+                        if t_avail && c_avail && r_avail && is_free && room_ok && consec_ok {
+                            self.assign(l_idx, slot, room_idx);
+                            self.lessons[l_idx].is_retained = true;
+                        } else {
+                            self.assignments[l_idx] = None;
+                            self.lessons[l_idx].is_retained = false;
+                        }
+                    } else {
+                        self.assignments[l_idx] = None;
+                        self.lessons[l_idx].is_retained = false;
+                    }
+                } else {
+                    // 3. Lessons with clashes or no initial placement remain unassigned
+                    self.assignments[l_idx] = None;
+                    self.lessons[l_idx].is_retained = false;
+                }
+            }
+        }
+
+        self.recompute_hard_conflicts();
+        self.recompute_soft_score();
     }
 
     #[inline(always)]

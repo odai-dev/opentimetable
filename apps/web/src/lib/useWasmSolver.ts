@@ -15,6 +15,7 @@ export interface UseWasmSolverReturn {
   progress: SolverProgressPayload | null;
   solveStats: { durationMs: number; status: string } | null;
   solve: (payload: SolveRequestPayload) => Promise<Placement[]>;
+  allocateRooms: (payload: any) => Promise<Placement[]>;
   cancel: () => void;
 }
 
@@ -48,6 +49,14 @@ export function useWasmSolver(): UseWasmSolverReturn {
             durationMs: msg.durationMs,
             status: msg.status,
           });
+          setIsSolving(false);
+          setProgress(null);
+          if (resolveRef.current) {
+            resolveRef.current(msg.placements);
+            resolveRef.current = null;
+            rejectRef.current = null;
+          }
+        } else if (msg.type === 'ALLOCATE_ROOMS_COMPLETE') {
           setIsSolving(false);
           setProgress(null);
           if (resolveRef.current) {
@@ -143,6 +152,24 @@ export function useWasmSolver(): UseWasmSolverReturn {
     });
   }, []);
 
+  const allocateRooms = useCallback((payload: any): Promise<Placement[]> => {
+    setIsSolving(true);
+    return new Promise((resolve, reject) => {
+      resolveRef.current = resolve;
+      rejectRef.current = reject;
+
+      if (workerRef.current) {
+        workerRef.current.postMessage({
+          type: 'ALLOCATE_ROOMS_REQUEST',
+          payload,
+        } as SolverInboundMessage);
+      } else {
+        setIsSolving(false);
+        resolve(payload.placements);
+      }
+    });
+  }, []);
+
   const cancel = useCallback(() => {
     if (workerRef.current) {
       workerRef.current.postMessage({ type: 'CANCEL_REQUEST' } as SolverInboundMessage);
@@ -162,6 +189,7 @@ export function useWasmSolver(): UseWasmSolverReturn {
     progress,
     solveStats,
     solve,
+    allocateRooms,
     cancel,
   };
 }

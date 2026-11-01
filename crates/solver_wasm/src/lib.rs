@@ -46,6 +46,52 @@ pub fn get_benchmark_500_request(seed: Option<u64>) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
+pub fn allocate_classrooms(request_json: &str) -> Result<String, JsValue> {
+    let parsed: RoomAllocationRequest = serde_json::from_str(request_json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON request: {}", e)))?;
+
+    let req = parsed.request.unwrap_or_else(|| TimetableRequest {
+        id: "room_alloc".to_string(),
+        title: "Room Allocation".to_string(),
+        days_count: None,
+        periods_per_day: None,
+        teachers: parsed.teachers,
+        classes: parsed.classes,
+        rooms: parsed.rooms,
+        subjects: parsed.subjects,
+        lessons: parsed.lessons,
+        config: parsed.config.unwrap_or_default(),
+    });
+
+    let result = opentimetable_solver_core::allocate_all_classrooms(&req, &parsed.placements);
+    serde_json::to_string(&result)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {}", e)))
+}
+
+#[wasm_bindgen]
+pub fn allocate_classrooms_js(val: JsValue) -> Result<JsValue, JsValue> {
+    let parsed: RoomAllocationRequest = serde_wasm_bindgen::from_value(val)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse request: {}", e)))?;
+
+    let req = parsed.request.unwrap_or_else(|| TimetableRequest {
+        id: "room_alloc".to_string(),
+        title: "Room Allocation".to_string(),
+        days_count: None,
+        periods_per_day: None,
+        teachers: parsed.teachers,
+        classes: parsed.classes,
+        rooms: parsed.rooms,
+        subjects: parsed.subjects,
+        lessons: parsed.lessons,
+        config: parsed.config.unwrap_or_default(),
+    });
+
+    let result = opentimetable_solver_core::allocate_all_classrooms(&req, &parsed.placements);
+    serde_wasm_bindgen::to_value(&result)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {}", e)))
+}
+
+#[wasm_bindgen]
 pub struct WasmSolverSession {
     state: SolverState,
     req: TimetableRequest,
@@ -65,6 +111,10 @@ impl WasmSolverSession {
         let seed = req.config.random_seed.unwrap_or(42);
         let rng = StdRng::seed_from_u64(seed);
         let mut state = SolverState::new(&req);
+
+        if req.config.solve_mode == Some(SolveMode::Improve) {
+            state.init_improve_mode();
+        }
 
         // Run initial Stage 1 constructive greedy placement immediately
         constructive_greedy_stage(&mut state);

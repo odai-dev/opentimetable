@@ -10,7 +10,7 @@ export type GenerationComplexity = 'normal' | 'large' | 'huge';
 
 export type AvailabilityState = 0 | 1 | 2; // 1 = Available (Check), 0 = Blocked (X), 2 = Disfavored (?)
 
-export type BasicDataTab = 'school' | 'subjects' | 'classes' | 'rooms' | 'teachers' | 'lessons';
+export type BasicDataTab = 'school' | 'subjects' | 'classes' | 'rooms' | 'teachers' | 'lessons' | 'students' | 'seminars';
 
 export interface DragItem {
   type: 'deck' | 'grid';
@@ -37,6 +37,7 @@ export interface ClassGroup {
   nameAr?: string;
   grade: number;
   unavailableSlots?: number[];
+  homeRoomId?: string;
 }
 
 export interface Room {
@@ -66,6 +67,7 @@ export interface SolverPayloadConfig {
   preferenceWeight?: number;
   roomChangeWeight?: number;
   timeoutMs?: number;
+  solveMode?: 'NEW' | 'IMPROVE';
 }
 
 export interface Lesson {
@@ -83,6 +85,9 @@ export interface Lesson {
   classIds?: string[];
   jointClassIds?: string[];
   coTeacherIds?: string[];
+  isPinned?: boolean;
+  pinnedSlot?: number;
+  pinnedRoomId?: string;
 }
 
 export interface Placement {
@@ -90,6 +95,7 @@ export interface Placement {
   dayIndex: number;
   periodIndex: number;
   roomId: string;
+  isLocked?: boolean;
 }
 
 export interface Conflict {
@@ -120,4 +126,83 @@ export interface AdvancedRelationRule {
   description?: string;
   descriptionAr?: string;
 }
+
+// R5: Students & Elective Seminars
+export interface Student {
+  id: string;
+  name: string;
+  nameAr?: string;
+  studentNumber: string;
+  gradeLevel: string;
+  classId: string;
+  enrolledCourseIds: string[];
+}
+
+export interface CourseGroup {
+  id: string;
+  name: string;
+  nameAr?: string;
+  code: string;
+  subjectId: string;
+  teacherId: string;
+  roomId?: string;
+  capacity: number;
+  enrolledStudentIds: string[];
+}
+
+// R3: Card Layout & Customization
+export interface CardLayoutConfig {
+  line1: 'subject_name' | 'subject_code';
+  line2: 'teacher_name' | 'room_name' | 'none';
+  line3: 'room_name' | 'class_name' | 'none';
+  colorBy: 'subject' | 'teacher' | 'class';
+  fontFamily: 'Tajawal' | 'Cairo' | 'IBM Plex Sans Arabic' | 'sans-serif';
+  density: 'compact' | 'normal' | 'spacious';
+  showLockBadge: boolean;
+}
+
+// R2: Verification & Advisor
+export interface VerificationItem {
+  id: string;
+  category: 'TEACHER' | 'CLASS' | 'ROOM' | 'SUBJECT' | 'RELATION';
+  severity: 'HARD' | 'SOFT' | 'SUGGESTION';
+  ruleName: string;
+  ruleNameAr: string;
+  description: string;
+  descriptionAr: string;
+  affectedLessonIds: string[];
+  entityId?: string;
+  entityName?: string;
+  slotIndex?: number;
+}
+
+export interface AdvisorDiagnostic {
+  id: string;
+  type: 'PIGEONHOLE_TEACHER' | 'ROOM_BOTTLENECK' | 'TIMEOFF_STARVATION' | 'UNRESOLVABLE_CLASH';
+  severity: 'CRITICAL' | 'WARNING';
+  title: string;
+  titleAr: string;
+  analysis: string;
+  analysisAr: string;
+  suggestedAction: string;
+  suggestedActionAr: string;
+  actionPayload?: {
+    type: 'UNBLOCK_TIMEOFF' | 'RELAX_RULE' | 'FALLBACK_ROOM';
+    teacherId?: string;
+    roomId?: string;
+    slots?: number[];
+  };
+}
+
+// R3: Revision Comparison
+export interface TimetableDiffItem {
+  lessonId: string;
+  status: 'UNCHANGED' | 'MOVED' | 'ADDED' | 'REMOVED';
+  oldSlot?: { dayIndex: number; periodIndex: number; roomId: string };
+  newSlot?: { dayIndex: number; periodIndex: number; roomId: string };
+  subjectName: string;
+  teacherName: string;
+  className: string;
+}
+
 

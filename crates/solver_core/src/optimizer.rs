@@ -94,7 +94,10 @@ pub fn lahc_soft_optimization_stage(
 
             // Apply move and evaluate soft score
             state.assign(l_idx, new_slot, new_room);
-            let candidate_soft = state.recompute_soft_score();
+            let mut candidate_soft = state.recompute_soft_score();
+            if state.lessons[l_idx].is_retained {
+                candidate_soft += 100;
+            }
 
             if candidate_soft <= current_soft || candidate_soft <= history[history_idx] {
                 // Accept move
@@ -157,7 +160,13 @@ pub fn lahc_soft_optimization_stage(
                 continue;
             }
 
-            let candidate_soft = state.recompute_soft_score();
+            let mut candidate_soft = state.recompute_soft_score();
+            if state.lessons[l_idx].is_retained {
+                candidate_soft += 100;
+            }
+            if state.lessons[other_l_idx].is_retained {
+                candidate_soft += 100;
+            }
 
             if candidate_soft <= current_soft || candidate_soft <= history[history_idx] {
                 current_soft = candidate_soft;

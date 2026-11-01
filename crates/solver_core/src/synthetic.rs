@@ -36,6 +36,7 @@ pub fn generate_benchmark_request(num_lessons: usize, seed: u64) -> TimetableReq
             name: format!("Class {:02}", c + 1),
             unavailable_slots: Vec::new(),
             student_count: Some(28),
+            home_room_id: None,
         });
     }
 
@@ -160,6 +161,8 @@ pub fn generate_benchmark_request(num_lessons: usize, seed: u64) -> TimetableReq
             is_pinned: false,
             pinned_slot: None,
             pinned_room_id: None,
+            initial_slot: None,
+            initial_room_id: None,
         });
     }
 
@@ -174,6 +177,7 @@ pub fn generate_benchmark_request(num_lessons: usize, seed: u64) -> TimetableReq
         subjects,
         lessons,
         config: SolverConfig {
+            solve_mode: Some(SolveMode::New),
             days: Some(days),
             periods_per_day: Some(periods_per_day),
             max_consecutive_periods: Some(4),

@@ -94,7 +94,7 @@ pub fn feasibility_tabu_search_stage(
             for _ in 0..3 {
                 let pick = conflicting_lessons[rng.gen_range(0..conflicting_lessons.len())];
                 let lesson = &state.lessons[pick];
-                if !lesson.candidate_slots.is_empty() && !lesson.candidate_rooms.is_empty() {
+                if !lesson.is_pinned && !lesson.candidate_slots.is_empty() && !lesson.candidate_rooms.is_empty() {
                     let rand_s = lesson.candidate_slots[rng.gen_range(0..lesson.candidate_slots.len())];
                     let rand_r = lesson.candidate_rooms[rng.gen_range(0..lesson.candidate_rooms.len())];
                     state.unassign(pick);
@@ -114,6 +114,9 @@ pub fn feasibility_tabu_search_stage(
         // Shuffle / sample conflicting lessons
         for _ in 0..sample_size {
             let l_idx = conflicting_lessons[rng.gen_range(0..conflicting_lessons.len())];
+            if state.lessons[l_idx].is_pinned {
+                continue;
+            }
             let (old_slot, old_room) = state.assignments[l_idx].unwrap();
             let t_idx = state.lessons[l_idx].teacher_idx;
             let c_idx = state.lessons[l_idx].class_idx;

@@ -85,6 +85,8 @@ pub struct ClassGroup {
     pub unavailable_slots: Vec<u8>,
     #[serde(default, alias = "student_count")]
     pub student_count: Option<u16>,
+    #[serde(default, alias = "home_room_id", alias = "homeRoomId", alias = "homeroom_id", alias = "homeroomId")]
+    pub home_room_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -146,17 +148,31 @@ pub struct Lesson {
     pub required_features: Vec<String>,
     #[serde(default, alias = "student_count")]
     pub student_count: Option<u16>,
-    #[serde(default, alias = "is_pinned")]
+    #[serde(default, alias = "is_locked", alias = "is_pinned", alias = "isPinned", alias = "isLocked")]
     pub is_pinned: bool,
-    #[serde(default, alias = "pinned_slot")]
+    #[serde(default, alias = "pinned_slot", alias = "pinnedSlot")]
     pub pinned_slot: Option<u8>,
-    #[serde(default, alias = "pinned_room_id")]
+    #[serde(default, alias = "pinned_room_id", alias = "pinnedRoomId")]
     pub pinned_room_id: Option<String>,
+    #[serde(default, alias = "initial_slot", alias = "initialSlot")]
+    pub initial_slot: Option<u8>,
+    #[serde(default, alias = "initial_room_id", alias = "initialRoomId")]
+    pub initial_room_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum SolveMode {
+    #[default]
+    New,
+    Improve,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SolverConfig {
+    #[serde(default, alias = "solve_mode", alias = "solveMode")]
+    pub solve_mode: Option<SolveMode>,
     #[serde(default)]
     pub days: Option<u8>,
     #[serde(default, alias = "periods_per_day", alias = "periodsPerDay")]
@@ -182,6 +198,7 @@ pub struct SolverConfig {
 impl Default for SolverConfig {
     fn default() -> Self {
         Self {
+            solve_mode: Some(SolveMode::New),
             days: Some(5),
             periods_per_day: Some(7),
             max_consecutive_periods: Some(4),
@@ -250,4 +267,35 @@ pub struct TimetableResponse {
     pub placements: Vec<LessonAssignment>,
     #[serde(default)]
     pub violations: Vec<ViolationDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoomAllocationResult {
+    pub success: bool,
+    #[serde(default, alias = "unallocated_lessons", alias = "unallocatedLessons")]
+    pub unallocated_lessons: Vec<String>,
+    #[serde(default)]
+    pub assignments: Vec<LessonAssignment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RoomAllocationRequest {
+    #[serde(default)]
+    pub request: Option<TimetableRequest>,
+    #[serde(default)]
+    pub lessons: Vec<Lesson>,
+    #[serde(default)]
+    pub teachers: Vec<Teacher>,
+    #[serde(default)]
+    pub classes: Vec<ClassGroup>,
+    #[serde(default)]
+    pub rooms: Vec<Room>,
+    #[serde(default)]
+    pub subjects: Vec<Subject>,
+    #[serde(default)]
+    pub config: Option<SolverConfig>,
+    #[serde(default)]
+    pub placements: Vec<LessonAssignment>,
 }

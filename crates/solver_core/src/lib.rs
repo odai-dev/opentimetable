@@ -8,11 +8,13 @@ pub mod solver;
 pub mod validator;
 pub mod synthetic;
 pub mod time;
+pub mod bipartite_matching;
 
 pub use models::*;
 pub use solver::TimetableSolver;
 pub use validator::{validate_timetable, ValidationResult};
 pub use synthetic::generate_benchmark_request;
+pub use bipartite_matching::allocate_all_classrooms;
 
 #[cfg(test)]
 mod tests {
@@ -50,12 +52,14 @@ mod tests {
                     name: "Grade 10A".to_string(),
                     unavailable_slots: Vec::new(),
                     student_count: Some(25),
+                    home_room_id: None,
                 },
                 ClassGroup {
                     id: "C2".to_string(),
                     name: "Grade 10B".to_string(),
                     unavailable_slots: Vec::new(),
                     student_count: Some(30),
+                    home_room_id: None,
                 },
             ],
             rooms: vec![
@@ -105,6 +109,8 @@ mod tests {
                     is_pinned: false,
                     pinned_slot: None,
                     pinned_room_id: None,
+                    initial_slot: None,
+                    initial_room_id: None,
                 },
                 Lesson {
                     id: "L2".to_string(),
@@ -118,6 +124,8 @@ mod tests {
                     is_pinned: false,
                     pinned_slot: None,
                     pinned_room_id: None,
+                    initial_slot: None,
+                    initial_room_id: None,
                 },
                 Lesson {
                     id: "L3".to_string(),
@@ -131,6 +139,8 @@ mod tests {
                     is_pinned: false,
                     pinned_slot: None,
                     pinned_room_id: None,
+                    initial_slot: None,
+                    initial_room_id: None,
                 },
             ],
             config: SolverConfig {
@@ -219,6 +229,8 @@ mod tests {
                 is_pinned: false,
                 pinned_slot: None,
                 pinned_room_id: None,
+                initial_slot: None,
+                initial_room_id: None,
             });
         }
 

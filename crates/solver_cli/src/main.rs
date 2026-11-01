@@ -1,6 +1,6 @@
 use clap::Parser;
 use opentimetable_solver_core::{
-    generate_benchmark_request, models::*, TimetableSolver,
+    allocate_all_classrooms, generate_benchmark_request, models::*, TimetableSolver,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -29,6 +29,14 @@ struct Cli {
     /// Random seed for deterministic solving
     #[arg(long, default_value_t = 42)]
     seed: u64,
+
+    /// Solve mode: 'new' or 'improve'
+    #[arg(long, default_value = "new")]
+    mode: String,
+
+    /// Automatically allocate classrooms using bipartite matching after solve
+    #[arg(long)]
+    allocate_rooms: bool,
 }
 
 fn main() {
@@ -61,8 +69,15 @@ fn main() {
     request.config.timeout_ms = Some(cli.timeout_ms);
     request.config.random_seed = Some(cli.seed);
 
+    if cli.mode.eq_ignore_ascii_case("improve") {
+        request.config.solve_mode = Some(SolveMode::Improve);
+    } else {
+        request.config.solve_mode = Some(SolveMode::New);
+    }
+
     println!(
-        "==> Starting Timetable Solver on schedule '{}' ({} lessons, {} teachers, {} classes, {} rooms)...",
+        "==> Starting Timetable Solver ({:?}) on schedule '{}' ({} lessons, {} teachers, {} classes, {} rooms)...",
+        request.config.solve_mode.unwrap_or_default(),
         request.title,
         request.lessons.len(),
         request.teachers.len(),
@@ -70,7 +85,18 @@ fn main() {
         request.rooms.len()
     );
 
-    let response = TimetableSolver::solve(&request);
+    let mut response = TimetableSolver::solve(&request);
+
+    if cli.allocate_rooms {
+        println!("==> Running Automated Classroom Allocation via Bipartite Matching...");
+        let alloc_res = allocate_all_classrooms(&request, &response.placements);
+        println!(
+            "    Classroom Allocation: success={}, unallocated={}",
+            alloc_res.success,
+            alloc_res.unallocated_lessons.len()
+        );
+        response.placements = alloc_res.assignments;
+    }
 
     println!("\n========================================================");
     println!("                   SOLVER RESULTS                       ");

@@ -2,6 +2,8 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export const __wbg_wasmsolversession_free: (a: number, b: number) => void;
+export const allocate_classrooms: (a: number, b: number) => [number, number, number, number];
+export const allocate_classrooms_js: (a: any) => [number, number, number];
 export const get_benchmark_500_request: (a: number, b: bigint) => [number, number, number, number];
 export const init: () => void;
 export const solve_timetable: (a: number, b: number) => [number, number, number, number];

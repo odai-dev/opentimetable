@@ -162,6 +162,7 @@ export interface SolverSubjectInput extends Partial<Subject> {
 
 export interface SolveRequestPayload {
   complexity?: GenerationComplexity;
+  solveMode?: 'NEW' | 'IMPROVE';
   lessons: Array<Lesson | SolverLessonInput>;
   teachers?: Array<Teacher | SolverTeacherInput>;
   classes?: Array<ClassGroup | SolverClassInput>;
@@ -184,6 +185,19 @@ export type InboundWorkerMessage =
       payload: SolveRequestPayload;
       complexity?: GenerationComplexity;
       options?: SolverExecutionOptions;
+    }
+  | {
+      type: 'ALLOCATE_ROOMS_REQUEST';
+      requestId?: string;
+      payload: {
+        teachers: any[];
+        classes: any[];
+        rooms: any[];
+        subjects: any[];
+        lessons: any[];
+        placements: Placement[];
+        config?: any;
+      };
     }
   | {
       type: 'CANCEL_REQUEST';
@@ -219,6 +233,13 @@ export type OutboundWorkerMessage =
       placements: Placement[];
       durationMs: number;
       status: string;
+    }
+  | {
+      type: 'ALLOCATE_ROOMS_COMPLETE';
+      requestId?: string;
+      placements: Placement[];
+      allocatedCount: number;
+      unallocatedCount: number;
     }
   | {
       type: 'SOLVE_ERROR';

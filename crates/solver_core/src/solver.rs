@@ -82,6 +82,10 @@ impl TimetableSolver {
 
         let mut state = SolverState::new(req);
 
+        if req.config.solve_mode == Some(SolveMode::Improve) {
+            state.init_improve_mode();
+        }
+
         // Stage 1: MRV Constructive Greedy Placement (~5-15 ms)
         constructive_greedy_stage(&mut state);
 

@@ -43,6 +43,14 @@ pub fn constructive_greedy_stage(state: &mut SolverState) {
         }
 
         let lesson = &state.lessons[lesson_idx];
+        if lesson.is_pinned {
+            if let Some(ps) = lesson.pinned_slot {
+                let pr = lesson.pinned_room_idx.unwrap_or(0);
+                state.assign(lesson_idx, ps, pr);
+                continue;
+            }
+        }
+
         let dur = lesson.duration;
         let t_idx = lesson.teacher_idx;
         let c_idx = lesson.class_idx;

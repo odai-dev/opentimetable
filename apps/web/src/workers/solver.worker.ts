@@ -1,4 +1,4 @@
-import initWasm, { WasmSolverSession } from '../wasm/opentimetable_solver_wasm.js';
+import initWasm, { WasmSolverSession, allocate_classrooms } from '../wasm/opentimetable_solver_wasm.js';
 import type {
   InboundWorkerMessage,
   OutboundWorkerMessage,
@@ -267,6 +267,7 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
             const lessonId = p.lessonId || p.lesson_id;
             const lesson = lessonMap.get(lessonId);
             const fallbackRoom = lesson?.roomId || (payload?.rooms && payload.rooms[0]?.id) || '';
+            const origLesson = (payload?.lessons || []).find((l: any) => l.id === lessonId);
             return {
               lessonId,
               dayIndex:
@@ -278,6 +279,7 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
                 p.period_index ??
                 (p.slot !== undefined ? p.slot % resolvedPeriodsPerDay : 0),
               roomId: p.roomId || p.room_id || fallbackRoom,
+              isLocked: origLesson?.isPinned ?? false,
             };
           });
 
@@ -306,5 +308,38 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
     };
 
     stepLoop();
+  }
+
+  if (msg.type === 'ALLOCATE_ROOMS_REQUEST') {
+    const reqId = msg.requestId || `room_${Date.now()}`;
+    try {
+      await ensureWasmInitialized();
+      const resolvedPeriodsPerDay = msg.payload?.config?.periodsPerDay ?? 7;
+      const jsonStr = JSON.stringify(msg.payload);
+      const resStr = allocate_classrooms(jsonStr);
+      const res = JSON.parse(resStr);
+
+      const mappedPlacements = (res.placements || []).map((p: any) => ({
+        lessonId: p.lessonId || p.lesson_id,
+        dayIndex: p.dayIndex ?? p.day_index ?? (p.slot !== undefined ? Math.floor(p.slot / resolvedPeriodsPerDay) : 0),
+        periodIndex: p.periodIndex ?? p.period_index ?? (p.slot !== undefined ? p.slot % resolvedPeriodsPerDay : 0),
+        roomId: p.roomId || p.room_id || '',
+        isLocked: p.isLocked ?? p.is_locked ?? false,
+      }));
+
+      ctx.postMessage({
+        type: 'ALLOCATE_ROOMS_COMPLETE',
+        requestId: reqId,
+        placements: mappedPlacements,
+        allocatedCount: res.allocatedCount || 0,
+        unallocatedCount: res.unallocatedCount || 0,
+      } as OutboundWorkerMessage);
+    } catch (err: any) {
+      ctx.postMessage({
+        type: 'SOLVE_ERROR',
+        requestId: reqId,
+        error: `Room allocation failed: ${err?.message || String(err)}`,
+      } as OutboundWorkerMessage);
+    }
   }
 });

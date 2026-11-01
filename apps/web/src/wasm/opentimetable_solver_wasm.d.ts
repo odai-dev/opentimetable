@@ -9,6 +9,10 @@ export class WasmSolverSession {
     step(iterations: number): string;
 }
 
+export function allocate_classrooms(request_json: string): string;
+
+export function allocate_classrooms_js(val: any): any;
+
 export function get_benchmark_500_request(seed?: bigint | null): string;
 
 export function init(): void;
@@ -22,6 +26,8 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_wasmsolversession_free: (a: number, b: number) => void;
+    readonly allocate_classrooms: (a: number, b: number) => [number, number, number, number];
+    readonly allocate_classrooms_js: (a: any) => [number, number, number];
     readonly get_benchmark_500_request: (a: number, b: bigint) => [number, number, number, number];
     readonly init: () => void;
     readonly solve_timetable: (a: number, b: number) => [number, number, number, number];
