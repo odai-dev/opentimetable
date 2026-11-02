@@ -232,7 +232,7 @@ export default function TimetableStudioPage() {
 
   const dynamicPeriods = useMemo(() => {
     return Array.from({ length: periodsPerDay }, (_, i) =>
-      isRtl ? `الحصة ${i + 1}` : `Period ${i + 1}`
+      isRtl ? `المحاضرة ${i + 1}` : `Lecture ${i + 1}`
     );
   }, [periodsPerDay, isRtl]);
 
