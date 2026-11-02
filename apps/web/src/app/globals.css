@@ -131,9 +131,23 @@ body {
     page-break-inside: avoid;
   }
 
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   th, td {
     border: 1px solid #64748b !important;
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     box-shadow: none !important;
   }
 
@@ -141,4 +155,16 @@ body {
     box-shadow: none !important;
     border: 1px solid #475569 !important;
   }
+
+  /* Multi-page batch printing page breaks */
+  .print-page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .print-page-break:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 }
+

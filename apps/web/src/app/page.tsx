@@ -46,6 +46,7 @@ import { CompareTimetablesModal } from '../components/CompareTimetablesModal';
 import { ConstraintsLedgerModal } from '../components/ConstraintsLedgerModal';
 import { SetupWizardModal } from '../components/SetupWizardModal';
 import { HelpShortcutsModal } from '../components/HelpShortcutsModal';
+import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { useWasmSolver } from '../lib/useWasmSolver';
 import { FolderOpen } from 'lucide-react';
 
@@ -175,6 +176,7 @@ export default function TimetableStudioPage() {
   const [isConstraintsLedgerOpen, setIsConstraintsLedgerOpen] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isPrintStudioOpen, setIsPrintStudioOpen] = useState(false);
 
   // Selected placement for synchronized inspection and lock controls
   const [selectedPlacement, setSelectedPlacement] = useState<Placement | null>(null);
@@ -1624,50 +1626,91 @@ export default function TimetableStudioPage() {
     setTimeOffMatrix(updatedMatrix);
   };
 
-  // Export CSV
+  // Export Formatted Timetable Matrix Spreadsheet (R4)
   const handleExportCsv = () => {
-    const headers = isRtl
-      ? ['اليوم', 'الحصة', 'الفصل', 'الأستاذ', 'القاعة', 'المادة']
-      : ['Day', 'Period', 'Class', 'Teacher', 'Room', 'Subject'];
+    const escapeCsv = (val: string) => `"${(val || '').replace(/"/g, '""')}"`;
+    const days = dynamicDays && dynamicDays.length > 0 ? dynamicDays : t.days;
+    const periods = dynamicPeriods && dynamicPeriods.length > 0 ? dynamicPeriods : t.periods;
+    const entities = viewMode === 'teacher' ? teachers : classes;
+    const entityType = viewMode === 'teacher' ? 'teacher' : 'class';
 
-    const rows = placements.map((p) => {
+    // Header Row 1: Entity Title + Spanning Days
+    const row1 = [escapeCsv(isRtl ? (entityType === 'teacher' ? 'المعلم' : 'الفصل') : (entityType === 'teacher' ? 'Teacher' : 'Class'))];
+    for (let d = 0; d < cycleDays; d++) {
+      const dayLabel = days[d] || `Day ${d + 1}`;
+      for (let p = 0; p < periodsPerDay; p++) {
+        row1.push(escapeCsv(p === 0 ? dayLabel : ''));
+      }
+    }
+
+    // Header Row 2: Period / Time + Period Numbers & Bell Times
+    const row2 = [escapeCsv(isRtl ? 'الحصة / الوقت' : 'Period / Time')];
+    for (let d = 0; d < cycleDays; d++) {
+      for (let p = 0; p < periodsPerDay; p++) {
+        const pLabel = periods[p] || `P${p + 1}`;
+        const bell = dynamicBells[p] ? ` (${dynamicBells[p]})` : '';
+        row2.push(escapeCsv(`${pLabel}${bell}`));
+      }
+    }
+
+    // Index placements by entityId_day_period
+    const placementIndex = new Map<string, Placement>();
+    for (const p of placements) {
       const lesson = lessonMap.get(p.lessonId);
-      const dayName = t.days[p.dayIndex] || `Day ${p.dayIndex + 1}`;
-      const periodName = t.periods[p.periodIndex] || `Period ${p.periodIndex + 1}`;
-      const className =
-        (isRtl
-          ? classMap.get(lesson?.classId || '')?.nameAr
-          : classMap.get(lesson?.classId || '')?.name) || 'N/A';
-      const teacherName =
-        (isRtl
-          ? teacherMap.get(lesson?.teacherId || '')?.nameAr
-          : teacherMap.get(lesson?.teacherId || '')?.name) || 'N/A';
-      const roomName =
-        (isRtl ? roomMap.get(p.roomId)?.nameAr : roomMap.get(p.roomId)?.name) || p.roomId;
-      const subName =
-        (isRtl
-          ? subjectMap.get(lesson?.subjectId || '')?.nameAr
-          : subjectMap.get(lesson?.subjectId || '')?.name) || 'N/A';
-      return `"${dayName}","${periodName}","${className}","${teacherName}","${roomName}","${subName}"`;
-    });
+      if (!lesson) continue;
+      const keyEntity = entityType === 'class' ? lesson.classId : lesson.teacherId;
+      placementIndex.set(`${keyEntity}_${p.dayIndex}_${p.periodIndex}`, p);
+    }
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    // Data rows for each entity
+    const dataRows: string[] = [];
+    for (const ent of entities) {
+      const entName = isRtl ? (ent.nameAr || ent.name) : ent.name;
+      const row = [escapeCsv(entName)];
+
+      for (let d = 0; d < cycleDays; d++) {
+        for (let p = 0; p < periodsPerDay; p++) {
+          const match = placementIndex.get(`${ent.id}_${d}_${p}`);
+          if (match) {
+            const lesson = lessonMap.get(match.lessonId);
+            const sId = lesson?.subjectId || '';
+            const sub = subjectMap.get(sId);
+            const subName = isRtl ? (sub?.nameAr || sub?.name || sId) : (sub?.name || sId);
+
+            const partnerName = entityType === 'class'
+              ? (isRtl ? teacherMap.get(lesson?.teacherId || '')?.nameAr || teacherMap.get(lesson?.teacherId || '')?.name : teacherMap.get(lesson?.teacherId || '')?.name) || 'N/A'
+              : (isRtl ? classMap.get(lesson?.classId || '')?.nameAr || classMap.get(lesson?.classId || '')?.name : classMap.get(lesson?.classId || '')?.name) || 'N/A';
+
+            const rm = roomMap.get(match.roomId || lesson?.roomId || '');
+            const rmName = isRtl ? (rm?.nameAr || rm?.name || match.roomId) : (rm?.name || match.roomId);
+
+            row.push(escapeCsv(`${subName} - ${partnerName} [${rmName}]`));
+          } else {
+            row.push('');
+          }
+        }
+      }
+      dataRows.push(row.join(','));
+    }
+
+    const csvContent = '\uFEFF' + [row1.join(','), row2.join(','), ...dataRows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `opentimetable-${selectedEntityId}-${lang}.csv`;
+    const safeSchool = (schoolName || 'timetable').replace(/[^a-zA-Z0-9_\u0600-\u06FF-]/g, '_');
+    a.download = `${safeSchool}_matrix_${entityType}_${lang}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Export iCal with full RFC 5545 compliance (DTSTAMP, DTSTART, DTEND, SUMMARY, LOCATION, DESCRIPTION)
+  // Export recurring iCal with full RFC 5545 compliance (DTSTAMP, DTSTART, DTEND, RRULE, SUMMARY, LOCATION)
   const handleExportIcal = () => {
     const pad = (n: number) => String(n).padStart(2, '0');
     const now = new Date();
     const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
 
-    // Reference base date (Monday of current week)
+    // Reference base date (Monday of semester start week)
     const baseDate = new Date();
     const currentDay = baseDate.getDay();
     const diffToMonday = currentDay === 0 ? 1 : 1 - currentDay;
@@ -1678,6 +1721,13 @@ export default function TimetableStudioPage() {
     for (const p of placements) {
       const lesson = lessonMap.get(p.lessonId);
       if (!lesson) continue;
+
+      // Filter by selected entity if one is active and not in wall mode
+      if (viewMode !== 'wall' && selectedEntityId) {
+        const matchesTeacher = lesson.teacherId === selectedEntityId || lesson.teacherIds?.includes(selectedEntityId);
+        const matchesClass = lesson.classId === selectedEntityId || lesson.classIds?.includes(selectedEntityId);
+        if (!matchesTeacher && !matchesClass) continue;
+      }
 
       const sub = subjectMap.get(lesson.subjectId);
       const subName = (isRtl ? sub?.nameAr || sub?.name : sub?.name) || lesson.subjectId;
@@ -1722,6 +1772,7 @@ export default function TimetableStudioPage() {
       ical += `DTSTAMP:${dtstamp}\r\n`;
       ical += `DTSTART:${dtstart}\r\n`;
       ical += `DTEND:${dtend}\r\n`;
+      ical += 'RRULE:FREQ=WEEKLY;COUNT=16\r\n';
       ical += `SUMMARY:${subName} (${clsName})\r\n`;
       ical += `DESCRIPTION:${isRtl ? 'المعلم' : 'Teacher'}: ${tcName}\\n${isRtl ? 'الشعبة' : 'Class'}: ${clsName}\r\n`;
       ical += `LOCATION:${rmName}\r\n`;
@@ -1739,14 +1790,16 @@ export default function TimetableStudioPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Launch interactive Print & Preview Studio Modal (R1)
   const handlePrintPreview = () => {
-    window.print();
+    setIsPrintStudioOpen(true);
   };
 
   const handleOpenBasicData = (tab: BasicDataTab) => {
     setBasicDataInitialTab(tab);
     setIsBasicDataModalOpen(true);
   };
+
 
   const unplacedCount = lessons.length - placements.length;
 
@@ -2243,6 +2296,34 @@ export default function TimetableStudioPage() {
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
         lang={lang}
+      />
+
+      {/* Interactive Print & Preview Studio Modal (M1) */}
+      <PrintPreviewModal
+        isOpen={isPrintStudioOpen}
+        onClose={() => setIsPrintStudioOpen(false)}
+        lang={lang}
+        viewMode={viewMode}
+        selectedEntityId={selectedEntityId}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        lessons={lessons}
+        placements={placements}
+        teacherMap={teacherMap}
+        classMap={classMap}
+        roomMap={roomMap}
+        subjectMap={subjectMap}
+        lessonMap={lessonMap}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        customDays={dynamicDays}
+        customPeriods={dynamicPeriods}
+        bellSchedule={dynamicBells}
+        schoolName={schoolName}
+        academicYear={academicYear}
+        onTriggerExportCsv={handleExportCsv}
       />
     </div>
   );
