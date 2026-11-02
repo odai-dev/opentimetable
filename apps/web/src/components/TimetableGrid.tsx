@@ -295,10 +295,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
   // Left vertical tab switching
   const verticalTabs = [
-    { id: 'class' as ViewMode, labelEn: 'Lesson grid', labelAr: 'الجدول العام', icon: LayoutGrid },
-    { id: 'wall' as ViewMode, labelEn: 'Whole', labelAr: 'الكل', icon: Eye },
-    { id: 'teacher' as ViewMode, labelEn: 'Teachers', labelAr: 'المعلمون', icon: Users },
-    { id: 'room' as ViewMode, labelEn: 'Classrooms', labelAr: 'القاعات', icon: DoorOpen },
+    { id: 'class' as ViewMode, labelEn: 'Lecture grid', labelAr: 'جدول المحاضرات', icon: LayoutGrid },
+    { id: 'wall' as ViewMode, labelEn: 'Whole Campus', labelAr: 'كامل الكلية', icon: Eye },
+    { id: 'teacher' as ViewMode, labelEn: 'Faculty', labelAr: 'أعضاء هيئة التدريس', icon: Users },
+    { id: 'room' as ViewMode, labelEn: 'Halls & Labs', labelAr: 'القاعات والمعامل', icon: DoorOpen },
   ];
 
   // Detect authentic compact Whole (wall) view vs detailed view
@@ -347,7 +347,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
         <div className="bg-white border border-slate-300 rounded shadow-sm overflow-hidden inline-block min-w-full">
           <table
             role="grid"
-            aria-label={isRtl ? 'جدول الحصص الأسبوعي' : 'Weekly Timetable Grid'}
+            aria-label={isRtl ? 'جدول المحاضرات الأكاديمي الأسبوعي' : 'Weekly University Lecture Schedule'}
             aria-readonly={isReadOnly}
             className="border-collapse w-full text-slate-800"
           >
@@ -363,10 +363,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 >
                   <div className="font-bold text-slate-800">
                     {viewMode === 'class' || viewMode === 'wall'
-                      ? isRtl ? 'الشعبة / الفصل' : 'Class / Section'
+                      ? isRtl ? 'المجموعة / الشعبة' : 'Group / Section'
                       : viewMode === 'teacher'
-                      ? isRtl ? 'المعلم' : 'Teacher'
-                      : isRtl ? 'الغرفة الدراسية' : 'Classroom'}
+                      ? isRtl ? 'عضو هيئة التدريس / المحاضر' : 'Faculty Member / Instructor'
+                      : isRtl ? 'القاعة / المعمل الأكاديمي' : 'Hall / Lab'}
                   </div>
                 </th>
 
@@ -455,8 +455,8 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               role="gridcell"
                               aria-label={
                                 isRtl
-                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: فارغ`
-                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Empty`
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `المحاضرة ${pIdx + 1}`}: فارغ`
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Lecture ${pIdx + 1}`}: Empty`
                               }
                               aria-selected={isDragOver}
                               onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
@@ -547,15 +547,15 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               role="gridcell"
                               aria-label={
                                 isRtl
-                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: ${
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `المحاضرة ${pIdx + 1}`}: ${
                                       subject.nameAr || subject.name
-                                    }${teacherShortName ? `، المعلم ${teacherShortName}` : ''}${
-                                      room ? `، القاعة ${room.nameAr || room.name}` : ''
+                                    }${teacherShortName ? `، المحاضر ${teacherShortName}` : ''}${
+                                      room ? `، القاعة/المعمل ${room.nameAr || room.name}` : ''
                                     }${groupBadge ? ` [${groupBadge}]` : ''}${hasConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
-                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: ${
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Lecture ${pIdx + 1}`}: ${
                                       subject.name
-                                    }${teacherShortName ? `, Teacher ${teacherShortName}` : ''}${
-                                      room ? `, Room ${room.name}` : ''
+                                    }${teacherShortName ? `, Instructor ${teacherShortName}` : ''}${
+                                      room ? `, Hall/Lab ${room.name}` : ''
                                     }${groupBadge ? ` [${groupBadge}]` : ''}${hasConflict ? ' (Warning: Conflict detected)' : ''}`
                               }
                               aria-selected={isDragOver}
@@ -640,7 +640,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                             e.stopPropagation();
                                             onToggleLockPlacement?.(lesson.id);
                                           }}
-                                          title={isRtl ? 'حصة مقفلة (L لفك القفل)' : 'Locked lesson (Press L to unlock)'}
+                                          title={isRtl ? 'محاضرة مقفلة (L لفك القفل)' : 'Locked lecture (Press L to unlock)'}
                                           className="p-0.5 rounded hover:bg-amber-100 text-amber-600 transition"
                                         >
                                           <Lock className="w-3 h-3 text-amber-600 fill-amber-100" />
@@ -654,7 +654,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                             e.stopPropagation();
                                             onToggleLockPlacement(lesson.id);
                                           }}
-                                          title={isRtl ? 'تثبيت وقفل الحصة (L)' : 'Lock lesson in place (Press L)'}
+                                          title={isRtl ? 'تثبيت وقفل المحاضرة (L)' : 'Lock lecture in place (Press L)'}
                                           className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-amber-600 transition"
                                         >
                                           <Unlock className="w-3 h-3" />
@@ -672,7 +672,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                             e.stopPropagation();
                                             onRemovePlacement(lesson.id);
                                           }}
-                                          title={isRtl ? 'إرجاع إلى بنك البطاقات' : 'Return to cards bank'}
+                                          title={isRtl ? 'إرجاع إلى بنك المحاضرات' : 'Return to lecture cards bank'}
                                           className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-rose-500 hover:text-white text-slate-500 transition"
                                         >
                                           <X className="w-3 h-3" />
@@ -728,10 +728,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                               role="gridcell"
                               aria-label={
                                 isRtl
-                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `الحصة ${pIdx + 1}`}: حصة مشتركة مقسمة - ${
+                                  ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `المحاضرة ${pIdx + 1}`}: محاضرة مشتركة مقسمة - ${
                                       s1?.nameAr || s1?.name || ''
                                     } و ${s2?.nameAr || s2?.name || ''}${hasAnyConflict ? ' (تنبيه: يوجد تعارض)' : ''}`
-                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Split divided lesson - ${
+                                  : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Lecture ${pIdx + 1}`}: Split divided lecture - ${
                                       s1?.name || ''
                                     } and ${s2?.name || ''}${hasAnyConflict ? ' (Warning: Conflict detected)' : ''}`
                               }
@@ -750,7 +750,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                   : 'border-slate-300 shadow-xs'
                               }`}>
                                 {hasAnyConflict && (
-                                  <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه الحصص المقسمة' : 'Conflict in split lessons'}>
+                                  <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه المحاضرات المقسمة' : 'Conflict in split lectures'}>
                                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600 animate-bounce" />
                                   </div>
                                 )}
@@ -824,7 +824,11 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                           <td
                             key={`${dIdx}-${pIdx}`}
                             role="gridcell"
-                            aria-label={`${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Period ${pIdx + 1}`}: Multi-split (${slotPlacements.length} lessons)${hasAnyConflict ? ' (Conflict)' : ''}`}
+                            aria-label={
+                              isRtl
+                                ? `${entity.name}، ${daysList[dIdx]}، ${periodsList[pIdx] || `المحاضرة ${pIdx + 1}`}: تقسيم متعدد (${slotPlacements.length} محاضرات)${hasAnyConflict ? ' (تعارض)' : ''}`
+                                : `${entity.name}, ${daysList[dIdx]}, ${periodsList[pIdx] || `Lecture ${pIdx + 1}`}: Multi-split (${slotPlacements.length} lectures)${hasAnyConflict ? ' (Conflict)' : ''}`
+                            }
                             aria-selected={isDragOver}
                             onDragOver={(e) => handleDragOver(e, dIdx, pIdx, entity.id)}
                             onDragLeave={(e) => handleDragLeave(e, dIdx, pIdx, entity.id)}
@@ -840,7 +844,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 : 'border-slate-300 shadow-xs bg-slate-50'
                             }`}>
                               {hasAnyConflict && (
-                                <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه الحصص المقسمة' : 'Conflict in split lessons'}>
+                                <div className="absolute z-20 top-0.5 right-0.5 p-0.5 bg-white/95 rounded-full shadow-xs pointer-events-none" title={isRtl ? 'تعارض في هذه المحاضرات المقسمة' : 'Conflict in split lectures'}>
                                   <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
                                 </div>
                               )}

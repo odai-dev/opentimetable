@@ -15,7 +15,8 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
-  School,
+  GraduationCap,
+  Building2,
   BookOpen,
   DoorOpen,
   UserCheck,
@@ -50,45 +51,48 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  // Step 1: School & Calendar
-  const [schoolName, setSchoolName] = useState<string>('Al-Noor Secondary School');
+  // Step 1: University & Academic Calendar
+  const [schoolName, setSchoolName] = useState<string>(
+    isRtl ? 'كلية الحاسبات والذكاء الاصطناعي' : 'Faculty of Computer Science & Artificial Intelligence'
+  );
   const [academicYear, setAcademicYear] = useState<string>('2026/2027');
   const [cycleDays, setCycleDays] = useState<number>(5);
   const [periodsPerDay, setPeriodsPerDay] = useState<number>(7);
 
-  // Step 2: Subjects
+  // Step 2: Curriculum Courses
   const [subjectsList, setSubjectsList] = useState<Subject[]>([
-    { id: 's_math', name: 'الرياضيات', code: 'MATH', color: '#0284c7' },
-    { id: 's_sci', name: 'العلوم الفيزيائية', code: 'PHYS', color: '#10b981', requiredRoomType: 'LAB' },
-    { id: 's_ara', name: 'اللغة العربية', code: 'ARAB', color: '#f59e0b' },
-    { id: 's_eng', name: 'اللغة الإنجليزية', code: 'ENG', color: '#8b5cf6' },
-    { id: 's_isl', name: 'الدراسات الإسلامية', code: 'ISLM', color: '#059669' },
+    { id: 's_ds', name: isRtl ? 'هياكل البيانات والخوارزميات' : 'Data Structures & Algorithms', code: 'CS201', color: '#0284c7', requiredRoomType: 'LAB' },
+    { id: 's_os', name: isRtl ? 'نظم التشغيل والشبكات' : 'Operating Systems & Networks', code: 'CS302', color: '#10b981', requiredRoomType: 'LAB' },
+    { id: 's_ai', name: isRtl ? 'الذكاء الاصطناعي وتعلم الآلة' : 'Artificial Intelligence & Machine Learning', code: 'AI401', color: '#8b5cf6', requiredRoomType: 'STANDARD' },
+    { id: 's_db', name: isRtl ? 'قواعد البيانات وإدارة المعلومات' : 'Database Management Systems', code: 'IS204', color: '#f59e0b', requiredRoomType: 'LAB' },
+    { id: 's_se', name: isRtl ? 'هندسة البرمجيات والتصميم' : 'Software Engineering & Architecture', code: 'SE305', color: '#059669', requiredRoomType: 'STANDARD' },
   ]);
   const [newSubName, setNewSubName] = useState('');
 
-  // Step 3: Classrooms
+  // Step 3: Lecture Halls & Specialized Labs
   const [roomsList, setRoomsList] = useState<Room[]>([
-    { id: 'r_101', name: 'القاعة 101', capacity: 32, type: 'STANDARD' },
-    { id: 'r_102', name: 'القاعة 102', capacity: 32, type: 'STANDARD' },
-    { id: 'r_lab1', name: 'معمل الفيزياء', capacity: 30, type: 'LAB' },
-    { id: 'r_comp', name: 'معمل الحاسوب', capacity: 25, type: 'LAB' },
+    { id: 'r_aud', name: isRtl ? 'المدرج المركزي A101 (150 مقعد)' : 'Auditorium A101 (150 Cap)', capacity: 150, type: 'AUDITORIUM' },
+    { id: 'r_hall', name: isRtl ? 'قاعة المحاضرات B202 (80 مقعد)' : 'Lecture Hall B202 (80 Cap)', capacity: 80, type: 'STANDARD' },
+    { id: 'r_clab', name: isRtl ? 'معمل البرمجة والحاسوب D403' : 'Computer Lab D403 (35 Cap)', capacity: 35, type: 'LAB' },
+    { id: 'r_ailab', name: isRtl ? 'معمل الذكاء الاصطناعي C301' : 'AI & Robotics Lab C301 (30 Cap)', capacity: 30, type: 'LAB' },
   ]);
   const [newRoomName, setNewRoomName] = useState('');
 
-  // Step 4: Teachers
+  // Step 4: Faculty & Instructors with Academic Titles
   const [teachersList, setTeachersList] = useState<Teacher[]>([
-    { id: 't_1', name: 'أ. أحمد خالد', speciality: 'رياضيات', color: '#0284c7', unavailableSlots: [], maxDailyHours: 5 },
-    { id: 't_2', name: 'أ. محمد سعيد', speciality: 'علوم', color: '#10b981', unavailableSlots: [], maxDailyHours: 4 },
-    { id: 't_3', name: 'أ. فهد ناصر', speciality: 'عربي', color: '#f59e0b', unavailableSlots: [], maxDailyHours: 5 },
-    { id: 't_4', name: 'أ. سامي عادل', speciality: 'إنجليزي', color: '#8b5cf6', unavailableSlots: [], maxDailyHours: 4 },
+    { id: 't_1', name: isRtl ? 'أ.د. أحمد خالد' : 'Prof. Dr. Ahmed Khaled', speciality: isRtl ? 'ذكاء اصطناعي' : 'Artificial Intelligence', color: '#0284c7', unavailableSlots: [], maxDailyHours: 5 },
+    { id: 't_2', name: isRtl ? 'د. محمد سعيد' : 'Dr. Mohammed Saeed', speciality: isRtl ? 'نظم تشغيل' : 'Operating Systems', color: '#10b981', unavailableSlots: [], maxDailyHours: 4 },
+    { id: 't_3', name: isRtl ? 'م. شيماء الهزازي' : 'Eng. Shaima Al-Harazi', speciality: isRtl ? 'هياكل بيانات' : 'Data Structures', color: '#f59e0b', unavailableSlots: [], maxDailyHours: 5 },
+    { id: 't_4', name: isRtl ? 'د. إبراهيم الحداد' : 'Dr. Ibrahim Al-Hadad', speciality: isRtl ? 'قواعد بيانات' : 'Database Systems', color: '#8b5cf6', unavailableSlots: [], maxDailyHours: 4 },
   ]);
   const [newTeacherName, setNewTeacherName] = useState('');
 
-  // Step 5: Classes
+  // Step 5: Academic Levels & Student Groups
   const [classesList, setClassesList] = useState<ClassGroup[]>([
-    { id: 'c_10a', name: 'الصف 10-أ', grade: 10 },
-    { id: 'c_10b', name: 'الصف 10-ب', grade: 10 },
-    { id: 'c_11a', name: 'الصف 11-أ علمي', grade: 11 },
+    { id: 'c_l1_a', name: isRtl ? 'أمن سيبراني - مستوى 1 - شعبة أ' : 'CyberSecurity-L1-SecA', grade: 1 },
+    { id: 'c_l1_b', name: isRtl ? 'أمن سيبراني - مستوى 1 - شعبة ب' : 'CyberSecurity-L1-SecB', grade: 1 },
+    { id: 'c_l2', name: isRtl ? 'علوم حاسوب - مستوى 2' : 'ComputerScience-L2', grade: 2 },
+    { id: 'c_l3', name: isRtl ? 'ذكاء اصطناعي - مستوى 3' : 'ArtificialIntelligence-L3', grade: 3 },
   ]);
 
   const handleFinish = () => {
@@ -103,7 +107,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
           teachersList.find((tc) => tc.speciality.includes(sub.name.slice(0, 3))) ||
           teachersList[(lIdx - 1) % teachersList.length];
 
-        const weeklyPeriods = sub.code === 'MATH' ? 5 : sub.code === 'ARAB' ? 4 : 3;
+        const weeklyPeriods = sub.code.startsWith('CS') ? 4 : 3;
 
         for (let p = 0; p < weeklyPeriods; p++) {
           generatedLessons.push({
@@ -148,20 +152,20 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold leading-tight">
-                {isRtl ? 'معالج إعداد الجدول المدرسي خطوة بخطوة' : 'School Setup Wizard'}
+                {isRtl ? 'معالج إعداد الجدول الجامعي والأكاديمي خطوة بخطوة' : 'University & Faculty Setup Wizard'}
               </h2>
               <p className="text-xs text-sky-200">
                 {isRtl
                   ? `الخطوة ${step} من 5: ${
                       step === 1
-                        ? 'التقويم المدرسي'
+                        ? 'بيانات الكلية والتقويم'
                         : step === 2
-                        ? 'المواد الدراسية'
+                        ? 'المقررات الأكاديمية'
                         : step === 3
-                        ? 'القاعات والمعامل'
+                        ? 'القاعات والمعامل المتخصصة'
                         : step === 4
-                        ? 'هيئة التدريس'
-                        : 'الفصول وتوليد الحصص'
+                        ? 'أعضاء هيئة التدريس والمحاضرون'
+                        : 'الدفعات وتوليد المحاضرات'
                     }`
                   : `Step ${step} of 5`}
               </p>
@@ -196,14 +200,14 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                 }`}
               >
                 {s === 1
-                  ? isRtl ? 'المدرسة' : 'School'
+                  ? isRtl ? 'الكلية' : 'Faculty'
                   : s === 2
-                  ? isRtl ? 'المواد' : 'Subjects'
+                  ? isRtl ? 'المقررات' : 'Courses'
                   : s === 3
-                  ? isRtl ? 'القاعات' : 'Rooms'
+                  ? isRtl ? 'القاعات والمعامل' : 'Halls & Labs'
                   : s === 4
-                  ? isRtl ? 'المعلمين' : 'Teachers'
-                  : isRtl ? 'الفصول' : 'Classes'}
+                  ? isRtl ? 'هيئة التدريس' : 'Faculty'
+                  : isRtl ? 'الدفعات' : 'Groups'}
               </span>
               {s < 5 && <div className="w-8 h-0.5 bg-slate-200 mx-1 hidden sm:block" />}
             </div>
@@ -212,19 +216,19 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
 
         {/* Step Body */}
         <div className="p-6 flex-1 overflow-y-auto">
-          {/* STEP 1: School & Calendar */}
+          {/* STEP 1: University & Calendar */}
           {step === 1 && (
             <div className="space-y-4 max-w-lg mx-auto">
               <div className="text-center mb-4">
-                <School className="w-10 h-10 text-sky-600 mx-auto mb-1" />
+                <GraduationCap className="w-10 h-10 text-sky-600 mx-auto mb-1" />
                 <h3 className="text-sm font-bold text-slate-800">
-                  {isRtl ? 'بيانات المدرسة والتقويم الأسبوعي' : 'School Identity & Weekly Grid'}
+                  {isRtl ? 'بيانات الكلية أو الجامعة والتقويم الأكاديمي' : 'University & Faculty Calendar'}
                 </h3>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  {isRtl ? 'اسم المدرسة أو المنشأة:' : 'School / Institution Name:'}
+                  {isRtl ? 'اسم الجامعة أو الكلية:' : 'University / Faculty Name:'}
                 </label>
                 <input
                   type="text"
@@ -236,7 +240,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  {isRtl ? 'العام الدراسي:' : 'Academic Year:'}
+                  {isRtl ? 'العام الأكاديمي / الفصل:' : 'Academic Year / Semester:'}
                 </label>
                 <input
                   type="text"
@@ -249,7 +253,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    {isRtl ? 'أيام الدورة الأسبوعية:' : 'Cycle Days:'}
+                    {isRtl ? 'أيام الدورة الأسبوعية:' : 'Weekly Cycle Days:'}
                   </label>
                   <select
                     value={cycleDays}
@@ -264,29 +268,29 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">
-                    {isRtl ? 'الحصص باليوم الواحد:' : 'Periods Per Day:'}
+                    {isRtl ? 'المحاضرات باليوم الواحد:' : 'Lectures Per Day:'}
                   </label>
                   <select
                     value={periodsPerDay}
                     onChange={(e) => setPeriodsPerDay(Number(e.target.value))}
                     className="w-full text-xs p-2 rounded-lg border border-slate-300 font-bold text-slate-800"
                   >
-                    <option value={6}>6 {isRtl ? 'حصص' : 'Periods'}</option>
-                    <option value={7}>7 {isRtl ? 'حصص (افتراضي)' : 'Periods (Standard)'}</option>
-                    <option value={8}>8 {isRtl ? 'حصص' : 'Periods'}</option>
+                    <option value={6}>6 {isRtl ? 'محاضرات' : 'Lectures'}</option>
+                    <option value={7}>7 {isRtl ? 'محاضرات (افتراضي)' : 'Lectures (Standard)'}</option>
+                    <option value={8}>8 {isRtl ? 'محاضرات' : 'Lectures'}</option>
                   </select>
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 2: Subjects */}
+          {/* STEP 2: Curriculum Courses */}
           {step === 2 && (
             <div className="space-y-4 max-w-lg mx-auto">
               <div className="text-center mb-3">
                 <BookOpen className="w-9 h-9 text-emerald-600 mx-auto mb-1" />
                 <h3 className="text-sm font-bold text-slate-800">
-                  {isRtl ? 'المواد الدراسية ومتطلبات القاعات' : 'Curriculum Subjects & Facilities'}
+                  {isRtl ? 'المقررات الأكاديمية ومتطلبات القاعات والمعامل' : 'Curriculum Courses & Facilities'}
                 </h3>
               </div>
 
@@ -295,7 +299,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                   type="text"
                   value={newSubName}
                   onChange={(e) => setNewSubName(e.target.value)}
-                  placeholder={isRtl ? 'أضف مادة جديدة...' : 'Add new subject name...'}
+                  placeholder={isRtl ? 'أضف مقرراً جديداً...' : 'Add new course name...'}
                   className="flex-1 text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 />
                 <button
@@ -307,7 +311,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                         {
                           id: `s_${Date.now()}`,
                           name: newSubName.trim(),
-                          code: newSubName.trim().slice(0, 3).toUpperCase(),
+                          code: newSubName.trim().slice(0, 4).toUpperCase(),
                           color: '#0284c7',
                         },
                       ]);
@@ -346,13 +350,13 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
             </div>
           )}
 
-          {/* STEP 3: Rooms */}
+          {/* STEP 3: Halls & Labs */}
           {step === 3 && (
             <div className="space-y-4 max-w-lg mx-auto">
               <div className="text-center mb-3">
                 <DoorOpen className="w-9 h-9 text-amber-600 mx-auto mb-1" />
                 <h3 className="text-sm font-bold text-slate-800">
-                  {isRtl ? 'الفصول والقاعات والمعامل' : 'Classrooms & Specialized Labs'}
+                  {isRtl ? 'قاعات المحاضرات والمعامل المتخصصة' : 'Lecture Halls & Specialized Labs'}
                 </h3>
               </div>
 
@@ -361,20 +365,22 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder={isRtl ? 'اسم القاعة أو المعمل...' : 'Room name...'}
+                  placeholder={isRtl ? 'اسم القاعة أو المعمل...' : 'Hall or lab name...'}
                   className="flex-1 text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 />
                 <button
                   type="button"
                   onClick={() => {
                     if (newRoomName.trim()) {
+                      const isLab = newRoomName.includes('معمل') || newRoomName.toLowerCase().includes('lab');
+                      const isAud = newRoomName.includes('مدرج') || newRoomName.toLowerCase().includes('aud');
                       setRoomsList([
                         ...roomsList,
                         {
                           id: `r_${Date.now()}`,
                           name: newRoomName.trim(),
-                          capacity: 30,
-                          type: newRoomName.includes('معمل') || newRoomName.toLowerCase().includes('lab') ? 'LAB' : 'STANDARD',
+                          capacity: isAud ? 150 : isLab ? 30 : 60,
+                          type: isLab ? 'LAB' : isAud ? 'AUDITORIUM' : 'STANDARD',
                         },
                       ]);
                       setNewRoomName('');
@@ -392,12 +398,14 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-800">{r.name}</span>
                       <span className="text-[10px] text-slate-500">
-                        {isRtl ? `(سعة: ${r.capacity} طالب)` : `(Cap: ${r.capacity})`}
+                        {isRtl ? `(سعة: ${r.capacity} مقعد)` : `(Cap: ${r.capacity})`}
                       </span>
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
                           r.type === 'LAB'
                             ? 'bg-purple-100 text-purple-800'
+                            : r.type === 'AUDITORIUM'
+                            ? 'bg-amber-100 text-amber-800'
                             : 'bg-slate-100 text-slate-700'
                         }`}
                       >
@@ -417,13 +425,13 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
             </div>
           )}
 
-          {/* STEP 4: Teachers */}
+          {/* STEP 4: Faculty & Instructors */}
           {step === 4 && (
             <div className="space-y-4 max-w-lg mx-auto">
               <div className="text-center mb-3">
                 <UserCheck className="w-9 h-9 text-violet-600 mx-auto mb-1" />
                 <h3 className="text-sm font-bold text-slate-800">
-                  {isRtl ? 'المعلمون والتخصصات' : 'Faculty Teachers & Specialities'}
+                  {isRtl ? 'أعضاء هيئة التدريس والمحاضرون' : 'Faculty & Instructors'}
                 </h3>
               </div>
 
@@ -432,7 +440,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                   type="text"
                   value={newTeacherName}
                   onChange={(e) => setNewTeacherName(e.target.value)}
-                  placeholder={isRtl ? 'اسم المعلم الجديد...' : 'Teacher name...'}
+                  placeholder={isRtl ? 'اسم المحاضر الجديد (مع اللقب العلمي)...' : 'Faculty name with title (Dr., Eng., Prof.)...'}
                   className="flex-1 text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 />
                 <button
@@ -444,7 +452,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                         {
                           id: `t_${Date.now()}`,
                           name: newTeacherName.trim(),
-                          speciality: 'عام',
+                          speciality: isRtl ? 'حاسبات ومعلومات' : 'Computer Science',
                           color: '#8b5cf6',
                           unavailableSlots: [],
                           maxDailyHours: 5,
@@ -479,37 +487,37 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
             </div>
           )}
 
-          {/* STEP 5: Classes & Auto-Curriculum */}
+          {/* STEP 5: Groups & Auto-Curriculum */}
           {step === 5 && (
             <div className="space-y-4 max-w-lg mx-auto">
               <div className="text-center mb-3">
                 <Users className="w-9 h-9 text-indigo-600 mx-auto mb-1" />
                 <h3 className="text-sm font-bold text-slate-800">
-                  {isRtl ? 'الفصول وتوليد الحصص الأوتوماتيكي' : 'Classes & Curriculum Generation'}
+                  {isRtl ? 'الدفعات والشعب وتوليد جدول المحاضرات الأوتوماتيكي' : 'Groups, Sections & Auto-Curriculum Generation'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {isRtl
-                    ? 'سيقوم المعالج بتوليد خطة الحصص تلقائياً وتوزيع المواد على الفصول'
-                    : 'The wizard will automatically generate lesson allocations for all classes'}
+                    ? 'سيقوم المعالج بتوليد خطة المحاضرات تلقائياً وتوزيع المقررات على الدفعات والقاعات'
+                    : 'The wizard will automatically generate lecture allocations for all student groups'}
                 </p>
               </div>
 
               <div className="p-3 bg-sky-50 rounded-xl border border-sky-200 space-y-2 text-xs">
                 <div className="flex justify-between font-bold text-sky-950">
-                  <span>{isRtl ? 'الفصول المستهدفة:' : 'Target Classes:'}</span>
-                  <span>{classesList.length} {isRtl ? 'شعب' : 'classes'}</span>
+                  <span>{isRtl ? 'الدفعات والشعب المستهدفة:' : 'Target Groups & Sections:'}</span>
+                  <span>{classesList.length} {isRtl ? 'شعب / دفعات' : 'groups'}</span>
                 </div>
                 <div className="flex justify-between text-slate-700">
-                  <span>{isRtl ? 'المواد المعتمدة:' : 'Curriculum Subjects:'}</span>
-                  <span>{subjectsList.length} {isRtl ? 'مواد' : 'subjects'}</span>
+                  <span>{isRtl ? 'المقررات المعتمدة:' : 'Curriculum Courses:'}</span>
+                  <span>{subjectsList.length} {isRtl ? 'مقررات' : 'courses'}</span>
                 </div>
                 <div className="flex justify-between text-slate-700">
-                  <span>{isRtl ? 'المعلمون المسجلون:' : 'Faculty Count:'}</span>
-                  <span>{teachersList.length} {isRtl ? 'معلمين' : 'teachers'}</span>
+                  <span>{isRtl ? 'أعضاء هيئة التدريس:' : 'Faculty Members:'}</span>
+                  <span>{teachersList.length} {isRtl ? 'أعضاء' : 'faculty'}</span>
                 </div>
                 <div className="flex justify-between text-slate-700">
-                  <span>{isRtl ? 'القاعات والمعامل المتاحة:' : 'Rooms Available:'}</span>
-                  <span>{roomsList.length} {isRtl ? 'قاعات' : 'rooms'}</span>
+                  <span>{isRtl ? 'القاعات والمعامل المتاحة:' : 'Halls & Labs Available:'}</span>
+                  <span>{roomsList.length} {isRtl ? 'قاعات ومعامل' : 'halls/labs'}</span>
                 </div>
               </div>
 
@@ -517,8 +525,8 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
                 <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
                 <p className="text-xs text-emerald-900 font-semibold leading-relaxed">
                   {isRtl
-                    ? 'عند الضغط على "إنهاء وبناء الجدول"، سيتم إعداد المشروع وفتح مسودة الجدول فوراً للبدء بالتوليد السريع.'
-                    : 'Clicking Finish will initialize your project and open Draft 1 ready for instant solving.'}
+                    ? 'عند الضغط على "إنهاء وبناء مسودة الجدول"، سيتم إعداد المشروع وفتح مسودة الجدول الجامعي فوراً للبدء بالتوليد السريع.'
+                    : 'Clicking Finish will initialize your university project and open Draft 1 ready for instant solving.'}
                 </p>
               </div>
             </div>
@@ -553,7 +561,7 @@ export const SetupWizardModal: React.FC<SetupWizardModalProps> = ({
               className="px-5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold transition flex items-center gap-1.5 shadow-md"
             >
               <Check className="w-4 h-4" />
-              <span>{isRtl ? 'إنهاء وبناء مسودة الجدول' : 'Finish & Build Timetable'}</span>
+              <span>{isRtl ? 'إنهاء وبناء مسودة الجدول الجامعي' : 'Finish & Build University Timetable'}</span>
             </button>
           )}
         </div>

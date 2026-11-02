@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   School,
+  Building2,
   BookOpen,
   Users,
   DoorOpen,
@@ -483,7 +484,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         {/* Header */}
         <div className="bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
-            <School className="w-5 h-5 text-sky-400" />
+            <GraduationCap className="w-5 h-5 text-sky-400" />
             <h2 className="font-bold text-sm">{t.basicDataModal.title}</h2>
           </div>
           <button
@@ -507,7 +508,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 : 'text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <School className="w-3.5 h-3.5" />
+            <Building2 className="w-3.5 h-3.5" />
             <span>{t.basicDataModal.tabs.school}</span>
           </button>
 
@@ -641,24 +642,24 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               <span>
                 {isRtl
                   ? activeTab === 'subjects'
-                    ? 'إضافة مادة جديدة'
+                    ? 'إضافة مقرر جديد'
                     : activeTab === 'classes'
-                    ? 'إضافة فصل جديد'
+                    ? 'إضافة دفعة / شعبة جديدة'
                     : activeTab === 'rooms'
-                    ? 'إضافة قاعة جديدة'
+                    ? 'إضافة قاعة / معمل'
                     : activeTab === 'teachers'
-                    ? 'إضافة معلم جديد'
-                    : 'إضافة حصة جديدة'
+                    ? 'إضافة عضو هيئة تدريس'
+                    : 'إضافة محاضرة جديدة'
                   : `Add ${
                       activeTab === 'subjects'
-                        ? 'Subject'
+                        ? 'Course'
                         : activeTab === 'classes'
-                        ? 'Class'
+                        ? 'Group / Section'
                         : activeTab === 'rooms'
-                        ? 'Room'
+                        ? 'Hall / Lab'
                         : activeTab === 'teachers'
-                        ? 'Teacher'
-                        : 'Lesson'
+                        ? 'Faculty Member'
+                        : 'Lecture'
                     }`}
               </span>
             </button>
@@ -678,25 +679,25 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
 
         {/* Tab Content Body */}
         <div className="p-5 overflow-y-auto flex-1 min-h-0 text-xs text-slate-800">
-          {/* 1. School Tab */}
+          {/* 1. University Specification Tab */}
           {activeTab === 'school' && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">
-                    {isRtl ? 'اسم المؤسسة التعليمية' : 'Institution Name'}
+                    {isRtl ? 'اسم الجامعة / الكلية' : 'University / Faculty Name'}
                   </label>
                   <input
                     type="text"
                     value={localSchoolName}
                     onChange={(e) => setLocalSchoolName(e.target.value)}
-                    placeholder={isRtl ? 'اسم المدرسة' : 'School Name'}
+                    placeholder={isRtl ? 'اسم الجامعة أو الكلية' : 'University / Faculty Name'}
                     className="w-full bg-slate-50 border border-slate-300 rounded px-3 py-1.5 font-semibold focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">
-                    {isRtl ? 'العام الدراسي' : 'Academic Year'}
+                    {isRtl ? 'العام الأكاديمي / الفصل' : 'Academic Year / Semester'}
                   </label>
                   <input
                     type="text"
@@ -722,7 +723,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'الحصص باليوم' : 'Periods/Day'}</label>
+                  <label className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'المحاضرات باليوم' : 'Lectures/Day'}</label>
                   <select
                     value={localPeriodsPerDay}
                     onChange={(e) => handlePeriodsChange(Number(e.target.value))}
@@ -730,15 +731,15 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   >
                     {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((p) => (
                       <option key={p} value={p}>
-                        {p} {isRtl ? 'حصص' : 'Periods'}
+                        {p} {isRtl ? 'محاضرات' : 'Lectures'}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <span className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'إجمالي الحصص الأسبوعية' : 'Weekly Capacity'}</span>
+                  <span className="text-slate-500 block mb-1 font-semibold">{isRtl ? 'إجمالي المحاضرات الأسبوعية' : 'Weekly Capacity'}</span>
                   <div className="font-bold text-sm text-sky-700 bg-sky-100 border border-sky-300 rounded px-3 py-1.5 inline-block w-full text-center">
-                    {localCycleDays * localPeriodsPerDay} {isRtl ? 'حصة' : 'Slots'}
+                    {localCycleDays * localPeriodsPerDay} {isRtl ? 'محاضرة' : 'Slots'}
                   </div>
                 </div>
               </div>
@@ -746,7 +747,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-700">
-                    {isRtl ? 'أوقات الحصص (جدول الأجراس)' : 'Bell Schedule (Period Times)'}
+                    {isRtl ? 'أوقات المحاضرات' : 'Lecture Schedule (Times)'}
                   </label>
                   <button
                     type="button"
@@ -760,7 +761,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
-                        <th className="p-2 w-20 text-center">{isRtl ? 'الحصة' : 'Period'}</th>
+                        <th className="p-2 w-24 text-center">{isRtl ? 'المحاضرة' : 'Lecture'}</th>
                         <th className="p-2">{isRtl ? 'التوقيت (البدء - الانتهاء)' : 'Time Range (Start - End)'}</th>
                       </tr>
                     </thead>
@@ -789,14 +790,14 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                 <div className="text-sky-800 text-[11px]">
                   {isRtl
-                    ? '💡 احرص على تطبيق إعدادات المدرسة لحفظ وتحديث أبعاد الجدول.'
-                    : '💡 Click Apply School Settings to update active timetable dimensions and bells.'}
+                    ? '💡 احرص على تطبيق إعدادات الجامعة والكلية لحفظ وتحديث أبعاد الجدول.'
+                    : '💡 Click Apply University Settings to update active timetable dimensions and lecture slots.'}
                 </div>
                 <div className="flex items-center gap-3">
                   {schoolSavedFeedback && (
                     <span className="text-emerald-600 font-bold text-xs flex items-center gap-1 animate-in fade-in">
                       <Check className="w-4 h-4" />
-                      {isRtl ? 'تم تطبيق إعدادات المدرسة بنجاح!' : 'School settings applied successfully!'}
+                      {isRtl ? 'تم تطبيق إعدادات الجامعة بنجاح!' : 'University settings applied successfully!'}
                     </span>
                   )}
                   <button
@@ -805,14 +806,14 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     className="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-1.5 rounded-lg shadow-sm text-xs transition flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    {isRtl ? 'تطبيق إعدادات المدرسة' : 'Apply School Settings'}
+                    {isRtl ? 'تطبيق إعدادات الجامعة' : 'Apply University Settings'}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 2. Subjects Tab */}
+          {/* 2. Subjects (Courses) Tab */}
           {activeTab === 'subjects' && (
             <div className="flex flex-col gap-3">
               <table className="w-full border-collapse border border-slate-200">
@@ -820,8 +821,8 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
                     <th className="p-2 border-r border-slate-200 w-16 text-center">{isRtl ? 'اللون' : 'Color'}</th>
                     <th className="p-2 border-r border-slate-200 w-24">{isRtl ? 'الرمز' : 'Code'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم المادة' : 'Subject Name'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'القاعة المطلوبة' : 'Required Room'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم المقرر' : 'Course Name'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'القاعة / المعمل المطلوب' : 'Required Hall / Lab'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -829,7 +830,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   {filteredSubjects.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching subjects'}
+                        {isRtl ? 'لا توجد مقررات مطابقة' : 'No matching courses'}
                       </td>
                     </tr>
                   ) : (
@@ -879,15 +880,15 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
             </div>
           )}
 
-          {/* 3. Classes Tab */}
+          {/* 3. Groups & Sections Tab */}
           {activeTab === 'classes' && (
             <div className="flex flex-col gap-3">
               <table className="w-full border-collapse border border-slate-200">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
                     <th className="p-2 border-r border-slate-200 w-20 text-center">ID</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم الفصل / الشعبة' : 'Class Name'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المستوى' : 'Grade'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم الدفعة / الشعبة' : 'Group / Section Name'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المستوى الدراسي / السنة' : 'Academic Level / Year'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -895,7 +896,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   {filteredClasses.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching classes'}
+                        {isRtl ? 'لا توجد شعب أو دفعات مطابقة' : 'No matching groups or sections'}
                       </td>
                     </tr>
                   ) : (
@@ -908,7 +909,9 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                             <span className="text-slate-400 text-[10px] ml-2">({c.nameAr})</span>
                           )}
                         </td>
-                        <td className="p-2 border-r border-slate-200 text-slate-600 font-medium">Grade {c.grade}</td>
+                        <td className="p-2 border-r border-slate-200 text-slate-600 font-medium">
+                          {t.terms.levelFormat ? t.terms.levelFormat(c.grade) : (isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`)}
+                        </td>
                         <td className="p-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button
@@ -937,16 +940,16 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
             </div>
           )}
 
-          {/* 4. Rooms Tab */}
+          {/* 4. Halls & Labs Tab */}
           {activeTab === 'rooms' && (
             <div className="flex flex-col gap-3">
               <table className="w-full border-collapse border border-slate-200">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
-                    <th className="p-2 border-r border-slate-200 w-24 text-center">Room ID</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم القاعة' : 'Room Name'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'النوع' : 'Type'}</th>
-                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'السعة' : 'Capacity'}</th>
+                    <th className="p-2 border-r border-slate-200 w-24 text-center">{isRtl ? 'رمز القاعة' : 'Hall / Lab ID'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم القاعة / المعمل' : 'Hall / Lab Name'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'النوع والتخصص' : 'Type & Facility'}</th>
+                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'السعة القصوى' : 'Capacity'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -954,7 +957,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   {filteredRooms.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching rooms'}
+                        {isRtl ? 'لا توجد قاعات أو معامل مطابقة' : 'No matching halls or labs'}
                       </td>
                     </tr>
                   ) : (
@@ -997,16 +1000,16 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
             </div>
           )}
 
-          {/* 5. Teachers Tab */}
+          {/* 5. Faculty & Instructors Tab */}
           {activeTab === 'teachers' && (
             <div className="flex flex-col gap-3">
               <table className="w-full border-collapse border border-slate-200">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
-                    <th className="p-2 border-r border-slate-200 w-16 text-center">ID</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم المعلم' : 'Teacher Name'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'التخصص' : 'Speciality'}</th>
-                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'الأنصبة' : 'Workload'}</th>
+                    <th className="p-2 border-r border-slate-200 w-24 text-center">{isRtl ? 'الرقم الأكاديمي' : 'Faculty ID'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'عضو هيئة التدريس / المحاضر' : 'Faculty Member / Instructor'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'التخصص الأكاديمي' : 'Speciality / Dept'}</th>
+                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'الأنصبة الأكاديمية' : 'Workload'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -1014,7 +1017,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   {filteredTeachers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching teachers'}
+                        {isRtl ? 'لا يوجد أعضاء هيئة تدريس مطابقون' : 'No matching faculty members'}
                       </td>
                     </tr>
                   ) : (
@@ -1029,7 +1032,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                         </td>
                         <td className="p-2 border-r border-slate-200 text-slate-600">{tc.speciality}</td>
                         <td className="p-2 border-r border-slate-200 text-center font-bold text-emerald-700">
-                          {lessons.filter((l) => l.teacherId === tc.id).length} {isRtl ? 'حصص' : 'hrs'}
+                          {lessons.filter((l) => l.teacherId === tc.id).length} {isRtl ? 'محاضرة' : 'lectures'}
                         </td>
                         <td className="p-2 text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -1059,18 +1062,18 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
             </div>
           )}
 
-          {/* 6. Lessons Tab */}
+          {/* 6. Curriculum Lectures & Labs Tab */}
           {activeTab === 'lessons' && (
             <div className="flex flex-col gap-3">
               <table className="w-full border-collapse border border-slate-200">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
-                    <th className="p-2 border-r border-slate-200 w-16 text-center">ID</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المادة' : 'Subject'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المعلم' : 'Teacher'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'الفصل' : 'Class'}</th>
-                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'المجموعة / التقسيم' : 'Group / Split'}</th>
-                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'القاعة' : 'Room'}</th>
+                    <th className="p-2 border-r border-slate-200 w-24 text-center">{isRtl ? 'رمز المحاضرة' : 'Lecture ID'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المقرر' : 'Course'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المحاضر' : 'Faculty / Instructor'}</th>
+                    <th className="p-2 border-r border-slate-200">{isRtl ? 'الدفعة / الشعبة' : 'Group / Section'}</th>
+                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'السكشن / المجموعة الفرعية' : 'Sub-group / Lab Section'}</th>
+                    <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'القاعة / المعمل' : 'Hall / Lab'}</th>
                     <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
                 </thead>
@@ -1078,7 +1081,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   {filteredLessons.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد نتائج مطابقة' : 'No matching lessons'}
+                        {isRtl ? 'لا توجد محاضرات مطابقة' : 'No matching lectures'}
                       </td>
                     </tr>
                   ) : (
@@ -1097,11 +1100,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                         <td className="p-2 border-r border-slate-200 text-center text-xs">
                           {l.isSplitGroup || (l.groupName && l.groupName.toLowerCase() !== 'entire class' && l.groupName !== 'كامل الفصل') ? (
                             <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold border border-amber-300">
-                              {l.groupName || (isRtl ? 'مجموعة مقسمة' : 'Split Group')}
+                              {l.groupName || (isRtl ? 'سكشن عملي' : 'Lab Section')}
                             </span>
                           ) : (
                             <span className="text-slate-400">
-                              {isRtl ? 'كامل الفصل' : 'Entire Class'}
+                              {isRtl ? 'كامل الشعبة / الدفعة' : 'Entire Section / Batch'}
                             </span>
                           )}
                           {Boolean(l.jointClassIds && l.jointClassIds.length > 0) && (
@@ -1152,7 +1155,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       {isRtl ? 'اسم الطالب' : 'Student Name'}
                     </th>
                     <th className="p-2.5 text-start border-r border-slate-200">
-                      {isRtl ? 'الصف / الفصل' : 'Grade / Class'}
+                      {isRtl ? 'المستوى / الشعبة' : 'Level / Section'}
                     </th>
                     <th className="p-2.5 text-start border-r border-slate-200">
                       {isRtl ? 'المقررات المسجلة' : 'Enrolled Courses'}
@@ -1217,7 +1220,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       {isRtl ? 'اسم السمينار / المقرر' : 'Seminar / Course'}
                     </th>
                     <th className="p-2.5 text-start border-r border-slate-200">
-                      {isRtl ? 'المحاضر / المعلم' : 'Instructor'}
+                      {isRtl ? 'المحاضر / عضو التدريس' : 'Faculty / Instructor'}
                     </th>
                     <th className="p-2.5 text-center border-r border-slate-200">
                       {isRtl ? 'الطلاب المسجلون' : 'Enrollment'}
@@ -1246,7 +1249,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                           {sem.name}
                         </td>
                         <td className="p-2.5 border-r border-slate-200 text-slate-700">
-                          {teacherMap?.get(sem.teacherId)?.name || 'Teacher'}
+                          {teacherMap?.get(sem.teacherId)?.name || (isRtl ? 'المحاضر' : 'Instructor')}
                         </td>
                         <td className="p-2.5 border-r border-slate-200 text-center font-bold text-slate-700">
                           {sem.enrolledStudentIds?.length || 0} / {sem.capacity}
@@ -1292,29 +1295,49 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   ? isRtl
                     ? `إضافة ${
                         editingEntityType === 'subject'
-                          ? 'مادة'
+                          ? 'مقرر دراسي جديد'
                           : editingEntityType === 'class'
-                          ? 'فصل'
+                          ? 'دفعة / شعبة جديدة'
                           : editingEntityType === 'room'
-                          ? 'قاعة'
+                          ? 'قاعة / معمل جديد'
                           : editingEntityType === 'teacher'
-                          ? 'معلم'
-                          : 'حصة'
-                      } جديدة`
-                    : `Add New ${editingEntityType.toUpperCase()}`
+                          ? 'عضو هيئة تدريس جديد'
+                          : 'محاضرة جديدة'
+                      }`
+                    : `Add New ${
+                        editingEntityType === 'subject'
+                          ? 'Course'
+                          : editingEntityType === 'class'
+                          ? 'Group / Section'
+                          : editingEntityType === 'room'
+                          ? 'Hall / Lab'
+                          : editingEntityType === 'teacher'
+                          ? 'Faculty Member'
+                          : 'Lecture'
+                      }`
                   : isRtl
                   ? `تعديل ${
                       editingEntityType === 'subject'
-                        ? 'المادة'
+                        ? 'المقرر الدراسي'
                         : editingEntityType === 'class'
-                        ? 'الفصل'
+                        ? 'الدفعة / الشعبة'
                         : editingEntityType === 'room'
-                        ? 'القاعة'
+                        ? 'القاعة / المعمل'
                         : editingEntityType === 'teacher'
-                        ? 'المعلم'
-                        : 'الحصة'
+                        ? 'عضو هيئة التدريس'
+                        : 'المحاضرة'
                     }`
-                  : `Edit ${editingEntityType.toUpperCase()}`}
+                  : `Edit ${
+                      editingEntityType === 'subject'
+                        ? 'Course'
+                        : editingEntityType === 'class'
+                        ? 'Group / Section'
+                        : editingEntityType === 'room'
+                        ? 'Hall / Lab'
+                        : editingEntityType === 'teacher'
+                        ? 'Faculty Member'
+                        : 'Lecture'
+                    }`}
               </h3>
               <button
                 type="button"
@@ -1333,38 +1356,38 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 </div>
               )}
 
-              {/* Subject Form */}
+              {/* Subject (Course) Form */}
               {editingEntityType === 'subject' && (
                 <>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رمز المادة' : 'Code'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رمز المقرر' : 'Course Code'} *</label>
                     <input
                       type="text"
                       required
                       value={formSubject.code || ''}
                       onChange={(e) => setFormSubject({ ...formSubject, code: e.target.value })}
-                      placeholder="e.g. MATH"
+                      placeholder="e.g. CS201"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الاسم (إنجليزي)' : 'Name'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم المقرر (إنجليزي)' : 'Course Name (EN)'} *</label>
                     <input
                       type="text"
                       required
                       value={formSubject.name || ''}
                       onChange={(e) => setFormSubject({ ...formSubject, name: e.target.value })}
-                      placeholder="e.g. Mathematics"
+                      placeholder="e.g. Data Structures & Algorithms"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الاسم (عربي)' : 'Name (Arabic)'}</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم المقرر (عربي)' : 'Course Name (AR)'}</label>
                     <input
                       type="text"
                       value={formSubject.nameAr || ''}
                       onChange={(e) => setFormSubject({ ...formSubject, nameAr: e.target.value })}
-                      placeholder="مثال: الرياضيات"
+                      placeholder="مثال: هياكل البيانات والخوارزميات"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
@@ -1382,7 +1405,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       </div>
                     </div>
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'القاعة المطلوبة' : 'Room Type'}</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'القاعة / المعمل المطلوب' : 'Required Hall / Lab'}</label>
                       <select
                         value={formSubject.requiredRoomType || 'STANDARD'}
                         onChange={(e) => setFormSubject({ ...formSubject, requiredRoomType: e.target.value })}
@@ -1398,11 +1421,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 </>
               )}
 
-              {/* Class Form */}
+              {/* Class (Group / Section) Form */}
               {editingEntityType === 'class' && (
                 <>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">Class ID</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رمز الدفعة' : 'Group ID'}</label>
                     <input
                       type="text"
                       disabled={dialogMode === 'edit'}
@@ -1412,13 +1435,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم الفصل / الشعبة' : 'Class Name'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم الدفعة / الشعبة' : 'Group / Section Name'} *</label>
                     <input
                       type="text"
                       required
                       value={formClass.name || ''}
                       onChange={(e) => setFormClass({ ...formClass, name: e.target.value })}
-                      placeholder="e.g. Class 10-A"
+                      placeholder="e.g. CyberSecurity-L2-SecA"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
@@ -1428,12 +1451,12 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       type="text"
                       value={formClass.nameAr || ''}
                       onChange={(e) => setFormClass({ ...formClass, nameAr: e.target.value })}
-                      placeholder="مثال: فصل 10-أ"
+                      placeholder="مثال: أمن سيبراني - مستوى 2 - شعبة أ"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المستوى الدراسي' : 'Grade'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المستوى الدراسي / السنة' : 'Academic Level / Year'} *</label>
                     <input
                       type="number"
                       min={1}
@@ -1447,11 +1470,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 </>
               )}
 
-              {/* Room Form */}
+              {/* Room (Hall / Lab) Form */}
               {editingEntityType === 'room' && (
                 <>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">Room ID</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رمز القاعة / المعمل' : 'Hall / Lab ID'}</label>
                     <input
                       type="text"
                       disabled={dialogMode === 'edit'}
@@ -1461,13 +1484,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم القاعة' : 'Room Name'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم القاعة / المعمل' : 'Hall / Lab Name'} *</label>
                     <input
                       type="text"
                       required
                       value={formRoom.name || ''}
                       onChange={(e) => setFormRoom({ ...formRoom, name: e.target.value })}
-                      placeholder="e.g. Science Lab 1"
+                      placeholder="e.g. Auditorium A101 / C-Lab D403"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
@@ -1477,13 +1500,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       type="text"
                       value={formRoom.nameAr || ''}
                       onChange={(e) => setFormRoom({ ...formRoom, nameAr: e.target.value })}
-                      placeholder="مثال: مختبر العلوم 1"
+                      placeholder="مثال: المدرج المركزي A101 / معمل البرمجة D403"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'نوع القاعة' : 'Type'}</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'نوع القاعة / المعمل' : 'Facility Type'}</label>
                       <select
                         value={formRoom.type || 'STANDARD'}
                         onChange={(e) => setFormRoom({ ...formRoom, type: e.target.value as any })}
@@ -1496,7 +1519,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'السعة القصوى' : 'Capacity'} *</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'السعة الاستيعابية للطلاب' : 'Max Student Capacity'} *</label>
                       <input
                         type="number"
                         min={1}
@@ -1511,11 +1534,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 </>
               )}
 
-              {/* Teacher Form */}
+              {/* Teacher (Faculty) Form */}
               {editingEntityType === 'teacher' && (
                 <>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">Teacher ID</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الرقم الأكاديمي' : 'Faculty ID'}</label>
                     <input
                       type="text"
                       disabled={dialogMode === 'edit'}
@@ -1525,13 +1548,13 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم المعلم' : 'Teacher Name'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم عضو هيئة التدريس / المحاضر' : 'Faculty / Instructor Name'} *</label>
                     <input
                       type="text"
                       required
                       value={formTeacher.name || ''}
                       onChange={(e) => setFormTeacher({ ...formTeacher, name: e.target.value })}
-                      placeholder="e.g. Prof. Ahmed"
+                      placeholder="e.g. Prof. Dr. Ahmed Khaled"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
@@ -1541,19 +1564,19 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       type="text"
                       value={formTeacher.nameAr || ''}
                       onChange={(e) => setFormTeacher({ ...formTeacher, nameAr: e.target.value })}
-                      placeholder="مثال: أ. أحمد سالم"
+                      placeholder="مثال: أ.د. أحمد خالد / د. إبراهيم الحداد"
                       className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'التخصص' : 'Speciality'} *</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'التخصص / القسم الأكاديمي' : 'Speciality / Department'} *</label>
                       <input
                         type="text"
                         required
                         value={formTeacher.speciality || ''}
                         onChange={(e) => setFormTeacher({ ...formTeacher, speciality: e.target.value })}
-                        placeholder="e.g. Mathematics"
+                        placeholder="e.g. Computer Science"
                         className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                     </div>
@@ -1573,11 +1596,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                 </>
               )}
 
-              {/* Lesson Form */}
+              {/* Lesson (Curriculum Lecture) Form */}
               {editingEntityType === 'lesson' && (
                 <>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">Lesson ID</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رمز المحاضرة' : 'Lecture ID'}</label>
                     <input
                       type="text"
                       disabled={dialogMode === 'edit'}
@@ -1588,14 +1611,14 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المادة' : 'Subject'} *</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المقرر' : 'Course'} *</label>
                       <select
                         required
                         value={formLesson.subjectId || ''}
                         onChange={(e) => setFormLesson({ ...formLesson, subjectId: e.target.value })}
                         className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       >
-                        <option value="">{isRtl ? '-- اختر المادة --' : '-- Select Subject --'}</option>
+                        <option value="">{isRtl ? '-- اختر المقرر --' : '-- Select Course --'}</option>
                         {subjects.map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.code} - {isRtl ? s.nameAr || s.name : s.name}
@@ -1604,14 +1627,14 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المعلم' : 'Teacher'} *</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المحاضر' : 'Faculty / Instructor'} *</label>
                       <select
                         required
                         value={formLesson.teacherId || ''}
                         onChange={(e) => setFormLesson({ ...formLesson, teacherId: e.target.value })}
                         className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       >
-                        <option value="">{isRtl ? '-- اختر المعلم --' : '-- Select Teacher --'}</option>
+                        <option value="">{isRtl ? '-- اختر المحاضر --' : '-- Select Faculty --'}</option>
                         {teachers.map((tc) => (
                           <option key={tc.id} value={tc.id}>
                             {isRtl ? tc.nameAr || tc.name : tc.name} ({tc.speciality})
@@ -1622,23 +1645,23 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الفصل' : 'Class'} *</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الدفعة / الشعبة' : 'Group / Section'} *</label>
                       <select
                         required
                         value={formLesson.classId || ''}
                         onChange={(e) => setFormLesson({ ...formLesson, classId: e.target.value })}
                         className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       >
-                        <option value="">{isRtl ? '-- اختر الفصل --' : '-- Select Class --'}</option>
+                        <option value="">{isRtl ? '-- اختر الدفعة / الشعبة --' : '-- Select Group / Section --'}</option>
                         {classes.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {isRtl ? c.nameAr || c.name : c.name} (Grade {c.grade})
+                            {isRtl ? c.nameAr || c.name : c.name} ({t.terms.levelFormat ? t.terms.levelFormat(c.grade) : (isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`)})
                           </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'القاعة' : 'Room'}</label>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'القاعة / المعمل' : 'Hall / Lab'}</label>
                       <select
                         value={formLesson.roomId || ''}
                         onChange={(e) => setFormLesson({ ...formLesson, roomId: e.target.value })}
@@ -1654,7 +1677,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     </div>
                   </div>
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المدة (بالحصص)' : 'Duration (Periods)'}</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المدة (بالمحاضرات)' : 'Duration (Lectures)'}</label>
                     <input
                       type="number"
                       min={1}
@@ -1682,16 +1705,16 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                         }}
                         className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4"
                       />
-                      <span>{isRtl ? 'تقسيم الفصل / مجموعة فرعية (Split Group)' : 'Divided Class / Split Group'}</span>
+                      <span>{isRtl ? 'تقسيم سكشن عملي / مجموعة فرعية (Lab Section)' : 'Sub-group / Lab Section'}</span>
                     </label>
                     {Boolean(formLesson.isSplitGroup) && (
                       <div>
                         <label className="font-semibold block mb-1 text-[11px] text-slate-600">
-                          {isRtl ? 'اسم المجموعة (مثل: بنين، بنات، مجموعة 1، فرنسي)' : 'Group Name (e.g. Group 1, Group 2, Boys, Girls)'}
+                          {isRtl ? 'اسم السكشن أو المجموعة (مثل: Sec-A، معمل 1)' : 'Sub-group name (e.g. Lab Sec A, Group 1)'}
                         </label>
                         <input
                           type="text"
-                          placeholder={isRtl ? 'أدخل اسم المجموعة' : 'Enter group name'}
+                          placeholder={isRtl ? 'أدخل اسم السكشن أو المجموعة' : 'Enter sub-group name'}
                           value={formLesson.groupName || ''}
                           onChange={(e) => setFormLesson({ ...formLesson, groupName: e.target.value })}
                           className="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -1704,7 +1727,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <label className="font-bold block mb-1 text-slate-700">
-                        {isRtl ? 'فصول مشتركة' : 'Joint Classes'}
+                        {isRtl ? 'شعب / دفعات مشتركة' : 'Joint Groups / Sections'}
                       </label>
                       <select
                         multiple
@@ -1726,7 +1749,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     </div>
                     <div>
                       <label className="font-bold block mb-1 text-slate-700">
-                        {isRtl ? 'معلمون مشتركون' : 'Co-Teachers'}
+                        {isRtl ? 'محاضرون / معيدون مشاركون' : 'Co-Instructors / TAs'}
                       </label>
                       <select
                         multiple

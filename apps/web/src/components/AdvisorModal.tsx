@@ -60,7 +60,7 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
   const diagnostics = useMemo<AdvisorDiagnostic[]>(() => {
     const list: AdvisorDiagnostic[] = [];
 
-    // 1. Teacher Workload vs Available Unblocked Slots (Pigeonhole Principle)
+    // 1. Faculty Workload vs Available Unblocked Slots (Pigeonhole Principle)
     const teacherLessonHours = new Map<string, number>();
     for (const l of lessons) {
       const dur = l.duration || 1;
@@ -91,12 +91,12 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
           id: `ADV_PIGEONHOLE_${teacher.id}`,
           type: 'PIGEONHOLE_TEACHER',
           severity: 'CRITICAL',
-          title: `Impossible Schedule for ${teacher.name}`,
-          titleAr: `استحالة رياضية لتسكين جدول المعلم: ${teacher.name}`,
-          analysis: `Teacher ${teacher.name} has ${requiredHours} required weekly periods, but only ${availableSlots} available slots due to ${blockedCount} blocked periods in Time-Off (Deficit: ${shortage} periods).`,
-          analysisAr: `المعلم ${teacher.name} مطلوب منه تدريس ${requiredHours} حصة، بينما المتاح له فقط ${availableSlots} فترة بسبب حظر ${blockedCount} حصة في جدول تفريغه (العجز: ${shortage} حصة). التسكين مستحيل رياضياً.`,
-          suggestedAction: `Unblock at least ${shortage} periods in ${teacher.name}'s Time-Off schedule.`,
-          suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} حصص في جدول تفريغ المعلم ${teacher.name}.`,
+          title: `Impossible Schedule for Faculty Member: ${teacher.name}`,
+          titleAr: `استحالة رياضية لتسكين جدول عضو هيئة التدريس: ${teacher.name}`,
+          analysis: `Faculty member ${teacher.name} has ${requiredHours} required weekly lecture hours, but only ${availableSlots} available slots due to ${blockedCount} blocked periods in Time-Off (Deficit: ${shortage} lectures).`,
+          analysisAr: `عضو هيئة التدريس ${teacher.name} مطلوب منه تدريس ${requiredHours} محاضرة، بينما المتاح له فقط ${availableSlots} فترة بسبب حظر ${blockedCount} فترة في جدول تفريغه (العجز: ${shortage} محاضرة). التسكين مستحيل رياضياً.`,
+          suggestedAction: `Unblock at least ${shortage} lecture slots in ${teacher.name}'s Time-Off schedule.`,
+          suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} محاضرات في جدول تفريغ عضو هيئة التدريس ${teacher.name}.`,
           actionPayload: {
             type: 'UNBLOCK_TIMEOFF',
             teacherId: teacher.id,
@@ -106,7 +106,7 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
       }
     }
 
-    // 2. Room Type Depletion Bottleneck
+    // 2. Hall & Lab Type Depletion Bottleneck
     const roomTypeCounts = new Map<string, number>();
     for (const r of rooms) {
       if (r.type && r.type !== 'STANDARD') {
@@ -134,12 +134,12 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
           id: `ADV_ROOM_${rType}`,
           type: 'ROOM_BOTTLENECK',
           severity: 'CRITICAL',
-          title: `Severe Room Shortage: ${rType}`,
-          titleAr: `عجز حاد في قاعات: ${rType}`,
-          analysis: `Total weekly demand for ${rType} is ${demandedHours} hours, but the school only has ${physicalRooms} room(s) of this type (${totalAvailableLabHours} max capacity).`,
-          analysisAr: `الطلب الأسبوعي على قاعات (${rType}) هو ${demandedHours} حصة، بينما المدرسة تمتلك فقط ${physicalRooms} قاعة بطاقة قصوى ${totalAvailableLabHours} حصة.`,
-          suggestedAction: `Allow general classroom fallback or add another ${rType} facility.`,
-          suggestedActionAr: `السماح باستخدام الفصول العادية كبديل أو إضافة قاعة ${rType} أخرى.`,
+          title: `Severe Hall / Lab Shortage: ${rType}`,
+          titleAr: `عجز حاد في قاعات / معامل: ${rType}`,
+          analysis: `Total weekly demand for ${rType} is ${demandedHours} hours, but the university only has ${physicalRooms} hall(s)/lab(s) of this type (${totalAvailableLabHours} max capacity).`,
+          analysisAr: `الطلب الأسبوعي على قاعات/معامل (${rType}) هو ${demandedHours} محاضرة، بينما الكلية تمتلك فقط ${physicalRooms} قاعة/معمل بطاقة قصوى ${totalAvailableLabHours} محاضرة.`,
+          suggestedAction: `Allow general lecture hall fallback or add another ${rType} facility.`,
+          suggestedActionAr: `السماح باستخدام المدرجات والقاعات العامة كبديل أو إضافة قاعة/معمل ${rType} إضافي.`,
           actionPayload: {
             type: 'FALLBACK_ROOM',
             roomId: rType,
@@ -148,7 +148,7 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
       }
     }
 
-    // 3. Class Hours Overload
+    // 3. Group / Section Load Overload
     const classTotalHours = new Map<string, number>();
     for (const l of lessons) {
       const dur = l.duration || 1;
@@ -162,12 +162,12 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
           id: `ADV_CLASS_${cls.id}`,
           type: 'UNRESOLVABLE_CLASH',
           severity: 'CRITICAL',
-          title: `Over-allocated Curriculum for ${cls.name}`,
-          titleAr: `حمولة حصص زائدة للفصل: ${cls.name}`,
-          analysis: `Class ${cls.name} has ${totalH} assigned weekly hours, which exceeds the entire week capacity of ${totalCycleSlots} periods.`,
-          analysisAr: `الفصل ${cls.name} تم إسناد ${totalH} حصة له أسبوعياً، وهو ما يتجاوز الطاقة القصوى لكامل الأسبوع (${totalCycleSlots} حصة).`,
-          suggestedAction: `Reduce weekly lessons for this class by ${totalH - totalCycleSlots} periods.`,
-          suggestedActionAr: `تقليص الحصص الأسبوعية لهذا الفصل بمقدار ${totalH - totalCycleSlots} حصص.`,
+          title: `Over-allocated Curriculum for Section: ${cls.name}`,
+          titleAr: `حمولة محاضرات زائدة للدفعة/الشعبة: ${cls.name}`,
+          analysis: `Group/Section ${cls.name} has ${totalH} assigned weekly hours, which exceeds the entire week capacity of ${totalCycleSlots} lecture slots.`,
+          analysisAr: `الدفعة/الشعبة ${cls.name} تم إسناد ${totalH} محاضرة لها أسبوعياً، وهو ما يتجاوز الطاقة القصوى لكامل الأسبوع (${totalCycleSlots} محاضرة).`,
+          suggestedAction: `Reduce weekly lectures for this group/section by ${totalH - totalCycleSlots} lectures.`,
+          suggestedActionAr: `تقليص المحاضرات الأسبوعية لهذه الدفعة/الشعبة بمقدار ${totalH - totalCycleSlots} محاضرة.`,
         });
       }
     }
@@ -225,8 +225,8 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
               </h3>
               <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
                 {isRtl
-                  ? 'أنصبة المعلمين، سعات القاعات، وجداول التفريغ متوافقة وقابلة للتسكين بنجاح.'
-                  : 'Teacher workloads, room capacities, and time-off policies satisfy feasibility bounds.'}
+                  ? 'أنصبة أعضاء هيئة التدريس، سعات القاعات والمعامل، وجداول التفريغ متوافقة وقابلة للتسكين بنجاح.'
+                  : 'Faculty workloads, hall & lab capacities, and time-off policies satisfy feasibility bounds.'}
               </p>
             </div>
           ) : (

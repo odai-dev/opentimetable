@@ -223,17 +223,17 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                 onChange={(e) => setSelectedEntityId(e.target.value)}
                 className="bg-white border border-slate-300 rounded px-3 py-1 font-semibold text-slate-800 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
               >
-                <optgroup label={isRtl ? 'المعلمون' : 'Teachers'}>
+                <optgroup label={isRtl ? 'أعضاء هيئة التدريس' : 'Faculty & Instructors'}>
                   {teachers.map((tc) => (
                     <option key={tc.id} value={tc.id}>
                       {isRtl ? tc.nameAr || tc.name : tc.name} ({tc.speciality})
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label={isRtl ? 'الفصول' : 'Classes'}>
+                <optgroup label={isRtl ? 'الدفعات والشعب' : 'Groups & Sections'}>
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {isRtl ? c.nameAr || c.name : c.name} (Grade {c.grade})
+                      {isRtl ? c.nameAr || c.name : c.name} ({isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`})
                     </option>
                   ))}
                 </optgroup>
@@ -275,7 +275,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-bold text-[11px]">
                   <th className="p-2 border-r border-slate-300 w-28 bg-slate-200/70 text-start px-3">
-                    {isRtl ? 'اليوم / الحصة' : 'Day / Period'}
+                    {isRtl ? 'اليوم / المحاضرة' : 'Day / Lecture'}
                   </th>
                   {periodsList.map((_, pIdx) => {
                     const bellTime = bells[pIdx] ? bells[pIdx].split('-')[0].trim() : '';
@@ -284,7 +284,7 @@ export const TimeOffModal: React.FC<TimeOffModalProps> = ({
                         key={pIdx}
                         onClick={() => handleTogglePeriod(pIdx)}
                         className="p-2 border-r border-slate-200 hover:bg-slate-200 cursor-pointer transition select-none min-w-[50px]"
-                        title={isRtl ? `انقر لتعديل عمود الحصة ${pIdx + 1}` : `Click to toggle column ${pIdx + 1}`}
+                        title={isRtl ? `انقر لتعديل عمود المحاضرة ${pIdx + 1}` : `Click to toggle lecture column ${pIdx + 1}`}
                       >
                         <div>{pIdx + 1}</div>
                         {bellTime && (

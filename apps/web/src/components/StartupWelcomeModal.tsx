@@ -5,7 +5,7 @@ import {
   FilePlus,
   FolderOpen,
   Sparkles,
-  School,
+  GraduationCap,
   X,
   ArrowRight,
   ArrowLeft,
@@ -78,7 +78,7 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
         <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white px-6 py-5 flex items-center justify-between border-b border-sky-800/40">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-400 shadow-inner">
-              <School className="w-7 h-7" />
+              <GraduationCap className="w-7 h-7" />
             </div>
             <div>
               <h2 className="text-lg font-bold tracking-tight">
@@ -86,8 +86,8 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
               </h2>
               <p className="text-xs text-slate-300">
                 {isRtl
-                  ? 'برنامج إعداد وتوليد الجداول المدرسية الاحترافية'
-                  : 'Professional High-Performance School Timetable Software'}
+                  ? 'استوديو إعداد وتوليد الجداول الأكاديمية والجامعية الاحترافية'
+                  : 'Professional University & Faculty Scheduling Studio'}
               </p>
             </div>
           </div>
@@ -102,7 +102,7 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
 
         {/* Action Cards */}
         <div className="p-6 flex flex-col gap-3.5 bg-slate-50/70">
-          {/* 1. Create New Timetable */}
+          {/* 1. University Setup Wizard / New Faculty Timetable */}
           <button
             onClick={handleCreateNew}
             className="group flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-sky-500 hover:shadow-md transition text-start"
@@ -113,19 +113,19 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
               </div>
               <div>
                 <h3 className="font-bold text-sm text-slate-800 group-hover:text-sky-600 transition">
-                  {isRtl ? 'إنشاء جدول مدرسي جديد' : 'Create New Timetable'}
+                  {isRtl ? 'معالج إعداد الجدول الجامعي' : 'University Setup Wizard'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   {isRtl
-                    ? 'بدء مشروع جديد وضبط أيام الدوام والحصص والمواد والمعلمين'
-                    : 'Start a blank project and configure your school days, bells, and subjects'}
+                    ? 'بدء مشروع جديد وضبط أيام الدوام والمحاضرات والمقررات وأعضاء هيئة التدريس'
+                    : 'Start a blank project and configure academic cycle days, lecture times, faculties, and courses'}
                 </p>
               </div>
             </div>
             <NextArrow className="w-5 h-5 text-slate-400 group-hover:text-sky-600 transition shrink-0" />
           </button>
 
-          {/* 2. Open Existing File */}
+          {/* 2. Import .roz Binary */}
           <button
             onClick={handleOpenFile}
             className="group flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-amber-500 hover:shadow-md transition text-start"
@@ -136,12 +136,12 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
               </div>
               <div>
                 <h3 className="font-bold text-sm text-slate-800 group-hover:text-amber-600 transition">
-                  {isRtl ? 'فتح جدول موجود من جهازك' : 'Open Existing Timetable'}
+                  {isRtl ? 'استيراد جدول (.roz) أو مشروع' : 'Import .roz Binary or Project'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   {isRtl
-                    ? 'استيراد ملف (.roz) من برنامج aSc أو ملف مشروع (.json)'
-                    : 'Open an aSc Timetables (.roz) file or project (.json)'}
+                    ? 'استيراد ملف (.roz) من نظام aSc أو ملف مشروع جامعي (.json)'
+                    : 'Open an aSc Timetables (.roz) binary or university project (.json)'}
                 </p>
               </div>
             </div>
@@ -160,12 +160,12 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-800">
-                    {isRtl ? 'استكشاف مدرسة نموذجية (تجربة)' : 'Explore Sample School (Demo)'}
+                    {isRtl ? 'استكشف النموذج الجامعي (تجريبي)' : 'Explore Sample University (Demo)'}
                   </h3>
                   <p className="text-xs text-slate-500">
                     {isRtl
-                      ? 'تحميل جدول حقيقي مسبق التجهيز لتجربة البرنامج ومحرك التوليد'
-                      : 'Load a real ready-made timetable to test the studio and solver'}
+                      ? 'تحميل جدول جامعي حقيقي مسبق التجهيز لتجربة البرنامج ومحرك التوليد'
+                      : 'Load a real ready-made university timetable to test the studio and solver'}
                   </p>
                 </div>
               </div>
@@ -184,7 +184,7 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
                 >
                   <span className="font-bold flex items-center gap-2">
                     <span>🇸🇦</span>
-                    <span>{isRtl ? 'مدرسة ثانوية نموذجية (82 معلماً، 12 حصة)' : 'Full Secondary School (82 Teachers, 12 Periods)'}</span>
+                    <span>{isRtl ? 'جدول جامعي نموذجي (82 عضو تدريس، 12 محاضرة)' : 'University Campus (82 Faculty, 12 Lecture Slots)'}</span>
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">Saudi Arabia 1</span>
                 </button>
@@ -194,7 +194,7 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
                 >
                   <span className="font-bold flex items-center gap-2">
                     <span>🌍</span>
-                    <span>{isRtl ? 'مدرسة نموذجية كاملة (7 أيام، 45 معلماً)' : '7-Day Cycle School (45 Teachers, 7 Periods)'}</span>
+                    <span>{isRtl ? 'جدول أكاديمي كامل (45 عضو تدريس، 7 محاضرات)' : 'Academic Faculty Timetable (45 Faculty, 7 Lectures)'}</span>
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">Demo 1</span>
                 </button>

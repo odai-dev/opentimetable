@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-  School,
+  Building2,
   BookOpen,
   Users,
   DoorOpen,
@@ -237,8 +237,8 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               (() =>
                 alert(
                   isRtl
-                    ? 'برنامج الجداول المدرسية المفتوحة (OpenTimetable 2026)\nنظام متكامل مفتوح المصدر لإعداد وتوليد الجداول المدرسية والجامعية.\nمتوافق مع ملفات .roz ويعمل بكفاءة عالية بدون الحاجة لأي خوادم خارجية.'
-                    : 'OpenTimetable 2026 Studio\nStandalone open-source school and university timetable system.\nCompatible with .roz files with high-performance desktop parity.'
+                    ? 'استوديو إعداد وتوليد الجداول الأكاديمية والجامعية (OpenTimetable 2026)\nنظام متكامل مفتوح المصدر لإعداد وتوليد الجداول الجامعية والأكاديمية.\nمتوافق مع ملفات .roz ويعمل بكفاءة عالية بدون الحاجة لأي خوادم خارجية.'
+                    : 'OpenTimetable 2026 Studio\nStandalone open-source university and faculty scheduling studio.\nCompatible with .roz files with high-performance desktop parity.'
                 ))
             }
             title={isRtl ? 'المساعدة واختصارات لوحة المفاتيح' : 'Help & Keyboard Shortcuts'}
@@ -303,7 +303,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   onClick={() => onOpenBasicData('school')}
                   className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-sky-50 active:bg-sky-100 border border-transparent hover:border-sky-200 text-slate-700 hover:text-sky-800 transition w-14"
                 >
-                  <School className="w-7 h-7 text-sky-600 mb-1" />
+                  <Building2 className="w-7 h-7 text-sky-600 mb-1" />
                   <span className="text-[10px] font-semibold text-center leading-tight">
                     {t.ribbon.tools.school}
                   </span>
@@ -730,11 +730,11 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <button
                     onClick={onAssignClassrooms}
                     className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-teal-50 active:bg-teal-100 border border-transparent hover:border-teal-200 text-slate-700 transition w-16"
-                    title={isRtl ? 'توزيع القاعات آلياً باستخدام خوارزمية التطابق الثنائي (Bipartite Matching)' : 'Automated classroom allocation via bipartite matching'}
+                    title={isRtl ? 'توزيع القاعات والمعامل آلياً باستخدام خوارزمية التطابق الثنائي (Bipartite Matching)' : 'Automated hall and lab allocation via bipartite matching'}
                   >
                     <DoorOpen className="w-7 h-7 text-teal-600 mb-1" />
                     <span className="text-[10px] font-semibold text-center leading-tight">
-                      {isRtl ? 'توزيع القاعات' : 'Assign Rooms'}
+                      {isRtl ? 'توزيع القاعات والمعامل' : 'Assign Halls & Labs'}
                     </span>
                   </button>
                 )}
@@ -810,7 +810,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <button
                     onClick={onLockAllPlacements}
                     className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-amber-50 border border-transparent hover:border-amber-200 text-slate-700 transition w-14"
-                    title={isRtl ? 'تثبيت وقفل جميع الحصص المسكنة لمنع نقلها' : 'Lock all placed lessons'}
+                    title={isRtl ? 'تثبيت وقفل جميع المحاضرات المسكنة لمنع نقلها' : 'Lock all placed lectures'}
                   >
                     <Lock className="w-6 h-6 text-amber-600 mb-1" />
                     <span className="text-[10px] font-semibold text-center leading-tight">
@@ -823,7 +823,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <button
                     onClick={onUnlockAllPlacements}
                     className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-slate-100 border border-transparent hover:border-slate-300 text-slate-700 transition w-14"
-                    title={isRtl ? 'إلغاء قفل جميع الحصص' : 'Unlock all placed lessons'}
+                    title={isRtl ? 'إلغاء قفل جميع المحاضرات' : 'Unlock all placed lectures'}
                   >
                     <Unlock className="w-6 h-6 text-slate-600 mb-1" />
                     <span className="text-[10px] font-semibold text-center leading-tight">
@@ -868,7 +868,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <button
                     onClick={onOpenSetupWizard}
                     className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-sky-50 active:bg-sky-100 border border-transparent hover:border-sky-200 text-slate-700 transition w-16"
-                    title={isRtl ? 'معالج إعداد بيانات المدرسة خطوة بخطوة' : 'Step-by-step school setup wizard'}
+                    title={isRtl ? 'معالج إعداد بيانات الكلية والجامعة خطوة بخطوة' : 'Step-by-step university setup wizard'}
                   >
                     <Sparkles className="w-7 h-7 text-sky-600 mb-1" />
                     <span className="text-[10px] font-semibold text-center leading-tight">
@@ -883,7 +883,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 >
                   <BookOpen className="w-7 h-7 text-emerald-600 mb-1" />
                   <span className="text-[10px] font-semibold text-center leading-tight">
-                    {isRtl ? 'شروط المواد' : 'Subject Rules'}
+                    {isRtl ? 'شروط المقررات' : 'Course Rules'}
                   </span>
                 </button>
 
@@ -893,7 +893,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 >
                   <Sliders className="w-7 h-7 text-violet-600 mb-1" />
                   <span className="text-[10px] font-semibold text-center leading-tight">
-                    {isRtl ? 'أنصبة المعلمين' : 'Teacher Gaps'}
+                    {isRtl ? 'أنصبة هيئة التدريس' : 'Faculty Workload'}
                   </span>
                 </button>
 
@@ -903,7 +903,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 >
                   <DoorOpen className="w-7 h-7 text-amber-600 mb-1" />
                   <span className="text-[10px] font-semibold text-center leading-tight">
-                    {isRtl ? 'سعة القاعات' : 'Room Limits'}
+                    {isRtl ? 'سعة القاعات والمعامل' : 'Hall & Lab Limits'}
                   </span>
                 </button>
 
@@ -984,7 +984,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                   <button
                     onClick={onOpenCardLayout}
                     className="flex flex-col items-center justify-center p-1.5 rounded-md hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-slate-700 transition w-16"
-                    title={isRtl ? 'تخصيص أسطر وألوان بطاقات الحصص والخطوط' : 'Customize card layout, colors, and typography'}
+                    title={isRtl ? 'تخصيص أسطر وألوان بطاقات المحاضرات والخطوط' : 'Customize lecture card layout, colors, and typography'}
                   >
                     <LayoutTemplate className="w-6 h-6 mb-1 text-indigo-600" />
                     <span className="text-[10px] text-center leading-tight font-semibold">
@@ -1001,7 +1001,7 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                         ? 'bg-sky-100 border-sky-300 text-sky-900 font-bold shadow-xs'
                         : 'hover:bg-slate-100 border-transparent'
                     }`}
-                    title={isRtl ? 'عرض الجداول المرتبطة المتزامنة (المعلم والقاعة والفصل معاً)' : 'Synchronized related timetables multi-pane dock'}
+                    title={isRtl ? 'عرض الجداول المرتبطة المتزامنة (عضو هيئة التدريس، القاعة/المعمل، والشعبة معاً)' : 'Synchronized related timetables (Faculty, Hall/Lab, and Group simultaneously)'}
                   >
                     <Network className="w-6 h-6 mb-1 text-sky-600" />
                     <span className="text-[10px] text-center leading-tight">

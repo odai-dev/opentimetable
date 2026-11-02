@@ -157,21 +157,21 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
         for (const ot of overloadedTeachers) {
           notes.push(
             isRtl
-              ? `تعذر التسكين: المعلم ${ot.teacher.nameAr || ot.teacher.name} مسند إليه (${ot.load}) حصة بينما المتاح له (${ot.effectiveCap}) فقط بعد حسم (${ot.blocked}) فترات تفرغ`
-              : `Infeasible: Teacher ${ot.teacher.name} has ${ot.load} assigned lessons but only ${ot.effectiveCap} available slots after deducting ${ot.blocked} time-off slots`
+              ? `تعذر التسكين: عضو هيئة التدريس ${ot.teacher.nameAr || ot.teacher.name} مسند إليه (${ot.load}) محاضرة بينما المتاح له (${ot.effectiveCap}) فقط بعد حسم (${ot.blocked}) فترات تفرغ`
+              : `Infeasible: Faculty Member ${ot.teacher.name} has ${ot.load} assigned lectures but only ${ot.effectiveCap} available slots after deducting ${ot.blocked} time-off slots`
           );
         }
       } else if (maxTeacherLoad > highWorkloadThreshold) {
         notes.push(
           isRtl
-            ? 'تنبيه: بعض المعلمين لديهم أنصبة مرتفعة تقترب من الحد الأقصى'
-            : 'Warning: Some teachers have workloads near weekly capacity limit'
+            ? 'تنبيه: بعض أعضاء هيئة التدريس لديهم أنصبة مرتفعة تقترب من الحد الأقصى'
+            : 'Warning: Some faculty members have workloads near weekly capacity limit'
         );
       } else {
         notes.push(
           isRtl
-            ? 'أنصبة المعلمين متوازنة وقابلة للتسكين ضمن الطاقة الاستيعابية'
-            : 'All teacher workloads are well-balanced within weekly limits'
+            ? 'أنصبة أعضاء هيئة التدريس متوازنة وقابلة للتسكين ضمن الطاقة الاستيعابية'
+            : 'All faculty workloads are well-balanced within weekly limits'
         );
       }
 
@@ -191,8 +191,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
           isFeasible = false;
           notes.push(
             isRtl
-              ? `تعذر التسكين: الفصل ${cls.nameAr || cls.name} لديه (${load}) حصة بينما الفترات المتاحة له (${effectiveCap}) فقط`
-              : `Infeasible: Class ${cls.name} has ${load} lessons but only ${effectiveCap} open slots`
+              ? `تعذر التسكين: الدفعة / الشعبة ${cls.nameAr || cls.name} لديها (${load}) محاضرة بينما الفترات المتاحة لها (${effectiveCap}) فقط`
+              : `Infeasible: Group/Section ${cls.name} has ${load} lectures but only ${effectiveCap} open slots`
           );
         }
       }
@@ -206,8 +206,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
           if (tw.load > maxWeeklyFromDaily) {
             notes.push(
               isRtl
-                ? `تنبيه قيود متقدمة: المعلم ${tw.teacher.nameAr || tw.teacher.name} يتجاوز الحد اليومي (${maxDaily} حصص/يوم)`
-                : `Advanced Rule Notice: Teacher ${tw.teacher.name} exceeds daily period limit (${maxDaily} periods/day)`
+                ? `تنبيه قيود متقدمة: عضو التدريس ${tw.teacher.nameAr || tw.teacher.name} يتجاوز الحد اليومي (${maxDaily} محاضرة/يوم)`
+                : `Advanced Rule Notice: Faculty member ${tw.teacher.name} exceeds daily lecture limit (${maxDaily} lectures/day)`
             );
           }
         }
@@ -216,7 +216,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
       const labsCount = rooms.filter((r) => r.type === 'LAB').length;
       notes.push(
         isRtl
-          ? `المختبرات المتخصصة (${labsCount}) كافية لاستيعاب حصص المواد العملية`
+          ? `المعامل المتخصصة (${labsCount}) كافية لاستيعاب محاضرات المقررات العملية`
           : `Specialized labs (${labsCount}) are sufficient for scheduled practical sessions`
       );
 
@@ -279,28 +279,28 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
     if (blockedCount > 0) {
       notes.push(
         isRtl
-          ? `تم حسم (${blockedCount}) فترة تفرغ مغلقة — الطاقة المتاحة الفعلية هي (${effectiveCapacity}) حصة`
-          : `Deducted (${blockedCount}) blocked time-off slots — effective available capacity is (${effectiveCapacity}) slots`
+          ? `تم حسم (${blockedCount}) فترة تفرغ مغلقة — الطاقة المتاحة الفعلية هي (${effectiveCapacity}) محاضرة`
+          : `Deducted (${blockedCount}) blocked time-off slots — effective available capacity is (${effectiveCapacity}) lectures`
       );
     }
 
     if (assignedLessons.length > effectiveCapacity) {
       notes.push(
         isRtl
-          ? `تعذر التسكين: إجمالي الحصص المسندة (${assignedLessons.length}) يتجاوز الطاقة الفعلية المتاحة (${effectiveCapacity})`
-          : `Infeasible: Assigned lessons (${assignedLessons.length}) exceed effective available capacity (${effectiveCapacity})`
+          ? `تعذر التسكين: إجمالي المحاضرات المسندة (${assignedLessons.length}) يتجاوز الطاقة الفعلية المتاحة (${effectiveCapacity})`
+          : `Infeasible: Assigned lectures (${assignedLessons.length}) exceed effective available capacity (${effectiveCapacity})`
       );
     } else if (assignedLessons.length > highWorkloadThreshold) {
       notes.push(
         isRtl
           ? `العبء الأسبوعي (${assignedLessons.length}/${effectiveCapacity}) مرتفع ويتطلب توزيعاً دقيقاً`
-          : `High weekly workload (${assignedLessons.length}/${effectiveCapacity} slots) requires careful distribution`
+          : `High weekly workload (${assignedLessons.length}/${effectiveCapacity} lectures) requires careful distribution`
       );
     } else {
       notes.push(
         isRtl
-          ? `العبء الأسبوعي (${assignedLessons.length}/${effectiveCapacity} حصة) مناسب ومتوازن`
-          : `Weekly workload (${assignedLessons.length}/${effectiveCapacity} slots) is well within feasible parameters`
+          ? `العبء الأسبوعي (${assignedLessons.length}/${effectiveCapacity} محاضرة) مناسب ومتوازن`
+          : `Weekly workload (${assignedLessons.length}/${effectiveCapacity} lectures) is well within feasible parameters`
       );
     }
 
@@ -340,25 +340,25 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
   const getSuggestion = (conflict: Conflict) => {
     if (conflict.type === 'TEACHER_CLASH') {
       return isRtl
-        ? 'اقتراح الحل: نقل إحدى الحصتين إلى فترة شاغرة يكون المعلم فيها متاحاً دون حصص أخرى.'
-        : 'Suggestion: Move one lesson to an empty period where this teacher has no active assignments.';
+        ? 'اقتراح الحل: نقل إحدى المحاضرتين إلى فترة شاغرة يكون عضو التدريس فيها متاحاً دون محاضرات أخرى.'
+        : 'Suggestion: Move one lecture to an empty slot where this faculty member has no active assignments.';
     }
     if (conflict.type === 'ROOM_CLASH') {
       return isRtl
-        ? 'اقتراح الحل: إعادة تعيين قاعة بديلة متوفرة أو نقل الحصة لوقت آخر.'
-        : 'Suggestion: Reassign one class to an available alternative room or shift time slot.';
+        ? 'اقتراح الحل: إعادة تعيين قاعة/معمل بديل متوفر أو نقل المحاضرة لوقت آخر.'
+        : 'Suggestion: Reassign one section to an available alternative hall/lab or shift time slot.';
     }
     if (conflict.type === 'CLASS_CLASH') {
       return isRtl
-        ? 'اقتراح الحل: جدولة إحدى المادتين في يوم أو حصة مختلفة للفصل نفسه.'
-        : 'Suggestion: Reschedule one of the concurrent subjects to an open period on another day.';
+        ? 'اقتراح الحل: جدولة أحد المقررين في يوم أو محاضرة مختلفة للشعبة نفسها.'
+        : 'Suggestion: Reschedule one of the concurrent courses to an open lecture slot on another day.';
     }
     if (conflict.type === 'UNAVAILABLE_SLOT') {
       return isRtl
-        ? 'اقتراح الحل: إخراج الحصة من وقت التفرغ المحظور للمعلم أو الفصل إلى فترة مسموح بها.'
-        : 'Suggestion: Move lesson out of the blocked/time-off period into an available slot.';
+        ? 'اقتراح الحل: إخراج المحاضرة من وقت التفرغ المحظور لعضو التدريس أو الشعبة إلى فترة مسموح بها.'
+        : 'Suggestion: Move lecture out of the blocked/time-off period into an available slot.';
     }
-    return isRtl ? 'اقتراح الحل: إعادة تسكين الحصة في فترة شاغرة.' : 'Suggestion: Reschedule lesson to an empty slot.';
+    return isRtl ? 'اقتراح الحل: إعادة تسكين المحاضرة في فترة شاغرة.' : 'Suggestion: Reschedule lecture to an empty slot.';
   };
 
   return (
@@ -392,7 +392,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>{isRtl ? 'الفحص العام للمدرسة' : 'Pre-Flight Feasibility'}</span>
+            <span>{isRtl ? 'الفحص العام للجامعة' : 'Campus-Wide Feasibility'}</span>
           </button>
 
           <button
@@ -430,7 +430,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
               <p className="text-slate-600 leading-relaxed">
                 {isRtl
                   ? 'يقوم هذا الاختبار بالتحقق من قابلية توليد الجدول وفحص وجود أي قيود متضاربة أو أنصبة غير قابلة للتحقيق قبل بدء عملية التوليد الحسابية الكاملة.'
-                  : 'This pre-flight verification tests whether all classes, teachers, and rooms satisfy feasibility limits and constraint criteria before running full generation.'}
+                  : 'This pre-flight verification tests whether all groups, faculty, and halls/labs satisfy feasibility limits and constraint criteria before running full generation.'}
               </p>
 
               {isRunning ? (
@@ -448,7 +448,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                   <div className="grid grid-cols-2 gap-2 bg-white p-3 rounded border border-emerald-200 text-[11px]">
                     <div>
                       <span className="text-slate-500 block">{t.testModal.totalWeeklyLessons}</span>
-                      <strong className="text-slate-800">{testResult.totalLessons} {isRtl ? 'حصة' : 'lessons'}</strong>
+                      <strong className="text-slate-800">{testResult.totalLessons} {isRtl ? 'محاضرة' : 'lectures'}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">{t.testModal.teachersWorkload}</span>
@@ -481,7 +481,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                   <p className="text-[11px] text-slate-500">
                     {isRtl
                       ? 'انقر على "بدء الفحص الشامل" أدناه لتحليل سلامة البيانات'
-                      : 'Click "Run Whole-School Test" to analyze data consistency and constraint feasibility.'}
+                      : 'Click "Run University-Wide Test" to analyze data consistency and constraint feasibility.'}
                   </p>
                 </div>
               )}
@@ -514,7 +514,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                       : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
                   }`}
                 >
-                  {isRtl ? 'تعارض معلم' : 'Teacher Clashes'} (
+                  {isRtl ? 'تعارض عضو تدريس' : 'Faculty Clashes'} (
                   {conflicts.filter((c) => c.type === 'TEACHER_CLASH').length})
                 </button>
                 <button
@@ -526,7 +526,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                       : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
                   }`}
                 >
-                  {isRtl ? 'تعارض قاعة' : 'Room Clashes'} (
+                  {isRtl ? 'تعارض قاعة/معمل' : 'Hall/Lab Clashes'} (
                   {conflicts.filter((c) => c.type === 'ROOM_CLASH').length})
                 </button>
                 <button
@@ -538,7 +538,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                       : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                   }`}
                 >
-                  {isRtl ? 'تعارض فصل' : 'Class Clashes'} (
+                  {isRtl ? 'تعارض شعبة' : 'Group Clashes'} (
                   {conflicts.filter((c) => c.type === 'CLASS_CLASH').length})
                 </button>
                 <button
@@ -564,8 +564,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                   </h3>
                   <p className="text-slate-600 text-[11px]">
                     {isRtl
-                      ? 'كافة الحصص المسكنة متوافقة تماماً مع قيود المعلمين والقاعات والفصول وأوقات التفرغ.'
-                      : 'All placed lessons comply with teacher schedules, classroom availability, class assignments, and time-off rules.'}
+                      ? 'كافة المحاضرات المسكنة متوافقة تماماً مع قيود أعضاء التدريس والقاعات والمعامل والشعب وأوقات التفرغ.'
+                      : 'All placed lectures comply with faculty schedules, hall and lab availability, group assignments, and time-off rules.'}
                   </p>
                 </div>
               ) : filteredClashes.length === 0 ? (
@@ -604,11 +604,11 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                               }`}
                             >
                               {c.type === 'TEACHER_CLASH'
-                                ? isRtl ? 'تعارض معلم' : 'Teacher Clash'
+                                ? isRtl ? 'تعارض عضو تدريس' : 'Faculty Clash'
                                 : c.type === 'ROOM_CLASH'
-                                ? isRtl ? 'تعارض قاعة' : 'Room Clash'
+                                ? isRtl ? 'تعارض قاعة/معمل' : 'Hall/Lab Clash'
                                 : c.type === 'CLASS_CLASH'
-                                ? isRtl ? 'تعارض فصل' : 'Class Clash'
+                                ? isRtl ? 'تعارض شعبة' : 'Group Clash'
                                 : isRtl ? 'مخالفة تفرغ' : 'Time-Off Clash'}
                             </span>
 
@@ -628,25 +628,25 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                         <div className="flex items-center gap-3 text-[11px] text-slate-600 flex-wrap bg-slate-50 p-2 rounded border border-slate-100">
                           {subject && (
                             <span>
-                              <strong>{isRtl ? 'المادة:' : 'Subject:'}</strong>{' '}
+                              <strong>{isRtl ? 'المقرر:' : 'Course:'}</strong>{' '}
                               {isRtl ? subject.nameAr || subject.name : subject.name} ({subject.code})
                             </span>
                           )}
                           {teacher && (
                             <span>
-                              <strong>{isRtl ? 'المعلم:' : 'Teacher:'}</strong>{' '}
+                              <strong>{isRtl ? 'عضو التدريس:' : 'Faculty / Instructor:'}</strong>{' '}
                               {isRtl ? teacher.nameAr || teacher.name : teacher.name}
                             </span>
                           )}
                           {cls && (
                             <span>
-                              <strong>{isRtl ? 'الفصل:' : 'Class:'}</strong>{' '}
+                              <strong>{isRtl ? 'الدفعة / الشعبة:' : 'Group / Section:'}</strong>{' '}
                               {isRtl ? cls.nameAr || cls.name : cls.name}
                             </span>
                           )}
                           {room && (
                             <span>
-                              <strong>{isRtl ? 'القاعة:' : 'Room:'}</strong>{' '}
+                              <strong>{isRtl ? 'القاعة / المعمل:' : 'Hall / Lab:'}</strong>{' '}
                               {isRtl ? room.nameAr || room.name : room.name}
                             </span>
                           )}
@@ -681,8 +681,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                     }}
                     className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold focus:outline-none"
                   >
-                    <option value="teacher">{isRtl ? 'معلم' : 'Teacher'}</option>
-                    <option value="class">{isRtl ? 'فصل / شعبة' : 'Class Group'}</option>
+                    <option value="teacher">{isRtl ? 'عضو هيئة التدريس' : 'Faculty Member'}</option>
+                    <option value="class">{isRtl ? 'الدفعة / الشعبة' : 'Group / Section'}</option>
                   </select>
 
                   <span className="font-bold text-slate-800 ml-2">{isRtl ? 'الاسم:' : 'Name:'}</span>
@@ -702,7 +702,7 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
                         ))
                       : classes.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {isRtl ? c.nameAr || c.name : c.name} (Grade {c.grade})
+                            {isRtl ? c.nameAr || c.name : c.name} ({isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`})
                           </option>
                         ))}
                   </select>
@@ -753,12 +753,12 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
 
                   <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-lg border border-slate-200 text-[11px]">
                     <div>
-                      <span className="text-slate-500 block">{isRtl ? 'إجمالي الحصص المسندة' : 'Assigned Lessons'}</span>
+                      <span className="text-slate-500 block">{isRtl ? 'إجمالي المحاضرات المسندة' : 'Assigned Lectures'}</span>
                       <strong className="text-slate-800">{singleTestResult.load} / {singleTestResult.maxCapacity}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">{isRtl ? 'الفترات الشاغرة' : 'Free Slots'}</span>
-                      <strong className="text-indigo-700">{Math.max(0, singleTestResult.maxCapacity - singleTestResult.load)} {isRtl ? 'حصة' : 'slots'}</strong>
+                      <strong className="text-indigo-700">{Math.max(0, singleTestResult.maxCapacity - singleTestResult.load)} {isRtl ? 'محاضرة' : 'lectures'}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">{isRtl ? 'التعارضات المباشرة' : 'Active Conflicts'}</span>
@@ -777,8 +777,8 @@ export const TestTimetableModal: React.FC<TestTimetableModalProps> = ({
               ) : (
                 <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-lg">
                   {isRtl
-                    ? 'اختر معلماً أو فصلاً وانقر على "فحص الكيان" لعرض تقرير التوافق والأنصبة'
-                    : 'Select a teacher or class and click "Test Entity" to inspect feasibility.'}
+                    ? 'اختر عضو تدريس أو شعبة وانقر على "فحص الكيان" لعرض تقرير التوافق والأنصبة'
+                    : 'Select a faculty member or group and click "Test Entity" to inspect feasibility.'}
                 </div>
               )}
             </div>

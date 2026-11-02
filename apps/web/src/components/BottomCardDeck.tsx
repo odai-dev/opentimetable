@@ -16,7 +16,7 @@ import {
   Wand2,
   CheckCircle2,
   Trash2,
-  School,
+  Building2,
   Users,
   GraduationCap,
   DoorOpen,
@@ -171,10 +171,10 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
   };
 
   const categoryButtons = [
-    { id: 'school' as DeckCategory, labelEn: 'School', labelAr: 'المدرسة', icon: School },
-    { id: 'teacher' as DeckCategory, labelEn: 'Teachers', labelAr: 'المعلمون', icon: Users },
-    { id: 'class' as DeckCategory, labelEn: 'Classes', labelAr: 'الشعب', icon: GraduationCap },
-    { id: 'room' as DeckCategory, labelEn: 'Classrooms', labelAr: 'القاعات', icon: DoorOpen },
+    { id: 'school' as DeckCategory, labelEn: 'Campus', labelAr: 'الجامعة', icon: Building2 },
+    { id: 'teacher' as DeckCategory, labelEn: 'Faculty', labelAr: 'أعضاء هيئة التدريس', icon: Users },
+    { id: 'class' as DeckCategory, labelEn: 'Groups', labelAr: 'الدفعات والشعب', icon: GraduationCap },
+    { id: 'room' as DeckCategory, labelEn: 'Halls & Labs', labelAr: 'القاعات والمعامل', icon: DoorOpen },
   ];
 
   return (
@@ -236,7 +236,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
           </span>
 
           <span className="px-2 py-0.5 bg-white border border-slate-300 rounded font-bold text-sky-800 text-[11px] shadow-xs">
-            {deckCategory === 'school' ? (isRtl ? 'كامل المدرسة' : 'Entire School') : selectedEntityName}
+            {deckCategory === 'school' ? (isRtl ? 'كامل الجامعة' : 'Entire University') : selectedEntityName}
           </span>
         </div>
 
@@ -329,7 +329,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
 
                 {/* Teacher Name */}
                 <div className="text-[10px] text-slate-600 font-medium truncate" title={teacherLabel}>
-                  👨‍🏫 {teacherLabel}
+                  🎓 {teacherLabel}
                 </div>
 
                 {/* Footer Badges */}
@@ -360,7 +360,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
       <div className="bg-slate-200/60 border-t border-slate-300/60 px-3 py-0.5 text-[10px] text-slate-500 flex items-center justify-between">
         <span>💡 {t.deck.dragHint}</span>
         <span className="text-[10px] text-slate-500 font-medium">
-          {displayedCards.length} {isRtl ? 'بطاقات ظاهرة' : 'visible cards'} ({unplacedLessons.length} {isRtl ? 'في البنك' : 'total pending'})
+          {displayedCards.length} {isRtl ? 'محاضرات ظاهرة' : 'visible lectures'} ({unplacedLessons.length} {isRtl ? 'في بنك المحاضرات' : 'total pending lectures'})
         </span>
       </div>
     </div>
