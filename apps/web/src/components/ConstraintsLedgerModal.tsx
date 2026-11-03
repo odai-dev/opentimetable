@@ -114,7 +114,7 @@ export const ConstraintsLedgerModal: React.FC<ConstraintsLedgerModalProps> = ({
           id: `TO_${teacher.id}`,
           category: 'TIMEOFF',
           title: `Time-Off Restrictions: ${teacher.name}`,
-          titleAr: `تفريغ المعلم: ${teacher.name}`,
+          titleAr: `تفريغ عضو هيئة التدريس: ${teacher.name}`,
           entityName: teacher.name,
           ruleValue: `${blockedCount} ${isRtl ? 'محظور' : 'blocked'}, ${disfavoredCount} ${isRtl ? 'غير مفضل' : 'disfavored'}`,
           status: violations > 0 ? 'VIOLATED' : 'SATISFIED',
@@ -141,9 +141,9 @@ export const ConstraintsLedgerModal: React.FC<ConstraintsLedgerModalProps> = ({
         id: `MAX_DAILY_${teacher.id}`,
         category: 'TEACHER_LOAD',
         title: `Max Daily Hours: ${teacher.name}`,
-        titleAr: `الحد اليومي للحصص: ${teacher.name}`,
+        titleAr: `الحد اليومي للمحاضرات: ${teacher.name}`,
         entityName: teacher.name,
-        ruleValue: `${maxH} ${isRtl ? 'حصص/يوم' : 'periods/day'}`,
+        ruleValue: `${maxH} ${isRtl ? 'محاضرات/يوم' : 'lectures/day'}`,
         status: violations > 0 ? 'VIOLATED' : 'SATISFIED',
         violationCount: violations,
         enabled: true,
@@ -158,7 +158,7 @@ export const ConstraintsLedgerModal: React.FC<ConstraintsLedgerModalProps> = ({
           id: `REQ_ROOM_${sub.id}`,
           category: 'ROOM_REQ',
           title: `Special Room Required: ${sub.name}`,
-          titleAr: `قاعة متخصصة مطلوبة لمادة: ${sub.name}`,
+          titleAr: `قاعة / معمل تخصصي مطلوب لمساق: ${sub.name}`,
           entityName: sub.name,
           ruleValue: `${sub.requiredRoomType} (${matchingRooms.length} ${isRtl ? 'متاحة' : 'avail'})`,
           status: 'SATISFIED',
@@ -251,9 +251,9 @@ export const ConstraintsLedgerModal: React.FC<ConstraintsLedgerModalProps> = ({
                   : cat === 'TIMEOFF'
                   ? isRtl ? 'جداول التفريغ' : 'Time-Off'
                   : cat === 'TEACHER_LOAD'
-                  ? isRtl ? 'أنصبة المعلمين' : 'Teacher Limits'
+                  ? isRtl ? 'أنصبة أعضاء التدريس' : 'Faculty Limits'
                   : cat === 'ROOM_REQ'
-                  ? isRtl ? 'اشتراطات القاعات' : 'Room Rules'
+                  ? isRtl ? 'اشتراطات القاعات والمعامل' : 'Hall / Lab Rules'
                   : isRtl ? 'قيود متقدمة' : 'Advanced Relations'}
               </button>
             ))}
@@ -265,7 +265,7 @@ export const ConstraintsLedgerModal: React.FC<ConstraintsLedgerModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isRtl ? 'بحث في القيود أو المعلمين...' : 'Search constraints...'}
+              placeholder={isRtl ? 'بحث في القيود أو أعضاء التدريس...' : 'Search constraints...'}
               className="w-full text-xs ps-8 pe-3 py-1.5 rounded-md border border-slate-300 focus:outline-hidden focus:border-sky-500"
             />
           </div>

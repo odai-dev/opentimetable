@@ -84,29 +84,29 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
   const targetFields = useMemo(() => {
     if (importTarget === 'teachers') {
       return [
-        { key: 'name', label: isRtl ? 'اسم المعلم (مطلوب)' : 'Teacher Name (Required)', required: true },
-        { key: 'speciality', label: isRtl ? 'التخصص' : 'Speciality' },
+        { key: 'name', label: isRtl ? 'اسم عضو هيئة التدريس (مطلوب)' : 'Faculty Name (Required)', required: true },
+        { key: 'speciality', label: isRtl ? 'القسم / التخصص' : 'Department / Speciality' },
         { key: 'maxDailyHours', label: isRtl ? 'الحد الأقصى اليومي' : 'Max Daily Hours' },
       ];
     }
     if (importTarget === 'classes') {
       return [
-        { key: 'name', label: isRtl ? 'اسم الفصل / الشعبة' : 'Class Name (Required)', required: true },
-        { key: 'grade', label: isRtl ? 'الصف / المرحلة' : 'Grade Level' },
+        { key: 'name', label: isRtl ? 'اسم الدفعة / الشعبة (مطلوب)' : 'Group / Section Name (Required)', required: true },
+        { key: 'grade', label: isRtl ? 'المستوى الأكاديمي' : 'Academic Level' },
       ];
     }
     if (importTarget === 'rooms') {
       return [
-        { key: 'name', label: isRtl ? 'اسم القاعة / المعمل' : 'Room Name (Required)', required: true },
+        { key: 'name', label: isRtl ? 'اسم القاعة / المعمل' : 'Hall / Lab Name (Required)', required: true },
         { key: 'capacity', label: isRtl ? 'السعة الاستيعابية' : 'Capacity' },
         { key: 'type', label: isRtl ? 'النوع (STANDARD/LAB/GYM)' : 'Type (STANDARD/LAB/GYM)' },
       ];
     }
     if (importTarget === 'subjects') {
       return [
-        { key: 'name', label: isRtl ? 'اسم المادة' : 'Subject Name (Required)', required: true },
-        { key: 'code', label: isRtl ? 'رمز المادة' : 'Subject Code' },
-        { key: 'requiredRoomType', label: isRtl ? 'نوع القاعة المطلوبة' : 'Required Room Type' },
+        { key: 'name', label: isRtl ? 'اسم المساق' : 'Course Name (Required)', required: true },
+        { key: 'code', label: isRtl ? 'رمز المساق' : 'Course Code' },
+        { key: 'requiredRoomType', label: isRtl ? 'نوع القاعة المطلوبة' : 'Required Hall/Lab Type' },
       ];
     }
     // Lessons
@@ -154,7 +154,7 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
 
     if (importTarget === 'teachers' && onImportTeachers) {
       const teachersList: Teacher[] = rows.map((row, i) => {
-        let name = `Teacher ${i + 1}`;
+        let name = `Faculty ${i + 1}`;
         let speciality = 'General';
         let maxDailyHours = 5;
 
@@ -177,7 +177,7 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
       onImportTeachers(teachersList);
     } else if (importTarget === 'classes' && onImportClasses) {
       const classesList: ClassGroup[] = rows.map((row, i) => {
-        let name = `Class ${i + 1}`;
+        let name = `Section ${i + 1}`;
         let grade = 1;
 
         Object.entries(columnMapping).forEach(([colIdx, field]) => {
@@ -195,7 +195,7 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
       onImportClasses(classesList);
     } else if (importTarget === 'rooms' && onImportRooms) {
       const roomsList: Room[] = rows.map((row, i) => {
-        let name = `Room ${i + 1}`;
+        let name = `Hall ${i + 1}`;
         let capacity = 30;
         let type: 'STANDARD' | 'LAB' | 'GYM' | 'AUDITORIUM' = 'STANDARD';
 
@@ -220,7 +220,7 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
       onImportRooms(roomsList);
     } else if (importTarget === 'subjects' && onImportSubjects) {
       const subjectsList: Subject[] = rows.map((row, i) => {
-        let name = `Subject ${i + 1}`;
+        let name = `Course ${i + 1}`;
         let code = name.slice(0, 3).toUpperCase();
         let requiredRoomType: string | undefined = undefined;
 
@@ -266,7 +266,7 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
               <p className="text-xs text-slate-300">
                 {isRtl
                   ? 'لصق مباشر من إكسل أو ملف CSV مع مطابقة ذكية للأعمدة'
-                  : 'Import teachers, classes, rooms, or subjects from spreadsheets'}
+                  : 'Import faculty, sections, halls/labs, or courses from spreadsheets'}
               </p>
             </div>
           </div>
@@ -297,12 +297,12 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
               }`}
             >
               {target === 'teachers'
-                ? isRtl ? 'المعلمين' : 'Teachers'
+                ? isRtl ? 'أعضاء هيئة التدريس' : 'Faculty'
                 : target === 'classes'
-                ? isRtl ? 'الفصول' : 'Classes'
+                ? isRtl ? 'الدفعات والشعب' : 'Levels & Sections'
                 : target === 'rooms'
-                ? isRtl ? 'القاعات' : 'Rooms'
-                : isRtl ? 'المواد' : 'Subjects'}
+                ? isRtl ? 'القاعات والمعامل' : 'Halls & Labs'
+                : isRtl ? 'المساقات' : 'Courses'}
             </button>
           ))}
         </div>
@@ -335,11 +335,11 @@ export const SpreadsheetImportModal: React.FC<SpreadsheetImportModalProps> = ({
               placeholder={
                 importTarget === 'teachers'
                   ? isRtl
-                    ? "اسم المعلم\tالتخصص\tالحد الأقصى\nأحمد خالد\tرياضيات\t5\nسعد صالح\tعلوم\t4"
-                    : "Teacher Name\tSpeciality\tMax Hours\nAhmed Khalid\tMath\t5\nSaad Saleh\tScience\t4"
+                    ? "اسم عضو هيئة التدريس\tالقسم / التخصص\tالحد الأقصى\nد. أحمد خالد\tعلوم الحاسوب\t5\nم. سعد صالح\tهندسة البرمجيات\t4"
+                    : "Faculty Name\tDepartment\tMax Hours\nDr. Ahmed Khalid\tComputer Science\t5\nEng. Saad Saleh\tSoftware Engineering\t4"
                   : isRtl
-                  ? "اسم الفصل\tالمرحلة\n1/أول\t1\n2/أول\t1"
-                  : "Class Name\tGrade\nGrade 10-A\t10\nGrade 10-B\t10"
+                  ? "اسم الدفعة / الشعبة\tالمستوى\nCyberSecurity-L2-G1\t2\nDentistry-L3\t3"
+                  : "Section Name\tLevel\nCyberSecurity-L2-G1\t2\nDentistry-L3\t3"
               }
               rows={5}
               className="w-full text-xs font-mono p-3 rounded-lg border border-slate-300 focus:outline-hidden focus:border-emerald-500 bg-slate-50 focus:bg-white"

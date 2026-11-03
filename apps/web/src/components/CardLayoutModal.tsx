@@ -107,7 +107,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
                   <span className="truncate">
                     {config.line3 === 'room_name'
                       ? isRtl ? 'معمل 102' : 'Lab 102'
-                      : isRtl ? 'الصف 10-أ' : 'Grade 10-A'}
+                      : isRtl ? 'شعبة 1 (المستوى 2)' : 'Section A (Level 2)'}
                   </span>
                   <span className="text-[8px] font-mono text-sky-600 bg-sky-100 px-1 rounded">
                     45m

@@ -198,13 +198,13 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
           <div className="p-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-indigo-900 block">
-                {isRtl ? 'متوسط نصاب المعلم' : 'Avg Teacher Load'}
+                {isRtl ? 'متوسط نصاب عضو التدريس' : 'Avg Faculty Load'}
               </span>
               <UserCheck className="w-4 h-4 text-indigo-600" />
             </div>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-xl font-black text-indigo-700">{stats.avgLoad}</span>
-              <span className="text-[10px] text-indigo-600 font-semibold">{isRtl ? 'حصة' : 'hrs'}</span>
+              <span className="text-[10px] text-indigo-600 font-semibold">{isRtl ? 'محاضرة' : 'hrs'}</span>
             </div>
             <span className="text-[9px] text-indigo-500 block">
               {isRtl ? `(الأدنى: ${stats.minLoad} - الأقصى: ${stats.maxLoad})` : `(Min: ${stats.minLoad} - Max: ${stats.maxLoad})`}
@@ -223,7 +223,7 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
               <span className="text-[10px] text-amber-600 font-semibold">{isRtl ? 'ساعة فراغ' : 'gap hrs'}</span>
             </div>
             <span className="text-[9px] text-amber-500 block">
-              {isRtl ? `معدل: ${stats.avgGaps} لكل معلم` : `Avg: ${stats.avgGaps} per teacher`}
+              {isRtl ? `معدل: ${stats.avgGaps} لكل عضو تدريس` : `Avg: ${stats.avgGaps} per faculty`}
             </span>
           </div>
 
@@ -265,9 +265,9 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
           {/* Column 1: Teacher Load & Gap Table */}
           <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col">
             <h3 className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
-              <span>{isRtl ? 'أنصبة المعلمين وساعات الفراغ' : 'Teacher Loads & Window Gaps'}</span>
+              <span>{isRtl ? 'أنصبة أعضاء هيئة التدريس وساعات الفراغ' : 'Faculty Workloads & Window Gaps'}</span>
               <span className="text-[10px] text-slate-500 font-normal">
-                {teachers.length} {isRtl ? 'معلم' : 'teachers'}
+                {teachers.length} {isRtl ? 'عضو هيئة تدريس' : 'faculty members'}
               </span>
             </h3>
 
@@ -275,8 +275,8 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
               <table className="w-full text-xs text-start">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 text-[10px]">
-                    <th className="pb-1 text-start">{isRtl ? 'المعلم' : 'Teacher'}</th>
-                    <th className="pb-1 text-center">{isRtl ? 'النصاب' : 'Hours'}</th>
+                    <th className="pb-1 text-start">{isRtl ? 'عضو هيئة التدريس' : 'Faculty'}</th>
+                    <th className="pb-1 text-center">{isRtl ? 'النصاب' : 'Lectures'}</th>
                     <th className="pb-1 text-center">{isRtl ? 'الفراغ' : 'Gaps'}</th>
                     <th className="pb-1 text-end">{isRtl ? 'المعدل البصري' : 'Distribution'}</th>
                   </tr>
@@ -323,9 +323,9 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
           {/* Column 2: Room Utilization Table */}
           <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 flex flex-col">
             <h3 className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
-              <span>{isRtl ? 'نسب إشغال القاعات والمعامل' : 'Room & Lab Utilization'}</span>
+              <span>{isRtl ? 'نسب إشغال القاعات والمعامل' : 'Hall & Lab Utilization'}</span>
               <span className="text-[10px] text-slate-500 font-normal">
-                {rooms.length} {isRtl ? 'قاعة' : 'rooms'}
+                {rooms.length} {isRtl ? 'قاعة / معمل' : 'halls & labs'}
               </span>
             </h3>
 
@@ -333,9 +333,9 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
               <table className="w-full text-xs text-start">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500 text-[10px]">
-                    <th className="pb-1 text-start">{isRtl ? 'القاعة' : 'Room'}</th>
+                    <th className="pb-1 text-start">{isRtl ? 'القاعة / المعمل' : 'Hall / Lab'}</th>
                     <th className="pb-1 text-center">{isRtl ? 'النوع' : 'Type'}</th>
-                    <th className="pb-1 text-center">{isRtl ? 'الحصص' : 'Hours'}</th>
+                    <th className="pb-1 text-center">{isRtl ? 'المحاضرات' : 'Lectures'}</th>
                     <th className="pb-1 text-end">{isRtl ? 'نسبة الإشغال' : 'Occupancy'}</th>
                   </tr>
                 </thead>

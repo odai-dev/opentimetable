@@ -206,7 +206,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   const handleApplySchoolSettings = () => {
     if (onUpdateSchool) {
       onUpdateSchool({
-        schoolName: localSchoolName.trim() || 'School',
+        schoolName: localSchoolName.trim() || 'University',
         academicYear: localAcademicYear.trim() || '2025 - 2026',
         cycleDays: localCycleDays,
         periodsPerDay: localPeriodsPerDay,

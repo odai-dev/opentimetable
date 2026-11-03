@@ -123,7 +123,7 @@ export default function TimetableStudioPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [schoolName, setSchoolName] = useState<string>('My School');
+  const [schoolName, setSchoolName] = useState<string>('OpenTimetable University');
   const [currentFileName, setCurrentFileName] = useState<string>('untitled.roz');
   const [schemaVersion, setSchemaVersion] = useState<number>(314);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
@@ -464,7 +464,7 @@ export default function TimetableStudioPage() {
         setHistory([]);
         setRedoStack([]);
         setTimeOffMatrix({});
-        setSchoolName(isRtlRef.current ? 'مدرسة جديدة' : 'New School');
+        setSchoolName(isRtlRef.current ? 'جامعة / كلية جديدة' : 'New University');
         setCurrentFileName('untitled.roz');
         setSchemaVersion(314);
         setSelectedEntityId('');
@@ -1141,7 +1141,7 @@ export default function TimetableStudioPage() {
   const handleExportXml = () => {
     try {
       downloadAscttXml({
-        schoolName: schoolName || 'OpenTimetable School',
+        schoolName: schoolName || 'OpenTimetable University',
         academicYear: academicYear || '2025/2026',
         cycleDays,
         periodsPerDay,
@@ -1905,18 +1905,18 @@ export default function TimetableStudioPage() {
       <div className="hidden print:flex flex-col py-3 px-4 mb-2 bg-white border-b-2 border-slate-800 text-slate-900 select-text">
         <div className="flex items-center justify-between w-full">
           <div>
-            <h1 className="text-xl font-bold">{schoolName || 'OpenTimetable School'}</h1>
+            <h1 className="text-xl font-bold">{schoolName || 'OpenTimetable University'}</h1>
             <p className="text-xs text-slate-600">{academicYear || '2025/2026'}</p>
           </div>
           <div className="text-center">
             <h2 className="text-lg font-bold">
-              {viewMode === 'class' && (classMap.get(selectedEntityId)?.name || 'Class Schedule')}
-              {viewMode === 'teacher' && (teacherMap.get(selectedEntityId)?.name || 'Teacher Schedule')}
-              {viewMode === 'room' && (roomMap.get(selectedEntityId)?.name || 'Room Schedule')}
+              {viewMode === 'class' && (classMap.get(selectedEntityId)?.name || (isRtl ? 'جدول الدفعة / الشعبة' : 'Section Schedule'))}
+              {viewMode === 'teacher' && (teacherMap.get(selectedEntityId)?.name || (isRtl ? 'جدول عضو هيئة التدريس' : 'Faculty Schedule'))}
+              {viewMode === 'room' && (roomMap.get(selectedEntityId)?.name || (isRtl ? 'جدول القاعة / المعمل' : 'Hall / Lab Schedule'))}
               {viewMode === 'wall' && (isRtl ? 'الجدول العام للجامعة / الكلية' : 'Master University Timetable')}
             </h2>
             <p className="text-xs text-slate-500">
-              {isRtl ? 'جدول الحصص الأسبوعي' : 'Weekly Timetable'}
+              {isRtl ? 'الجدول الأكاديمي الأسبوعي' : 'Weekly Academic Schedule'}
             </p>
           </div>
           <div className="text-end text-xs text-slate-500">

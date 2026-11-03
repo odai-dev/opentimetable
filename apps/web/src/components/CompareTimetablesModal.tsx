@@ -94,9 +94,9 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
       const curr = currentMap.get(lessonId);
       const lesson = lessonMap.get(lessonId);
 
-      const sub = lesson ? subjectMap.get(lesson.subjectId)?.name : 'Subject';
-      const tc = lesson ? teacherMap.get(lesson.teacherId)?.name : 'Teacher';
-      const cls = lesson ? classMap.get(lesson.classId)?.name : 'Class';
+      const sub = lesson ? subjectMap.get(lesson.subjectId)?.name : 'Course';
+      const tc = lesson ? teacherMap.get(lesson.teacherId)?.name : 'Faculty';
+      const cls = lesson ? classMap.get(lesson.classId)?.name : 'Section';
 
       if (base && curr) {
         if (
@@ -170,7 +170,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
     if (!slot) return '-';
     const dayName = daysList[slot.dayIndex] || `Day ${slot.dayIndex + 1}`;
     const roomName = roomMap.get(slot.roomId)?.name || slot.roomId || '';
-    return `${dayName.slice(0, 3)} - ${isRtl ? 'ح' : 'P'}${slot.periodIndex + 1}${roomName ? ` (${roomName})` : ''}`;
+    return `${dayName.slice(0, 3)} - ${isRtl ? 'محاضرة ' : 'L'}${slot.periodIndex + 1}${roomName ? ` (${roomName})` : ''}`;
   };
 
   if (!isOpen) return null;
@@ -193,7 +193,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
               </h2>
               <p className="text-xs text-slate-300">
                 {isRtl
-                  ? 'مقارنة المسودة الحالية مع النسخة المرجعية السابقة وإبراز الحصص المنقولة'
+                  ? 'مقارنة المسودة الحالية مع النسخة المرجعية السابقة وإبراز المحاضرات المنقولة'
                   : 'Compare current modifications against baseline schedule snapshot'}
               </p>
             </div>
@@ -217,7 +217,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
             }`}
           >
             <span className="text-amber-800 block text-[10px] font-bold">
-              {isRtl ? 'حصص نُقلت (Moved)' : 'Moved Lessons'}
+              {isRtl ? 'محاضرات نُقلت (Moved)' : 'Moved Lectures'}
             </span>
             <span className="text-base font-black text-amber-900">{movedCount}</span>
           </button>
@@ -231,7 +231,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
             }`}
           >
             <span className="text-emerald-800 block text-[10px] font-bold">
-              {isRtl ? 'حصص جديدة (Added)' : 'Added Lessons'}
+              {isRtl ? 'محاضرات جديدة (Added)' : 'Added Lectures'}
             </span>
             <span className="text-base font-black text-emerald-900">{addedCount}</span>
           </button>
@@ -245,7 +245,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
             }`}
           >
             <span className="text-rose-800 block text-[10px] font-bold">
-              {isRtl ? 'حصص أُفرغت (Removed)' : 'Removed Lessons'}
+              {isRtl ? 'محاضرات أُفرغت (Removed)' : 'Removed Lectures'}
             </span>
             <span className="text-base font-black text-rose-900">{removedCount}</span>
           </button>
@@ -259,7 +259,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
             }`}
           >
             <span className="text-sky-800 block text-[10px] font-bold">
-              {isRtl ? 'إجمالي الحصص (Total)' : 'Total Lessons'}
+              {isRtl ? 'إجمالي المحاضرات (Total)' : 'Total Lectures'}
             </span>
             <span className="text-base font-black text-sky-900">{diffItems.length}</span>
           </button>
@@ -273,7 +273,7 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isRtl ? 'بحث بالمادة، المعلم، أو الفصل...' : 'Filter by subject, teacher, class...'}
+              placeholder={isRtl ? 'بحث بالمساق، عضو هيئة التدريس، أو الشعبة...' : 'Filter by course, faculty, section...'}
               className="w-full text-xs ps-8 pe-3 py-1.5 rounded-md border border-slate-300 focus:outline-hidden focus:border-teal-500"
             />
           </div>
@@ -293,12 +293,12 @@ export const CompareTimetablesModal: React.FC<CompareTimetablesModalProps> = ({
               <table className="w-full text-xs text-start">
                 <thead>
                   <tr className="bg-slate-100 text-slate-600 text-[10px] border-b border-slate-200">
-                    <th className="p-2 text-start">{isRtl ? 'المادة' : 'Subject'}</th>
-                    <th className="p-2 text-start">{isRtl ? 'الفصل' : 'Class'}</th>
-                    <th className="p-2 text-start">{isRtl ? 'المعلم' : 'Teacher'}</th>
+                    <th className="p-2 text-start">{isRtl ? 'المساق' : 'Course'}</th>
+                    <th className="p-2 text-start">{isRtl ? 'الدفعة / الشعبة' : 'Level / Section'}</th>
+                    <th className="p-2 text-start">{isRtl ? 'عضو هيئة التدريس' : 'Faculty'}</th>
                     <th className="p-2 text-center">{isRtl ? 'الحالة' : 'Status'}</th>
-                    <th className="p-2 text-start">{isRtl ? 'الموقع السابق (Baseline)' : 'Previous Slot'}</th>
-                    <th className="p-2 text-start">{isRtl ? 'الموقع الحالي (Current)' : 'New Slot'}</th>
+                    <th className="p-2 text-start">{isRtl ? 'المحاضرة السابقة (Baseline)' : 'Previous Lecture Slot'}</th>
+                    <th className="p-2 text-start">{isRtl ? 'المحاضرة الحالية (Current)' : 'New Lecture Slot'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
