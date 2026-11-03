@@ -204,7 +204,7 @@ export const IndividualTimetableSheet: React.FC<IndividualTimetableSheetProps> =
 
   const gradeDisplay = useMemo(() => {
     if (entitySubtitle && entitySubtitle.trim() !== '') return entitySubtitle;
-    if (classObj?.grade) return isRtl ? `الصف ${classObj.grade}` : `Grade ${classObj.grade}`;
+    if (classObj?.grade) return isRtl ? `المستوى ${classObj.grade}` : `Level ${classObj.grade}`;
     return '-';
   }, [entitySubtitle, classObj, isRtl]);
 
@@ -287,7 +287,7 @@ export const IndividualTimetableSheet: React.FC<IndividualTimetableSheetProps> =
       >
         <div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-            {schoolName || (isRtl ? 'المدرسة النموذجية' : 'OpenTimetable School')}
+            {schoolName || (isRtl ? 'الجامعة النموذجية' : 'OpenTimetable University')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
             {academicYear || (isRtl ? 'العام الدراسي 2025 / 2026' : 'Academic Year 2025 / 2026')}
@@ -378,7 +378,7 @@ export const IndividualTimetableSheet: React.FC<IndividualTimetableSheetProps> =
             </div>
             <div>
               <span className="text-[11px] font-semibold text-slate-500 block uppercase tracking-wider">
-                {isRtl ? 'الصف الدراسي' : 'Grade'}
+                {isRtl ? 'المستوى الدراسي' : 'Academic Level'}
               </span>
               <span className="text-sm font-semibold text-slate-800 mt-0.5 block truncate">
                 {gradeDisplay}
@@ -386,7 +386,7 @@ export const IndividualTimetableSheet: React.FC<IndividualTimetableSheetProps> =
             </div>
             <div>
               <span className="text-[11px] font-semibold text-slate-500 block uppercase tracking-wider">
-                {isRtl ? 'رائد الفصل' : 'Homeroom Teacher'}
+                {isRtl ? 'المرشد الأكاديمي' : 'Academic Advisor'}
               </span>
               <span className="text-sm font-semibold text-slate-800 mt-0.5 block truncate">
                 {homeroomDisplay}
@@ -691,7 +691,7 @@ export const IndividualTimetableSheet: React.FC<IndividualTimetableSheetProps> =
           {/* Approved by Principal block */}
           <div className="text-center min-w-[180px]">
             <div className="font-bold text-sm">
-              {isRtl ? 'اعتماد مدير المدرسة' : 'Approved by Principal'}
+              {isRtl ? 'اعتماد عميد الكلية' : 'Approved by Dean'}
             </div>
             <div className="h-6 mt-1 flex items-center justify-center font-medium text-xs">
               {approvedBy || ''}

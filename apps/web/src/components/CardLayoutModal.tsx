@@ -48,7 +48,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold leading-tight">
-                {isRtl ? 'تخصيص شكل وتصميم بطاقة الحصة' : 'Timetable Card Layout & Designer'}
+                {isRtl ? 'تخصيص شكل وتصميم بطاقة المحاضرة' : 'Timetable Card Layout & Designer'}
               </h2>
               <p className="text-xs text-slate-300">
                 {isRtl
@@ -70,7 +70,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
           {/* Live Card Preview Box */}
           <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 flex flex-col items-center justify-center">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-              {isRtl ? 'معاينة حية لشكل بطاقة الحصة في الجدول:' : 'Live Timetable Card Preview:'}
+              {isRtl ? 'معاينة حية لشكل بطاقة المحاضرة في الجدول:' : 'Live Timetable Card Preview:'}
             </span>
 
             {/* Mock Card Preview */}
@@ -149,7 +149,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
                   onChange={(e) => setConfig({ ...config, line2: e.target.value as any })}
                   className="w-full text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 >
-                  <option value="teacher_name">{isRtl ? 'اسم المعلم' : 'Teacher Name'}</option>
+                  <option value="teacher_name">{isRtl ? 'اسم عضو هيئة التدريس' : 'Faculty Name'}</option>
                   <option value="room_name">{isRtl ? 'اسم القاعة' : 'Room Name'}</option>
                   <option value="none">{isRtl ? '-- إخفاء هذا السطر --' : '-- Hide Line --'}</option>
                 </select>
@@ -165,7 +165,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
                   className="w-full text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 >
                   <option value="room_name">{isRtl ? 'اسم القاعة' : 'Room Name'}</option>
-                  <option value="class_name">{isRtl ? 'اسم الفصل / الشعبة' : 'Class Name'}</option>
+                  <option value="class_name">{isRtl ? 'اسم الدفعة / الشعبة' : 'Level / Section Name'}</option>
                   <option value="none">{isRtl ? '-- إخفاء هذا السطر --' : '-- Hide Line --'}</option>
                 </select>
               </div>
@@ -187,9 +187,9 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
                   onChange={(e) => setConfig({ ...config, colorBy: e.target.value as any })}
                   className="w-full text-xs p-2 rounded-lg border border-slate-300 font-medium text-slate-800"
                 >
-                  <option value="subject">{isRtl ? 'لون المادة الدراسية (موصى به)' : 'Subject Color (Recommended)'}</option>
-                  <option value="teacher">{isRtl ? 'لون المعلم' : 'Teacher Color'}</option>
-                  <option value="class">{isRtl ? 'لون الفصل الدراسي' : 'Class Group Color'}</option>
+                  <option value="subject">{isRtl ? 'لون المساق الأكاديمي (موصى به)' : 'Course Color (Recommended)'}</option>
+                  <option value="teacher">{isRtl ? 'لون عضو هيئة التدريس' : 'Faculty Color'}</option>
+                  <option value="class">{isRtl ? 'لون الدفعة / الشعبة' : 'Section Color'}</option>
                 </select>
               </div>
 
@@ -243,7 +243,7 @@ export const CardLayoutModal: React.FC<CardLayoutModalProps> = ({
                     onChange={(e) => setConfig({ ...config, showLockBadge: e.target.checked })}
                     className="rounded text-sky-600"
                   />
-                  <span>{isRtl ? 'إظهار شارة القفل 🔒 للحصص المثبتة' : 'Show 🔒 lock badge on pinned lessons'}</span>
+                  <span>{isRtl ? 'إظهار شارة القفل 🔒 للمحاضرات المثبتة' : 'Show 🔒 lock badge on pinned lectures'}</span>
                 </label>
               </div>
             </div>

@@ -66,8 +66,8 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
     { label: string; labelAr: string; icon: any; color: string; defaultParam: number; unit: string; unitAr: string }
   > = {
     DISTRIBUTION_ACROSS_DAYS: {
-      label: 'Lesson distribution across days',
-      labelAr: 'توزيع الحصص بانتظام على أيام الأسبوع',
+      label: 'Lecture distribution across days',
+      labelAr: 'توزيع المحاضرات بانتظام على أيام الأسبوع',
       icon: Calendar,
       color: 'bg-emerald-100 text-emerald-800 border-emerald-300',
       defaultParam: 1,
@@ -75,13 +75,13 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
       unitAr: 'باليوم',
     },
     MAX_CONSECUTIVE_PERIODS: {
-      label: 'Max consecutive periods',
-      labelAr: 'الحد الأقصى للحصص المتتالية دون راحة',
+      label: 'Max consecutive lectures',
+      labelAr: 'الحد الأقصى للمحاضرات المتتالية دون راحة',
       icon: Clock,
       color: 'bg-indigo-100 text-indigo-800 border-indigo-300',
       defaultParam: 2,
-      unit: 'periods',
-      unitAr: 'حصص',
+      unit: 'lectures',
+      unitAr: 'محاضرات',
     },
     MAX_DAILY_HOURS: {
       label: 'Max daily lectures',
@@ -143,8 +143,8 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
       subjectId: subjects[0]?.id,
       teacherId: undefined,
       classId: undefined,
-      description: 'Evenly distribute scheduled lessons across all cycle days.',
-      descriptionAr: 'توزيع متوازن للحصص لتفادي تكدسها في أيام متتالية.',
+      description: 'Evenly distribute scheduled lectures across all cycle days.',
+      descriptionAr: 'توزيع متوازن للمحاضرات لتفادي تكدسها في أيام متتالية.',
     });
     setFormError(null);
     setIsFormOpen(true);
@@ -203,12 +203,12 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
             <Sliders className="w-5 h-5 text-indigo-300" />
             <div>
               <h2 className="font-bold text-sm tracking-tight">
-                {isRtl ? 'القيود والعلاقات المتقدمة بين الحصص' : 'Advanced Relations & Constraints'}
+                {isRtl ? 'القيود والعلاقات المتقدمة بين المحاضرات' : 'Advanced Relations & Constraints'}
               </h2>
               <p className="text-[11px] text-indigo-200">
                 {isRtl
-                  ? 'ضبط قواعد التوزيع، أوقات الفراغ، الحد الأقصى للحصص المتتالية، والقاعات المشتركة'
-                  : 'Configure card distribution rules, teacher gap limits, consecutive periods, and shared rooms'}
+                  ? 'ضبط قواعد التوزيع، أوقات الفراغ لأعضاء التدريس، الحد الأقصى للمحاضرات المتتالية، والقاعات والمعامل المشتركة'
+                  : 'Configure lecture distribution rules, faculty gap limits, consecutive lectures, and shared halls/labs'}
               </p>
             </div>
           </div>
@@ -291,22 +291,22 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
                         <span className="font-medium text-slate-400">{isRtl ? 'النطاق:' : 'Scope:'}</span>
                         {targetSubject && (
                           <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
-                            {isRtl ? 'المادة:' : 'Subject:'} {isRtl ? targetSubject.nameAr || targetSubject.name : targetSubject.name}
+                            {isRtl ? 'المساق:' : 'Course:'} {isRtl ? targetSubject.nameAr || targetSubject.name : targetSubject.name}
                           </span>
                         )}
                         {targetTeacher && (
                           <span className="bg-violet-50 text-violet-800 px-2 py-0.5 rounded border border-violet-200">
-                            {isRtl ? 'المعلم:' : 'Teacher:'} {isRtl ? targetTeacher.nameAr || targetTeacher.name : targetTeacher.name}
+                            {isRtl ? 'عضو هيئة التدريس:' : 'Faculty:'} {isRtl ? targetTeacher.nameAr || targetTeacher.name : targetTeacher.name}
                           </span>
                         )}
                         {targetClass && (
                           <span className="bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
-                            {isRtl ? 'الفصل:' : 'Class:'} {isRtl ? targetClass.nameAr || targetClass.name : targetClass.name}
+                            {isRtl ? 'الدفعة / الشعبة:' : 'Section:'} {isRtl ? targetClass.nameAr || targetClass.name : targetClass.name}
                           </span>
                         )}
                         {!targetSubject && !targetTeacher && !targetClass && (
                           <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
-                            {isRtl ? 'كافة المواد والمعلمين' : 'Whole School (All Entities)'}
+                            {isRtl ? 'كافة المساقات وأعضاء هيئة التدريس' : 'All Courses & Faculty'}
                           </span>
                         )}
                       </div>
@@ -495,7 +495,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المعلم' : 'Teacher'}</label>
+                  <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'عضو هيئة التدريس' : 'Faculty'}</label>
                   <select
                     value={editingRule.teacherId || ''}
                     onChange={(e) =>
@@ -503,7 +503,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
                     }
                     className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px]"
                   >
-                    <option value="">{isRtl ? 'كافة المعلمين' : 'All Teachers'}</option>
+                    <option value="">{isRtl ? 'كافة أعضاء هيئة التدريس' : 'All Faculty'}</option>
                     {teachers.map((tc) => (
                       <option key={tc.id} value={tc.id}>
                         {isRtl ? tc.nameAr || tc.name : tc.name}
@@ -513,7 +513,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الفصل' : 'Class'}</label>
+                  <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الدفعة / الشعبة' : 'Level / Section'}</label>
                   <select
                     value={editingRule.classId || ''}
                     onChange={(e) =>
@@ -521,7 +521,7 @@ export const AdvancedRelationsModal: React.FC<AdvancedRelationsModalProps> = ({
                     }
                     className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px]"
                   >
-                    <option value="">{isRtl ? 'كافة الفصول' : 'All Classes'}</option>
+                    <option value="">{isRtl ? 'كافة الدفعات والشعب' : 'All Levels & Sections'}</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {isRtl ? c.nameAr || c.name : c.name}

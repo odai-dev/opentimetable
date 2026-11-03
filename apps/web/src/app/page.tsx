@@ -1635,7 +1635,7 @@ export default function TimetableStudioPage() {
     const entityType = viewMode === 'teacher' ? 'teacher' : 'class';
 
     // Header Row 1: Entity Title + Spanning Days
-    const row1 = [escapeCsv(isRtl ? (entityType === 'teacher' ? 'المعلم' : 'الفصل') : (entityType === 'teacher' ? 'Teacher' : 'Class'))];
+    const row1 = [escapeCsv(isRtl ? (entityType === 'teacher' ? 'عضو هيئة التدريس / المحاضر' : 'الدفعة / الشعبة') : (entityType === 'teacher' ? 'Faculty Member' : 'Group / Section'))];
     for (let d = 0; d < cycleDays; d++) {
       const dayLabel = days[d] || `Day ${d + 1}`;
       for (let p = 0; p < periodsPerDay; p++) {
@@ -1644,7 +1644,7 @@ export default function TimetableStudioPage() {
     }
 
     // Header Row 2: Period / Time + Period Numbers & Bell Times
-    const row2 = [escapeCsv(isRtl ? 'الحصة / الوقت' : 'Period / Time')];
+    const row2 = [escapeCsv(isRtl ? 'المحاضرة / الوقت' : 'Lecture / Time')];
     for (let d = 0; d < cycleDays; d++) {
       for (let p = 0; p < periodsPerDay; p++) {
         const pLabel = periods[p] || `P${p + 1}`;
@@ -1774,7 +1774,7 @@ export default function TimetableStudioPage() {
       ical += `DTEND:${dtend}\r\n`;
       ical += 'RRULE:FREQ=WEEKLY;COUNT=16\r\n';
       ical += `SUMMARY:${subName} (${clsName})\r\n`;
-      ical += `DESCRIPTION:${isRtl ? 'المعلم' : 'Teacher'}: ${tcName}\\n${isRtl ? 'الشعبة' : 'Class'}: ${clsName}\r\n`;
+      ical += `DESCRIPTION:${isRtl ? 'عضو هيئة التدريس' : 'Faculty'}: ${tcName}\\n${isRtl ? 'الدفعة / الشعبة' : 'Group / Section'}: ${clsName}\r\n`;
       ical += `LOCATION:${rmName}\r\n`;
       ical += 'STATUS:CONFIRMED\r\n';
       ical += 'END:VEVENT\r\n';
@@ -1887,6 +1887,7 @@ export default function TimetableStudioPage() {
         <ViewNavigator
           lang={lang}
           viewMode={viewMode}
+          setViewMode={setViewMode}
           selectedEntityId={selectedEntityId}
           setSelectedEntityId={setSelectedEntityId}
           classes={classes}
@@ -1912,7 +1913,7 @@ export default function TimetableStudioPage() {
               {viewMode === 'class' && (classMap.get(selectedEntityId)?.name || 'Class Schedule')}
               {viewMode === 'teacher' && (teacherMap.get(selectedEntityId)?.name || 'Teacher Schedule')}
               {viewMode === 'room' && (roomMap.get(selectedEntityId)?.name || 'Room Schedule')}
-              {viewMode === 'wall' && (isRtl ? 'الجدول العام للمدرسة' : 'Master School Timetable')}
+              {viewMode === 'wall' && (isRtl ? 'الجدول العام للجامعة / الكلية' : 'Master University Timetable')}
             </h2>
             <p className="text-xs text-slate-500">
               {isRtl ? 'جدول الحصص الأسبوعي' : 'Weekly Timetable'}
@@ -1991,8 +1992,8 @@ export default function TimetableStudioPage() {
           <span className="text-slate-400">|</span>
           <span className="text-slate-600">
             {isRtl
-              ? `المدرسة: ${schoolName || 'مشروع جديد'} (${currentFileName || 'غير محفوظ'})`
-              : `School: ${schoolName || 'New Project'} (${currentFileName || 'Unsaved'})`}
+              ? `الجامعة / الكلية: ${schoolName || 'مشروع جديد'} (${currentFileName || 'غير محفوظ'})`
+              : `University / Faculty: ${schoolName || 'New Project'} (${currentFileName || 'Unsaved'})`}
           </span>
         </div>
 

@@ -93,10 +93,10 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
           severity: 'CRITICAL',
           title: `Impossible Schedule for Faculty Member: ${teacher.name}`,
           titleAr: `استحالة رياضية لتسكين جدول عضو هيئة التدريس: ${teacher.name}`,
-          analysis: `Faculty member ${teacher.name} has ${requiredHours} required weekly lecture hours, but only ${availableSlots} available slots due to ${blockedCount} blocked periods in Time-Off (Deficit: ${shortage} lectures).`,
-          analysisAr: `عضو هيئة التدريس ${teacher.name} مطلوب منه تدريس ${requiredHours} محاضرة، بينما المتاح له فقط ${availableSlots} فترة بسبب حظر ${blockedCount} فترة في جدول تفريغه (العجز: ${shortage} محاضرة). التسكين مستحيل رياضياً.`,
+          analysis: `Faculty member ${teacher.name} has ${requiredHours} required weekly lecture hours, but only ${availableSlots} available slots due to ${blockedCount} blocked lecture slots in Time-Off (Deficit: ${shortage} lectures).`,
+          analysisAr: `عضو هيئة التدريس ${teacher.name} مطلوب منه تدريس ${requiredHours} محاضرة، بينما المتاح له فقط ${availableSlots} محاضرة بسبب حظر ${blockedCount} محاضرة في جدول تفريغه (العجز: ${shortage} محاضرة). التسكين مستحيل رياضياً.`,
           suggestedAction: `Unblock at least ${shortage} lecture slots in ${teacher.name}'s Time-Off schedule.`,
-          suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} محاضرات في جدول تفريغ عضو هيئة التدريس ${teacher.name}.`,
+          suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} محاضرة في جدول تفريغ عضو هيئة التدريس ${teacher.name}.`,
           actionPayload: {
             type: 'UNBLOCK_TIMEOFF',
             teacherId: teacher.id,

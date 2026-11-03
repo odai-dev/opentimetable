@@ -23,6 +23,7 @@ interface ViewNavigatorProps {
   placedLessonsCount: number;
   unplacedCount: number;
   solveDurationMs?: number | null;
+  setViewMode?: (mode: ViewMode) => void;
 }
 
 export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
@@ -38,9 +39,30 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
   placedLessonsCount,
   unplacedCount,
   solveDurationMs,
+  setViewMode,
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
+
+  const viewTabs: { mode: ViewMode; labelEn: string; labelAr: string }[] = [
+    { mode: 'class', labelEn: 'Levels & Sections', labelAr: 'المستويات والشعب' },
+    { mode: 'teacher', labelEn: 'Faculty', labelAr: 'أعضاء هيئة التدريس' },
+    { mode: 'room', labelEn: 'Halls & Labs', labelAr: 'القاعات والمعامل' },
+    { mode: 'wall', labelEn: 'Master Timetable', labelAr: 'الجدول العام' },
+  ];
+
+  const handleModeSwitch = (mode: ViewMode) => {
+    if (setViewMode) {
+      setViewMode(mode);
+      if (mode === 'class' && classes.length > 0 && !classes.some((c) => c.id === selectedEntityId)) {
+        setSelectedEntityId(classes[0].id);
+      } else if (mode === 'teacher' && teachers.length > 0 && !teachers.some((tc) => tc.id === selectedEntityId)) {
+        setSelectedEntityId(teachers[0].id);
+      } else if (mode === 'room' && rooms.length > 0 && !rooms.some((r) => r.id === selectedEntityId)) {
+        setSelectedEntityId(rooms[0].id);
+      }
+    }
+  };
 
   // Get active entities list for navigation
   const entities = React.useMemo(() => {
@@ -78,11 +100,30 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
 
   return (
     <div className="bg-slate-100 border-b border-slate-300 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
-      {/* Left: Entity Stepper (< Dropdown >) */}
-      <div className="flex items-center gap-2">
-        <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-xs shrink-0 border border-sky-200">
-          {t.views[viewMode]}
-        </span>
+      {/* Left: View Mode Switcher + Entity Stepper (< Dropdown >) */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Higher Education View Switcher */}
+        <div className="inline-flex rounded-md shadow-xs bg-slate-200/90 p-0.5 border border-slate-300" role="group">
+          {viewTabs.map((tab) => {
+            const isActive = viewMode === tab.mode;
+            return (
+              <button
+                key={tab.mode}
+                type="button"
+                onClick={() => handleModeSwitch(tab.mode)}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-sky-700 text-white shadow-xs'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
+                }`}
+                title={isRtl ? tab.labelAr : tab.labelEn}
+              >
+                <span>{isRtl ? tab.labelAr : tab.labelEn}</span>
+              </button>
+            );
+          })}
+        </div>
+
         <span className="font-semibold text-slate-600 hidden sm:inline">
           {t.viewNav.showing}
         </span>

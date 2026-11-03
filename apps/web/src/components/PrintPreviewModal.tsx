@@ -108,10 +108,10 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showSignatures, setShowSignatures] = useState<boolean>(true);
   const [preparedBy, setPreparedBy] = useState<string>(
-    isRtl ? 'منسق الجدول المدرسي' : 'Timetable Coordinator'
+    isRtl ? 'الشؤون الأكاديمية / إعداد' : 'Academic Affairs / Prepared By'
   );
   const [approvedBy, setApprovedBy] = useState<string>(
-    isRtl ? 'مدير المدرسة' : 'School Principal'
+    isRtl ? 'اعتماد عميد الكلية' : 'Approved by Dean'
   );
 
   // Synchronize initial document mode when modal opens
@@ -127,10 +127,15 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   // Dynamic day & period definitions with fallbacks
   const daysList = useMemo(() => {
     if (customDays && customDays.length > 0) return customDays;
+    if (cycleDays === 6) {
+      return isRtl
+        ? ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+        : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+    }
     return isRtl
       ? ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
       : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  }, [customDays, isRtl]);
+  }, [customDays, cycleDays, isRtl]);
 
   const periodsList = useMemo(() => {
     if (customPeriods && customPeriods.length > 0) return customPeriods;
@@ -152,7 +157,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
           type: 'class' as const,
           id: c.id,
           name: isRtl ? c.nameAr || c.name : c.name,
-          subtitle: c.grade ? (isRtl ? `الصف ${c.grade}` : `Grade ${c.grade}`) : undefined,
+          subtitle: c.grade ? (isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`) : undefined,
         }));
       case 'batch_teachers':
         return teachers.map((tc) => ({
@@ -177,7 +182,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
             type: 'class' as const,
             id: cls.id,
             name: isRtl ? cls.nameAr || cls.name : cls.name,
-            subtitle: cls.grade ? (isRtl ? `الصف ${cls.grade}` : `Grade ${cls.grade}`) : undefined,
+            subtitle: cls.grade ? (isRtl ? `المستوى ${cls.grade}` : `Level ${cls.grade}`) : undefined,
           }];
         }
         const rm = roomMap.get(selectedEntityId);
@@ -201,7 +206,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
         return [{
           type: 'class' as const,
           id: 'master_wall',
-          name: isRtl ? 'الجدول العام للمدرسة' : 'Master School Timetable',
+          name: isRtl ? 'الجدول العام للجامعة / الكلية' : 'Master University Timetable',
           subtitle: undefined,
         }];
     }
@@ -288,29 +293,29 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                 {[
                   {
                     id: 'batch_classes' as const,
-                    labelEn: 'Individual Schedules (All Classes)',
-                    labelAr: 'جداول فردية (دفعة - جميع الفصول)',
+                    labelEn: 'Individual Schedules (All Groups)',
+                    labelAr: 'جداول فردية (دفعة - جميع الشعب)',
                     icon: GraduationCap,
                     count: classes.length,
                   },
                   {
                     id: 'batch_teachers' as const,
-                    labelEn: 'Individual Schedules (All Teachers)',
-                    labelAr: 'جداول فردية (دفعة - جميع المعلمين)',
+                    labelEn: 'Individual Schedules (All Faculty)',
+                    labelAr: 'جداول فردية (دفعة - جميع أعضاء التدريس)',
                     icon: Users,
                     count: teachers.length,
                   },
                   {
                     id: 'selected_entity' as const,
                     labelEn: 'Selected Entity Only',
-                    labelAr: 'الكيان الحالي فقط',
+                    labelAr: 'الكيان الأكاديمي الحالي فقط',
                     icon: FileText,
                     count: 1,
                   },
                   {
                     id: 'master_wall' as const,
-                    labelEn: 'Master Wall Timetable',
-                    labelAr: 'جدول الحائط العام للمدرسة',
+                    labelEn: 'Master University Timetable',
+                    labelAr: 'الجدول العام للجامعة / الكلية',
                     icon: LayoutGrid,
                     count: 1,
                   },
@@ -517,7 +522,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
               {/* Active Entity Badge */}
               <div className="text-xs font-semibold text-slate-300 truncate max-w-[280px]">
                 {documentMode === 'master_wall' ? (
-                  <span>{isRtl ? 'الجدول العام للمدرسة' : 'Master School Timetable'}</span>
+                  <span>{isRtl ? 'الجدول العام للجامعة / الكلية' : 'Master University Timetable'}</span>
                 ) : (
                   <span>
                     {activeEntity?.name} {activeEntity?.subtitle ? `(${activeEntity.subtitle})` : ''}
@@ -583,10 +588,10 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                         </div>
                         <div className="text-center">
                           <h2 className="text-base font-bold text-slate-800">
-                            {isRtl ? 'الجدول العام للمدرسة' : 'Master School Timetable'}
+                            {isRtl ? 'الجدول العام للجامعة / الكلية' : 'Master University Timetable'}
                           </h2>
                           <p className="text-xs text-slate-500">
-                            {isRtl ? 'جميع الفصول والمعلمين' : 'Complete School Matrix'}
+                            {isRtl ? 'المصفوفة الأكاديمية الشاملة' : 'Complete Academic Matrix'}
                           </p>
                         </div>
                         <div className="text-end text-xs text-slate-500">
@@ -722,7 +727,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                 entityType="class"
                 entityId={c.id}
                 entityName={isRtl ? c.nameAr || c.name : c.name}
-                entitySubtitle={c.grade ? (isRtl ? `الصف ${c.grade}` : `Grade ${c.grade}`) : undefined}
+                entitySubtitle={c.grade ? (isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`) : undefined}
                 schoolName={schoolName}
                 academicYear={academicYear}
                 daysList={daysList}
