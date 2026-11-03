@@ -38,6 +38,7 @@ import {
   GraduationCap,
   Network,
   Upload,
+  Globe,
 } from 'lucide-react';
 import { RibbonTab, Role, ViewMode, BasicDataTab } from '../lib/types';
 import { translations } from '../lib/i18n';
@@ -156,48 +157,39 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
 
   return (
     <div className="w-full bg-slate-200 border-b border-slate-300 select-none shadow-sm flex flex-col">
-      {/* 1. Window Frame & Quick Access Bar */}
-      <div className="bg-slate-800 text-white px-3 py-1.5 flex items-center justify-between text-xs border-b border-slate-700">
-        {/* Quick Access Icons & Title */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center font-bold text-white text-xs shadow">
-            📅
-          </div>
-          <span className="font-bold tracking-tight text-slate-100 hidden sm:inline">
-            {currentFileName ? `OpenTimetable 2026 - [${currentFileName}]` : t.windowSubtitle}
-          </span>
-
-          <div className="h-4 w-[1px] bg-slate-600 mx-1 hidden sm:block" />
-
+      {/* Ribbon Tabs Navigation & Controls */}
+      <div className="bg-slate-200 px-3 pt-1.5 flex items-center justify-between border-b border-slate-300 gap-2">
+        {/* Left: Quick Access Tools & Ribbon Tabs */}
+        <div className="flex items-end gap-1 flex-wrap">
           {/* Quick Access Tools */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-1 mr-2 rtl:mr-0 rtl:ml-2 bg-slate-300/80 p-0.5 rounded border border-slate-400/50 shadow-xs">
             <button
               onClick={onNewFile || (() => alert(isRtl ? 'مشروع جديد' : 'New Project'))}
               title={t.ribbon.tools.newFile}
-              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white text-slate-700 hover:text-sky-700 transition"
             >
               <FilePlus className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onImportRoz}
               title={t.ribbon.tools.openRoz}
-              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white text-slate-700 hover:text-sky-700 transition"
             >
               <FolderOpen className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onSaveFile || (() => alert(isRtl ? 'تم حفظ التغييرات محلياً' : 'Changes saved locally'))}
               title={t.ribbon.tools.saveFile}
-              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white text-slate-700 hover:text-sky-700 transition"
             >
               <Save className="w-3.5 h-3.5" />
             </button>
-            <div className="h-3 w-[1px] bg-slate-600 mx-0.5" />
+            <div className="h-3 w-[1px] bg-slate-400 mx-0.5" />
             <button
               onClick={onUndo}
               disabled={!canUndo || isReadOnly}
               title={t.ribbon.tools.undo}
-              className="p-1 rounded hover:bg-slate-700 disabled:opacity-40 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white disabled:opacity-40 text-slate-700 hover:text-sky-700 transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -205,32 +197,49 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
               onClick={onRedo}
               disabled={!canRedo || isReadOnly}
               title={t.ribbon.tools.redo}
-              className="p-1 rounded hover:bg-slate-700 disabled:opacity-40 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white disabled:opacity-40 text-slate-700 hover:text-sky-700 transition"
             >
               <RotateCw className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onPrintPreview}
               title={t.ribbon.tools.printPreview}
-              className="p-1 rounded hover:bg-slate-700 text-slate-200 hover:text-white transition"
+              className="p-1 rounded hover:bg-white text-slate-700 hover:text-sky-700 transition"
             >
               <Printer className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Ribbon Tabs */}
+          {(['file', 'main', 'timetable', 'specification', 'view'] as RibbonTab[]).map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-t-md transition-all relative ${
+                  isActive
+                    ? 'bg-gradient-to-b from-white to-slate-50 text-sky-800 border-t-2 border-t-sky-600 border-x border-slate-300 shadow-sm z-10'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
+              >
+                {t.ribbon.tabs[tab]}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Right Corner: Bilingual Language Switcher, Help & Native Window Controls */}
-        <div className="flex items-center gap-2">
-
-          {/* Bilingual Language Switcher */}
+        {/* Right: Language Switcher & Help */}
+        <div className="flex items-center gap-2 mb-1">
           <button
             onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="px-2.5 py-0.5 rounded bg-sky-700 hover:bg-sky-600 text-white font-bold text-xs transition border border-sky-500/50 shadow-xs"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white hover:bg-sky-50 text-sky-800 hover:text-sky-900 font-bold text-xs transition border border-slate-300 shadow-xs"
+            title={lang === 'en' ? 'التحويل إلى اللغة العربية' : 'Switch to English'}
           >
-            {lang === 'en' ? '🇸🇦 العربية (RTL)' : '🇺🇸 English (LTR)'}
+            <Globe className="w-3.5 h-3.5 text-sky-600" />
+            <span>{lang === 'en' ? '🇸🇦 العربية (RTL)' : '🇺🇸 English'}</span>
           </button>
 
-          {/* About / Help */}
           <button
             onClick={
               onOpenHelpShortcuts ||
@@ -242,53 +251,11 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                 ))
             }
             title={isRtl ? 'المساعدة واختصارات لوحة المفاتيح' : 'Help & Keyboard Shortcuts'}
-            className="p-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition"
+            className="p-1 rounded hover:bg-slate-300 text-slate-600 hover:text-slate-900 transition"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
+            <HelpCircle className="w-4 h-4" />
           </button>
-
-          {/* Desktop Window Controls (Min, Max, Close) */}
-          <div className="flex items-center ml-1 border-l border-slate-700 pl-1.5 gap-0.5">
-            <div
-              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-white rounded-xs text-[10px] cursor-pointer"
-              title={isRtl ? 'تصغير' : 'Minimize'}
-            >
-              ─
-            </div>
-            <div
-              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-slate-700 hover:text-white rounded-xs text-[10px] cursor-pointer"
-              title={isRtl ? 'تكبير' : 'Maximize'}
-            >
-              □
-            </div>
-            <div
-              className="w-5 h-4 flex items-center justify-center text-slate-400 hover:bg-rose-600 hover:text-white rounded-xs text-[10px] cursor-pointer"
-              title={isRtl ? 'إغلاق' : 'Close'}
-            >
-              ✕
-            </div>
-          </div>
         </div>
-      </div>
-
-      {/* 2. Ribbon Tabs Navigation */}
-      <div className="bg-slate-200 px-2 pt-1 flex items-end gap-0.5 border-b border-slate-300">
-        {(['file', 'main', 'timetable', 'specification', 'view'] as RibbonTab[]).map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-t-md transition-all relative ${
-                isActive
-                  ? 'bg-gradient-to-b from-white to-slate-50 text-sky-800 border-t-2 border-t-sky-600 border-x border-slate-300 shadow-sm z-10'
-                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70'
-              }`}
-            >
-              {t.ribbon.tabs[tab]}
-            </button>
-          );
-        })}
       </div>
 
       {/* 3. Ribbon Command Band (Desktop Large-Icon Toolset) */}
