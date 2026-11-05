@@ -89,6 +89,7 @@ export interface RozRawLesson {
   duration: number;
   period: number;
   day: number;
+  is_locked?: boolean;
 }
 
 /**
@@ -232,13 +233,19 @@ export function mapRozToFrontend(parsed: Omit<RozParseResult, 'mapped'>): RozPar
     duration: l.duration || 1,
   }));
 
-  // Create initial placements based on parsed day and period
-  const placements: Placement[] = parsed.lessons.map((l) => ({
-    lessonId: l.id,
-    dayIndex: Math.max(0, (l.day || 1) - 1),
-    periodIndex: Math.max(0, (l.period || 1) - 1),
-    roomId: l.room_id || (rooms[0] ? rooms[0].id : '1'),
-  }));
+  // Create initial placements based on parsed day and period (filtering unplaced cards)
+  const placements: Placement[] = [];
+  for (const l of parsed.lessons) {
+    if (l.day > 0 && l.period > 0) {
+      placements.push({
+        lessonId: l.id,
+        dayIndex: l.day - 1,
+        periodIndex: l.period - 1,
+        roomId: l.room_id || (rooms[0] ? rooms[0].id : '1'),
+        isLocked: Boolean((l as any).is_locked || (l as any).isLocked),
+      });
+    }
+  }
 
   return {
     teachers,
