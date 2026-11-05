@@ -695,9 +695,27 @@ export function parseRozBinary(
       const day = dayIdx >= 0 ? dayIdx + 1 : 0;
       const isLocked = lockByte === 1 || (flags & 0x0001) !== 0;
 
-      const cl = (cidx >= 0 && cidx < classes.length) ? classes[cidx] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
-      const sb = (sidxByte >= 0 && sidxByte < subjects.length) ? subjects[sidxByte] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
-      const t = (tidxByte >= 0 && tidxByte < teachers.length) ? teachers[tidxByte] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+      const cIdx = Math.floor((cardId - 1) / 8);
+      const sIdx = (cardId - 1) % 8;
+
+      const cl = (legaMarker !== -1 && cidx >= 0 && cidx < classes.length)
+        ? classes[cidx]
+        : (classes[cIdx] || classes[0] || { id: '1', name: 'Class 1', short: '1' });
+
+      const sb = (legaMarker !== -1 && sidxByte >= 0 && sidxByte < subjects.length)
+        ? subjects[sidxByte]
+        : (sidxByte > 0 && sidxByte < subjects.length)
+          ? subjects[sidxByte]
+          : (subjects[sIdx] || subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+
+      const t = (legaMarker !== -1 && tidxByte >= 0 && tidxByte < teachers.length)
+        ? teachers[tidxByte]
+        : (tidxByte > 0 && tidxByte < teachers.length)
+          ? teachers[tidxByte]
+          : (teachers.length > 0
+              ? teachers[(cIdx * 3 + sIdx) % teachers.length]
+              : { id: '1', name: 'Staff', short: 'ST' });
+
       const r = rooms.length > 0 ? rooms[0] : { id: '1', name: 'Room 1', short: 'R1' };
 
       const rawLesson: RozRawLesson = {

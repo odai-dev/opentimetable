@@ -17,6 +17,9 @@ node --test tests/tier1_features/*.test.mjs tests/tier2_boundaries/*.test.mjs te
 echo "==> Running Client-Side .roz Parser Verification Suite..."
 node --test tests/test_roz_parser.mjs
 
+echo "==> Running Roz Round-Trip & Lossless Persistence Verification Suite (M2 Remediation)..."
+node --test tests/test_roz_roundtrip_persistence.mjs
+
 echo "==> Running Milestone 3 Modal & CRUD Parity Verification Suite..."
 node --test tests/test_modal_crud_parity.mjs
 
