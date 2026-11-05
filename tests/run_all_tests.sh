@@ -20,6 +20,9 @@ node --test tests/test_roz_parser.mjs
 echo "==> Running Roz Round-Trip & Lossless Persistence Verification Suite (M2 Remediation)..."
 node --test tests/test_roz_roundtrip_persistence.mjs
 
+echo "==> Running Roz Parser & Serializer Adversarial Fuzzing Suite (M2 Remediation Challenger)..."
+node --test tests/test_m2_remed_challenger_adversarial.mjs
+
 echo "==> Running Milestone 3 Modal & CRUD Parity Verification Suite..."
 node --test tests/test_modal_crud_parity.mjs
 
