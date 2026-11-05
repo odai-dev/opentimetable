@@ -394,7 +394,22 @@ export function parseRozBinary(
         if (p.name.includes(' ') && p.offset < pClasstt) {
           const parts = p.name.split(' ');
           const lastPart = parts[parts.length - 1];
-          if (/[A-Z]/.test(lastPart[0] || '')) {
+          if (
+            /[A-Z]/.test(lastPart[0] || '') ||
+            p.name.toLowerCase().startsWith('teacher') ||
+            p.name.toLowerCase().startsWith('staff')
+          ) {
+            firstTeacherOff = p.offset;
+            break;
+          }
+        }
+      }
+      if (firstTeacherOff === null) {
+        for (const p of rawPairs) {
+          if (
+            p.offset < pClasstt &&
+            (p.name.toLowerCase().includes('teacher') || p.name.toLowerCase().includes('staff'))
+          ) {
             firstTeacherOff = p.offset;
             break;
           }
