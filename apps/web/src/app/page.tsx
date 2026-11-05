@@ -24,6 +24,7 @@ import {
   AdvisorDiagnostic,
 } from '../lib/types';
 import { parseRozBinary } from '../lib/roz-parser';
+import { serializeRozBinary, downloadRozFile } from '../lib/roz-serializer';
 import { isSplitExempt, extractSlotsFromTimeOffMatrix } from '../lib/domain';
 import { downloadAscttXml } from '../lib/export-xml';
 import { RibbonToolbar } from '../components/RibbonToolbar';
@@ -827,10 +828,183 @@ export default function TimetableStudioPage() {
     setRedoStack((r) => r.slice(0, -1));
   }, [redoStack, placements, isReadOnly]);
 
-  // Keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+G, Space)
+  // Dual-Persistence: LocalStorage + Binary .roz File Download
+  const handleSaveFile = useCallback(() => {
+    try {
+      const stateToSave = {
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+        timeOffMatrix,
+        schoolName,
+        academicYear,
+        currentFileName,
+        schemaVersion,
+        scheduleCycleKind,
+        cycleDays,
+        periodsPerDay,
+        bellSchedule: dynamicBells,
+        timestamp: Date.now(),
+      };
+      if (typeof window !== 'undefined') {
+        const serialized = JSON.stringify(stateToSave);
+        localStorage.setItem('opentimetable_saved_state', serialized);
+        localStorage.setItem('opentimetable_autosave_state', serialized);
+      }
+
+      const rozBytes = serializeRozBinary(
+        {
+          schoolName: schoolName || 'OpenTimetable School',
+          academicYear: academicYear || '2025/2026',
+          cycleDays,
+          periodsPerDay,
+          teachers,
+          classes,
+          rooms,
+          subjects,
+          lessons,
+          placements,
+          timeOffMatrix,
+          schemaVersion: schemaVersion || 314,
+        },
+        {
+          schemaVersion: schemaVersion || 314,
+          targetEncoding: schemaVersion < 248 ? 'win1256' : 'utf8',
+        }
+      );
+
+      const outName =
+        currentFileName && currentFileName.toLowerCase().endsWith('.roz')
+          ? currentFileName
+          : `${(schoolName || 'timetable').replace(/[^a-zA-Z0-9_\u0600-\u06FF-]/g, '_')}.roz`;
+
+      downloadRozFile(rozBytes, outName);
+    } catch (err) {
+      console.error('Failed to save .roz file:', err);
+      alert(isRtl ? `تعذر حفظ ملف .roz: ${err}` : `Failed to save .roz file: ${err}`);
+    }
+  }, [
+    teachers,
+    classes,
+    rooms,
+    subjects,
+    lessons,
+    placements,
+    timeOffMatrix,
+    schoolName,
+    academicYear,
+    currentFileName,
+    schemaVersion,
+    scheduleCycleKind,
+    cycleDays,
+    periodsPerDay,
+    dynamicBells,
+    isRtl,
+  ]);
+
+  // Save As: Persist to localStorage and download formatted .roz container with custom name
+  const handleSaveAs = useCallback(() => {
+    try {
+      const defaultName =
+        currentFileName && currentFileName.toLowerCase().endsWith('.roz')
+          ? currentFileName
+          : `${(schoolName || 'timetable').replace(/[^a-zA-Z0-9_\u0600-\u06FF-]/g, '_')}.roz`;
+
+      const userPrompt = prompt(
+        isRtl
+          ? 'أدخل اسم ملف الجدول المراد حفظه بصيغة (.roz):'
+          : 'Enter timetable file name to save as (.roz):',
+        defaultName
+      );
+      if (!userPrompt || !userPrompt.trim()) return;
+
+      let targetName = userPrompt.trim();
+      if (!targetName.toLowerCase().endsWith('.roz')) {
+        targetName = `${targetName}.roz`;
+      }
+
+      setCurrentFileName(targetName);
+
+      const stateToSave = {
+        teachers,
+        classes,
+        rooms,
+        subjects,
+        lessons,
+        placements,
+        timeOffMatrix,
+        schoolName,
+        academicYear,
+        currentFileName: targetName,
+        schemaVersion,
+        scheduleCycleKind,
+        cycleDays,
+        periodsPerDay,
+        bellSchedule: dynamicBells,
+        timestamp: Date.now(),
+      };
+      if (typeof window !== 'undefined') {
+        const serialized = JSON.stringify(stateToSave);
+        localStorage.setItem('opentimetable_saved_state', serialized);
+        localStorage.setItem('opentimetable_autosave_state', serialized);
+      }
+
+      const rozBytes = serializeRozBinary(
+        {
+          schoolName: schoolName || 'OpenTimetable School',
+          academicYear: academicYear || '2025/2026',
+          cycleDays,
+          periodsPerDay,
+          teachers,
+          classes,
+          rooms,
+          subjects,
+          lessons,
+          placements,
+          timeOffMatrix,
+          schemaVersion: schemaVersion || 314,
+        },
+        {
+          schemaVersion: schemaVersion || 314,
+          targetEncoding: schemaVersion < 248 ? 'win1256' : 'utf8',
+        }
+      );
+
+      downloadRozFile(rozBytes, targetName);
+    } catch (err) {
+      console.error('Failed to execute Save As:', err);
+      alert(isRtl ? 'تعذر إتمام عملية الحفظ باسم' : 'Failed to execute Save As');
+    }
+  }, [
+    teachers,
+    classes,
+    rooms,
+    subjects,
+    lessons,
+    placements,
+    timeOffMatrix,
+    schoolName,
+    academicYear,
+    currentFileName,
+    schemaVersion,
+    scheduleCycleKind,
+    cycleDays,
+    periodsPerDay,
+    dynamicBells,
+    isRtl,
+  ]);
+
+  // Keyboard shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Y, Ctrl+G, Space)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSaveFile();
+        return;
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         if (e.shiftKey) {
           e.preventDefault();
           handleRedo();
@@ -849,7 +1023,7 @@ export default function TimetableStudioPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, canRunSolver, isReadOnly]);
+  }, [handleSaveFile, handleUndo, handleRedo, canRunSolver, isReadOnly]);
 
   // Record history helper (capped at MAX_HISTORY = 50 snapshots)
   const recordHistory = useCallback(() => {
@@ -1055,86 +1229,6 @@ export default function TimetableStudioPage() {
   const handleLoadSampleFromStartup = (sample: 'saudi' | 'demo1') => {
     setIsStartupModalOpen(false);
     loadNamedSample(sample);
-  };
-
-  // Manual save to localStorage with user feedback
-  const handleSaveFile = () => {
-    try {
-      const stateToSave = {
-        teachers,
-        classes,
-        rooms,
-        subjects,
-        lessons,
-        placements,
-        timeOffMatrix,
-        schoolName,
-        academicYear,
-        currentFileName,
-        schemaVersion,
-        scheduleCycleKind,
-        cycleDays,
-        periodsPerDay,
-        bellSchedule: dynamicBells,
-        timestamp: Date.now(),
-      };
-      if (typeof window !== 'undefined') {
-        const serialized = JSON.stringify(stateToSave);
-        localStorage.setItem('opentimetable_saved_state', serialized);
-        localStorage.setItem('opentimetable_autosave_state', serialized);
-      }
-      alert(
-        isRtl
-          ? 'تم حفظ بيانات الجدول بنجاح في المتصفح محلياً (Local Storage)'
-          : 'Timetable data successfully saved to local browser storage!'
-      );
-    } catch (err) {
-      console.error('Failed to save to localStorage:', err);
-      alert(isRtl ? 'تعذر حفظ البيانات محلياً' : 'Failed to save timetable locally');
-    }
-  };
-
-  // Save As: Persist to localStorage and download formatted project JSON
-  const handleSaveAs = () => {
-    try {
-      const stateToSave = {
-        teachers,
-        classes,
-        rooms,
-        subjects,
-        lessons,
-        placements,
-        timeOffMatrix,
-        schoolName,
-        academicYear,
-        currentFileName,
-        schemaVersion,
-        scheduleCycleKind,
-        cycleDays,
-        periodsPerDay,
-        bellSchedule: dynamicBells,
-        timestamp: Date.now(),
-      };
-      if (typeof window !== 'undefined') {
-        const serialized = JSON.stringify(stateToSave, null, 2);
-        localStorage.setItem('opentimetable_saved_state', JSON.stringify(stateToSave));
-        localStorage.setItem('opentimetable_autosave_state', JSON.stringify(stateToSave));
-
-        const blob = new Blob([serialized], { type: 'application/json;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const safeName = (schoolName || 'timetable').replace(/[^a-zA-Z0-9_\u0600-\u06FF-]/g, '_');
-        a.href = url;
-        a.download = `${safeName}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (err) {
-      console.error('Failed to execute Save As:', err);
-      alert(isRtl ? 'تعذر تصدير وحفظ ملف المشروع' : 'Failed to export project file');
-    }
   };
 
   // Export aSc Timetables 2012 XML Format

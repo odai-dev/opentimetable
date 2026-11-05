@@ -77,7 +77,8 @@ describe('.roz Binary Parser — Demo1.roz Modern Schema Verification', () => {
     assert.strictEqual(mapped.subjects.length, 24);
     assert.strictEqual(mapped.rooms.length, 35);
     assert.strictEqual(mapped.lessons.length, 216);
-    assert.strictEqual(mapped.placements.length, 216);
+    assert.strictEqual(mapped.placements.length, 205, 'Demo1 has 205 placed cards');
+    assert.strictEqual(mapped.lessons.length - mapped.placements.length, 11, 'Demo1 has 11 unplaced cards');
 
     // Verify entity structure fidelity
     const firstTeacher = mapped.teachers[0];
@@ -94,8 +95,8 @@ describe('.roz Binary Parser — Demo1.roz Modern Schema Verification', () => {
     assert.strictEqual(firstSubject.code, 'Sp');
 
     const firstPlacement = mapped.placements[0];
-    assert.strictEqual(firstPlacement.lessonId, '1');
-    assert.ok(firstPlacement.dayIndex >= 0 && firstPlacement.dayIndex < 5);
+    assert.strictEqual(firstPlacement.lessonId, '2');
+    assert.ok(firstPlacement.dayIndex >= 0 && firstPlacement.dayIndex < 7);
     assert.ok(firstPlacement.periodIndex >= 0 && firstPlacement.periodIndex < 7);
   });
 });

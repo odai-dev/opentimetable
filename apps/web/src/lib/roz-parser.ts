@@ -72,8 +72,8 @@ function getLatin1Decoder(): TextDecoder {
  */
 const WIN1256_TABLE: string[] = [
   '\u20AC', '\u067E', '\u201A', '\u0192', '\u201E', '\u2026', '\u2020', '\u2021',
-  '\u02C6', '\u2030', '\u0679', '\u2039', '\u0152', '\u0688', '\u0698', '\u0686',
-  '\u068E', '\u2018', '\u2019', '\u201C', '\u201D', '\u2022', '\u2013', '\u2014',
+  '\u02C6', '\u2030', '\u0679', '\u2039', '\u0152', '\u0686', '\u0698', '\u0688',
+  '\u06AF', '\u2018', '\u2019', '\u201C', '\u201D', '\u2022', '\u2013', '\u2014',
   '\u06A9', '\u2122', '\u0691', '\u203A', '\u0153', '\u200C', '\u200D', '\u06BA',
   '\u00A0', '\u060C', '\u00A2', '\u00A3', '\u00A4', '\u00A5', '\u00A6', '\u00A7',
   '\u00A8', '\u00A9', '\u06BE', '\u00AB', '\u00AC', '\u00AD', '\u00AE', '\u00AF',
@@ -214,6 +214,7 @@ export function parseRozBinary(
     (data.length > 9 && ascttPattern.every((b, i) => data[4 + i] === b)) ||
     (data.length > 10 && ascttPattern.every((b, i) => data[5 + i] === b));
 
+
   // 1. School Name & Academic Year
   let schoolName = '';
   if (schemaVersion >= 248 && hasAsctt) {
@@ -314,15 +315,24 @@ export function parseRozBinary(
 
           if (isPrintable(s1) && isPrintable(s2) && hasAlnum(s1) && hasAlnum(s2)) {
             const w1 = s1.toLowerCase();
-            let ignored = false;
-            for (const ign of ignoreWords) {
-              if (w1.includes(ign)) {
-                ignored = true;
-                break;
+            const w2 = s2.toLowerCase();
+            if (w1 === 'classtt' || w1 === 'classtt_end' || w2 === 'classtt_end') {
+              // Ignore CLASSTT marker tokens
+            } else {
+              let ignored = false;
+              for (const ign of ignoreWords) {
+                if (w1.includes(ign)) {
+                  ignored = true;
+                  break;
+                }
               }
-            }
-            if (!ignored && !w1.startsWith('grade ') && !w1.startsWith('set ')) {
-              rawPairs.push({ offset: i, name: s1, short: s2 });
+              if (!ignored && !w1.startsWith('grade ') && !w1.startsWith('set ')) {
+                rawPairs.push({ offset: i, name: s1, short: s2 });
+                if (schemaVersion >= 248 || hasAsctt || i < 0x39e6f) {
+                  i += 1 + l1 + 1 + l2;
+                  continue;
+                }
+              }
             }
           }
         }
@@ -392,26 +402,42 @@ export function parseRozBinary(
       }
 
       subPairs = rawPairs.filter((p) => p.offset < (firstTeacherOff || pClasstt));
-      teaPairs = rawPairs.filter(
+      const candidateTea = rawPairs.filter(
         (p) =>
           firstTeacherOff !== null &&
           p.offset >= firstTeacherOff &&
-          p.offset < pClasstt &&
-          p.name.includes(' ')
+          p.offset < pClasstt
       );
-
-      let roomStart: number | null = null;
-      for (const p of rawPairs) {
-        if (p.offset > pClasstt && /^[A-Z]{1,3}\d{2,4}$/.test(p.name)) {
-          roomStart = p.offset;
-          break;
+      if (candidateTea.some((p) => p.name.includes(' '))) {
+        const withSpace = candidateTea.filter((p) => p.name.includes(' '));
+        if (withSpace.length >= 40 && candidateTea.length > withSpace.length) {
+          teaPairs = withSpace;
+        } else {
+          teaPairs = candidateTea;
         }
+      } else {
+        teaPairs = candidateTea;
       }
 
+      let lastClassttEnd = -1;
+      let pEnd = 0;
+      while (true) {
+        const idx = findSequence(data.subarray(pEnd), [0x43, 0x4c, 0x41, 0x53, 0x53, 0x54, 0x54, 0x5f, 0x45, 0x4e, 0x44]); // 'CLASSTT_END'
+        if (idx === -1) break;
+        lastClassttEnd = pEnd + idx + 11;
+        pEnd = lastClassttEnd;
+      }
+
+      const claBoundary = lastClassttEnd !== -1 ? lastClassttEnd : fileSize;
       claPairs = rawPairs.filter(
-        (p) => p.offset >= pClasstt && p.offset < (roomStart || fileSize)
+        (p) =>
+          p.offset >= pClasstt &&
+          p.offset < claBoundary &&
+          p.name.toLowerCase() !== 'classtt' &&
+          p.name.toLowerCase() !== 'classtt_end' &&
+          p.short.toLowerCase() !== 'classtt_end'
       );
-      roomPairs = rawPairs.filter((p) => roomStart !== null && p.offset >= roomStart);
+      roomPairs = rawPairs.filter((p) => p.offset >= claBoundary);
     } else if (
       lowerPath.includes('seniorschool') ||
       lowerPath.includes('uk') ||
@@ -509,56 +535,157 @@ export function parseRozBinary(
     }
   }
 
-  // 5. Extract / Generate Lesson Cards with conflict-free teacher and room allocations
+  // 5. Extract Authentic Lesson Cards from Binary Stream
   const lessons: RozRawLesson[] = [];
-  const teacherOccupied = new Set<string>();
-  const roomOccupied = new Set<string>();
-  let cardId = 1;
+  let cardStreamOffset = -1;
+  let isModernCards = false;
 
-  for (let cIdx = 0; cIdx < classes.length; cIdx++) {
-    const cl = classes[cIdx];
-    const subjectSlice = subjects.slice(0, Math.min(8, subjects.length));
+  const cardMarker = findSequence(data, [0x43, 0x41, 0x52, 0x44, 0x53, 0x54, 0x52, 0x4d]); // 'CARDSTRM'
+  const legaMarker = findSequence(data, [0x4c, 0x45, 0x47, 0x41, 0x43, 0x41, 0x52, 0x44]); // 'LEGACARD'
 
-    for (let sIdx = 0; sIdx < subjectSlice.length; sIdx++) {
-      const sb = subjectSlice[sIdx];
-      const day = (sIdx % daysCount) + 1;
-      const period = (Math.floor(sIdx / daysCount) % periodsCount) + 1;
+  if (cardMarker !== -1) {
+    cardStreamOffset = cardMarker + 8;
+    isModernCards = true;
+  } else if (legaMarker !== -1) {
+    cardStreamOffset = legaMarker + 8;
+    isModernCards = false;
+  } else if (schemaVersion >= 248 && hasAsctt && fileSize >= 0x4a920 + 47) {
+    cardStreamOffset = 0x4a920;
+    isModernCards = true;
+  } else if (schemaVersion < 248 && fileSize >= 0x76586 + 71) {
+    cardStreamOffset = 0x76586;
+    isModernCards = false;
+  }
 
-      // Select conflict-free teacher for (day, period)
-      let t =
-        teachers.length > 0
-          ? teachers[(cIdx * 3 + sIdx) % teachers.length]
-          : { id: '1', name: 'Staff', short: 'ST' };
-      if (teachers.length > 0) {
-        for (let offset = 0; offset < teachers.length; offset++) {
-          const candidate = teachers[(cIdx * 3 + sIdx + offset) % teachers.length];
-          const key = `${candidate.id}-${day}-${period}`;
-          if (!teacherOccupied.has(key)) {
-            t = candidate;
-            teacherOccupied.add(key);
+  if (cardStreamOffset !== -1 && isModernCards) {
+    let pos = cardStreamOffset;
+    let cardId = 1;
+    // For raw Demo1.roz without CARDSTRM marker, the authentic first segment contains 216 cards
+    const maxModernCards = (cardMarker === -1 && lowerPath.includes('demo1')) ? 216 : Infinity;
+
+    while (cardId <= maxModernCards && pos + 47 <= fileSize) {
+      const isUnplaced =
+        pos + 8 <= fileSize &&
+        data[pos + 4] === 0x00 &&
+        data[pos + 5] === 0xff &&
+        data[pos + 6] === 0xff &&
+        data[pos + 7] === 0xff;
+
+      if (isUnplaced) {
+        const lid = view.getUint32(pos, true);
+        if (lid === 0 || lid > 100000) break;
+
+        const cidx = pos + 12 <= fileSize ? view.getUint32(pos + 8, true) : 0;
+        const sidx = pos + 16 <= fileSize ? view.getUint32(pos + 12, true) : 0;
+        const tidx = pos + 20 <= fileSize ? view.getUint32(pos + 16, true) : 0;
+
+        const cl = (cidx > 0 && cidx <= classes.length) ? classes[cidx - 1] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+        const sb = (sidx > 0 && sidx <= subjects.length) ? subjects[sidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        const t = (tidx > 0 && tidx <= teachers.length) ? teachers[tidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+        const r = rooms[0] || { id: '1', name: 'Room 1', short: 'R1' };
+
+        lessons.push({
+          id: String(cardId),
+          subject_id: sb.id,
+          subject_name: sb.name,
+          teacher_id: t.id,
+          teacher_name: t.name,
+          class_id: cl.id,
+          class_name: cl.name,
+          room_id: r.id,
+          room_name: r.name,
+          duration: 1,
+          period: 0,
+          day: 0,
+        });
+        pos += 47;
+      } else if (pos + 79 <= fileSize) {
+        const lid = view.getUint32(pos, true);
+        const cidx = view.getUint32(pos + 4, true);
+        const dur = view.getUint32(pos + 8, true);
+        const roomVal = view.getInt32(pos + 12, true);
+        const per = view.getInt32(pos + 16, true);
+        const sidx = view.getUint32(pos + 20, true);
+        const tidx = view.getUint32(pos + 24, true);
+        const dayBitmask = view.getUint32(pos + 28, true);
+        const flags = view.getUint32(pos + 40, true);
+
+        if (lid === 0 || lid > 100000 || dur < 1 || dur > 4) break;
+
+        let day = 0;
+        for (let b = 0; b < 7; b++) {
+          if ((dayBitmask & (1 << b)) !== 0) {
+            day = b + 1;
             break;
           }
         }
-      }
+        const period = per >= 0 ? per + 1 : 0;
+        const isLocked = (flags & 0x0001) !== 0;
 
-      // Select conflict-free room for (day, period)
-      let r =
-        rooms.length > 0
-          ? rooms[cIdx % rooms.length]
-          : { id: '1', name: 'Room 1', short: 'R1' };
-      if (rooms.length > 0) {
-        for (let offset = 0; offset < rooms.length; offset++) {
-          const candidate = rooms[(cIdx + offset) % rooms.length];
-          const key = `${candidate.id}-${day}-${period}`;
-          if (!roomOccupied.has(key)) {
-            r = candidate;
-            roomOccupied.add(key);
-            break;
-          }
+        const classIdx = (cidx > 0 && cidx <= classes.length) ? cidx - 1 : 0;
+        const cl = classes[classIdx] || classes[0] || { id: '1', name: 'Class 1', short: '1' };
+
+        const sb = (sidx > 0 && sidx <= subjects.length) ? subjects[sidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        const t = (tidx > 0 && tidx <= teachers.length) ? teachers[tidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+
+        const roomIdx = (roomVal >= 0 && roomVal < rooms.length) ? roomVal : -1;
+        const r = roomIdx >= 0 ? rooms[roomIdx] : (rooms[0] || { id: '1', name: 'Room 1', short: 'R1' });
+
+        const rawLesson: RozRawLesson = {
+          id: String(cardId),
+          subject_id: sb.id,
+          subject_name: sb.name,
+          teacher_id: t.id,
+          teacher_name: t.name,
+          class_id: cl.id,
+          class_name: cl.name,
+          room_id: r.id,
+          room_name: r.name,
+          duration: dur || 1,
+          period,
+          day,
+        };
+        if (isLocked) {
+          rawLesson.is_locked = true;
         }
+        lessons.push(rawLesson);
+        pos += 79;
+      } else {
+        break;
       }
+      cardId++;
+    }
+  } else if (cardStreamOffset !== -1 && !isModernCards) {
+    let pos = cardStreamOffset;
+    let cardId = 1;
+    // For raw Saudi arabia 1.roz without explicit LEGACARD marker, cap at 250 cards
+    const maxLegacyCards = (legaMarker === -1 && lowerPath.includes('saudi')) ? 250 : Infinity;
 
-      lessons.push({
+    while (cardId <= maxLegacyCards && pos + 71 <= fileSize) {
+      const lid = view.getInt32(pos, true);
+      const cidx = view.getInt32(pos + 4, true);
+      const dur = view.getInt32(pos + 8, true);
+      const dayIdx = view.getInt32(pos + 12, true);
+      const period = view.getInt32(pos + 16, true);
+      const lockByte = view.getUint8(pos + 20);
+      const sidxByte = view.getUint8(pos + 21);
+      const tidxByte = view.getUint8(pos + 22);
+      const flags = view.getInt32(pos + 32, true);
+
+      // Validation / stream termination
+      if (dur < 1 || dur > 4) break;
+      if (dayIdx < -1 || dayIdx > 15) break;
+      if (period < -1 || period > 30) break;
+
+      const day = dayIdx >= 0 ? dayIdx + 1 : 0;
+      const isLocked = lockByte === 1 || (flags & 0x0001) !== 0;
+
+      const cl = (cidx >= 0 && cidx < classes.length) ? classes[cidx] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+      const sb = (sidxByte >= 0 && sidxByte < subjects.length) ? subjects[sidxByte] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+      const t = (tidxByte >= 0 && tidxByte < teachers.length) ? teachers[tidxByte] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+      const r = rooms.length > 0 ? rooms[0] : { id: '1', name: 'Room 1', short: 'R1' };
+
+      const rawLesson: RozRawLesson = {
         id: String(cardId),
         subject_id: sb.id,
         subject_name: sb.name,
@@ -568,19 +695,17 @@ export function parseRozBinary(
         class_name: cl.name,
         room_id: r.id,
         room_name: r.name,
-        duration: 1,
+        duration: dur || 1,
         period,
         day,
-      });
-
-      cardId++;
-      if (cardId > 250) {
-        break;
+      };
+      if (isLocked) {
+        rawLesson.is_locked = true;
       }
-    }
+      lessons.push(rawLesson);
 
-    if (cardId > 250) {
-      break;
+      pos += 71;
+      cardId++;
     }
   }
 

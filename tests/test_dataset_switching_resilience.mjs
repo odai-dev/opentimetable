@@ -103,7 +103,7 @@ describe('2. Binary Parsing of Public Demo Datasets', () => {
     assert.strictEqual(parsed.mapped.subjects.length, 24, 'Must have exactly 24 subjects');
     assert.strictEqual(parsed.mapped.rooms.length, 35, 'Must have exactly 35 rooms');
     assert.strictEqual(parsed.mapped.lessons.length, 216, 'Must have exactly 216 lessons');
-    assert.strictEqual(parsed.mapped.placements.length, 216, 'Must have exactly 216 placements');
+    assert.strictEqual(parsed.mapped.placements.length, 205, 'Must have exactly 205 placements (11 unplaced cards)');
 
     // Schema verification
     assert.ok(parsed.schema_version >= 248, `Modern schema version expected, got ${parsed.schema_version}`);
@@ -319,7 +319,7 @@ describe('3. Dataset Switching Sequence (Saudi -> Demo1 -> Blank -> Saudi)', () 
     assert.strictEqual(studio.rooms.length, 35, 'Demo1 must have 35 rooms');
     assert.strictEqual(studio.subjects.length, 24, 'Demo1 must have 24 subjects');
     assert.strictEqual(studio.lessons.length, 216, 'Demo1 must have 216 lessons');
-    assert.strictEqual(studio.placements.length, 216, 'Demo1 must have 216 placements');
+    assert.strictEqual(studio.placements.length, 205, 'Demo1 must have 205 placements (11 unplaced cards)');
     assert.strictEqual(studio.cycleDays, 7, 'Demo1 must scale grid to 7 cycle days');
     assert.strictEqual(studio.periodsPerDay, 7, 'Demo1 must scale grid to 7 periods');
     assert.strictEqual(studio.scheduleCycleKind, 'seven_day');
