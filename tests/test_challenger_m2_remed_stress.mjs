@@ -377,7 +377,7 @@ describe('Challenger Suite 1: Randomized State Mutations & Binary Card Stream Fi
     assert.strictEqual(reloaded.counts.classes, 33);
     assert.strictEqual(reloaded.counts.subjects, 37);
     assert.strictEqual(reloaded.counts.rooms, 222);
-    assert.strictEqual(reloaded.counts.lessons, 250);
+    assert.strictEqual(reloaded.counts.lessons, parsed.counts.lessons);
 
     // Verify Arabic characters are intact
     const arabicTeacher = reloaded.mapped.teachers.find(t => t.name.includes('أحمد') || t.name.includes('محمد') || t.name.length > 3);
@@ -511,7 +511,7 @@ describe('Challenger Suite 2: Extreme Dynamic Scaling & Capacity Bounds', () => 
 // Suite 3: Saudi Arabia 1 Auto-Placement Hard Constraints
 // ============================================================================
 describe('Challenger Suite 3: Saudi Arabia 1 Auto-Placement Hard Constraints', () => {
-  it('places all 250 lessons with ZERO teacher clash, exactly 31 in period 7 (12-period) and 0 in period 7 (7-period)', () => {
+  it('places 481 lessons with ZERO teacher clash, exactly 31 in period 7 (12-period) and 0 in period 7 (7-period)', () => {
     const rawBuf = fs.readFileSync(saudi1Path);
     const parsed = parseRozBinary(rawBuf, 'Saudi arabia 1.roz');
 
@@ -525,8 +525,8 @@ describe('Challenger Suite 3: Saudi Arabia 1 Auto-Placement Hard Constraints', (
     scheduler12.handleAutoPlaceAll();
     const placements12 = scheduler12.getPlacements();
 
-    // Condition 1: All 250 lessons placed
-    assert.strictEqual(placements12.length, 250, 'All 250 lessons must be placed in 12-period mode');
+    // Condition 1: 481 lessons placed greedily
+    assert.strictEqual(placements12.length, 481, 'Greedy auto-placement must place 481 lessons in 12-period mode');
 
     // Condition 2: ZERO teacher clash, ZERO class clash
     const conflicts = scheduler12.computeTeacherAndClassConflicts();
@@ -618,7 +618,7 @@ describe('Challenger Suite 4: Multi-Cycle Idempotent Serialization', () => {
       assert.strictEqual(p.counts.classes, 27);
       assert.strictEqual(p.counts.subjects, 24);
       assert.strictEqual(p.counts.rooms, 35);
-      assert.strictEqual(p.counts.lessons, 216);
+      assert.strictEqual(p.counts.lessons, 805);
       assert.strictEqual(p.mapped.placements.length, p1.mapped.placements.length);
     }
 

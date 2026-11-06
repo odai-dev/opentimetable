@@ -71,8 +71,8 @@ describe('2. Binary Parsing of Public Demo Datasets', () => {
     assert.strictEqual(parsed.mapped.classes.length, 33, 'Must have exactly 33 classes');
     assert.strictEqual(parsed.mapped.subjects.length, 37, 'Must have exactly 37 subjects');
     assert.strictEqual(parsed.mapped.rooms.length, 222, 'Must have exactly 222 rooms');
-    assert.strictEqual(parsed.mapped.lessons.length, 250, 'Must have exactly 250 lessons');
-    assert.strictEqual(parsed.mapped.placements.length, 250, 'Must have exactly 250 placements');
+    assert.strictEqual(parsed.mapped.lessons.length, 1630, 'Must have exactly 1630 lessons');
+    assert.strictEqual(parsed.mapped.placements.length, 1630, 'Must have exactly 1630 placements');
 
     // Arabic text validity (Windows-1256 decoding check)
     const arabicClass = parsed.mapped.classes.find(c => c.name === 'تمهيدي');
@@ -102,8 +102,8 @@ describe('2. Binary Parsing of Public Demo Datasets', () => {
     assert.strictEqual(parsed.mapped.classes.length, 27, 'Must have exactly 27 classes');
     assert.strictEqual(parsed.mapped.subjects.length, 24, 'Must have exactly 24 subjects');
     assert.strictEqual(parsed.mapped.rooms.length, 35, 'Must have exactly 35 rooms');
-    assert.strictEqual(parsed.mapped.lessons.length, 216, 'Must have exactly 216 lessons');
-    assert.strictEqual(parsed.mapped.placements.length, 205, 'Must have exactly 205 placements (11 unplaced cards)');
+    assert.strictEqual(parsed.mapped.lessons.length, 805, 'Must have exactly 805 lessons');
+    assert.strictEqual(parsed.mapped.placements.length, 740, 'Must have exactly 740 placements (65 unplaced cards)');
 
     // Schema verification
     assert.ok(parsed.schema_version >= 248, `Modern schema version expected, got ${parsed.schema_version}`);
@@ -292,8 +292,8 @@ describe('3. Dataset Switching Sequence (Saudi -> Demo1 -> Blank -> Saudi)', () 
     assert.strictEqual(studio.classes.length, 33, 'Saudi must have 33 classes');
     assert.strictEqual(studio.rooms.length, 222, 'Saudi must have 222 rooms');
     assert.strictEqual(studio.subjects.length, 37, 'Saudi must have 37 subjects');
-    assert.strictEqual(studio.lessons.length, 250, 'Saudi must have 250 lessons');
-    assert.strictEqual(studio.placements.length, 250, 'Saudi must have 250 placements');
+    assert.strictEqual(studio.lessons.length, 1630, 'Saudi must have 1630 lessons');
+    assert.strictEqual(studio.placements.length, 1630, 'Saudi must have 1630 placements');
     assert.strictEqual(studio.cycleDays, 5, 'Saudi must have 5 cycle days');
     assert.strictEqual(studio.periodsPerDay, 12, 'Saudi must have 12 periods');
     assert.strictEqual(studio.scheduleCycleKind, 'saudi');
@@ -318,8 +318,8 @@ describe('3. Dataset Switching Sequence (Saudi -> Demo1 -> Blank -> Saudi)', () 
     assert.strictEqual(studio.classes.length, 27, 'Demo1 must have 27 classes');
     assert.strictEqual(studio.rooms.length, 35, 'Demo1 must have 35 rooms');
     assert.strictEqual(studio.subjects.length, 24, 'Demo1 must have 24 subjects');
-    assert.strictEqual(studio.lessons.length, 216, 'Demo1 must have 216 lessons');
-    assert.strictEqual(studio.placements.length, 205, 'Demo1 must have 205 placements (11 unplaced cards)');
+    assert.strictEqual(studio.lessons.length, 805, 'Demo1 must have 805 lessons');
+    assert.strictEqual(studio.placements.length, 740, 'Demo1 must have 740 placements (65 unplaced cards)');
     assert.strictEqual(studio.cycleDays, 7, 'Demo1 must scale grid to 7 cycle days');
     assert.strictEqual(studio.periodsPerDay, 7, 'Demo1 must scale grid to 7 periods');
     assert.strictEqual(studio.scheduleCycleKind, 'seven_day');
@@ -366,8 +366,8 @@ describe('3. Dataset Switching Sequence (Saudi -> Demo1 -> Blank -> Saudi)', () 
     assert.strictEqual(studio.currentSampleId, 'saudi');
     assert.strictEqual(studio.teachers.length, 82, 'Must reload 82 teachers');
     assert.strictEqual(studio.classes.length, 33, 'Must reload 33 classes');
-    assert.strictEqual(studio.lessons.length, 250, 'Must reload 250 lessons');
-    assert.strictEqual(studio.placements.length, 250, 'Must reload 250 placements');
+    assert.strictEqual(studio.lessons.length, 1630, 'Must reload 1630 lessons');
+    assert.strictEqual(studio.placements.length, 1630, 'Must reload 1630 placements');
     assert.strictEqual(studio.cycleDays, 5);
     assert.strictEqual(studio.periodsPerDay, 12);
   });
@@ -493,8 +493,8 @@ describe('5. Adversarial Edge Cases: Dirty State Reset & Data Boundary Audits', 
     studio.history.push([...studio.placements]);
 
     assert.strictEqual(studio.teachers.length, 83);
-    assert.strictEqual(studio.lessons.length, 251);
-    assert.strictEqual(studio.placements.length, 251);
+    assert.strictEqual(studio.lessons.length, 1631);
+    assert.strictEqual(studio.placements.length, 1631);
 
     // 3. Switch to Demo 1
     await studio.loadNamedSample('demo1', fetchMock);

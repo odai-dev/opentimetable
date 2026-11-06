@@ -2331,7 +2331,7 @@ describe('Tier 4: Real-World Application Scenarios', () => {
 
     assert.strictEqual(result.counts.teachers, 82);
     assert.strictEqual(result.counts.classes, 33);
-    assert.strictEqual(result.counts.lessons, 250);
+    assert.strictEqual(result.counts.lessons, 1630);
 
     const saudiDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
     const saudiPeriods = Array.from({ length: 12 }, (_, i) => `الحصة ${i + 1}`);

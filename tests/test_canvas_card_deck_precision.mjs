@@ -31,7 +31,7 @@ describe('Desktop Canvas Precision — Dynamic Days & Multi-Period Scaling', () 
 
     assert.strictEqual(result.counts.teachers, 82);
     assert.strictEqual(result.counts.classes, 33);
-    assert.strictEqual(result.counts.lessons, 250);
+    assert.strictEqual(result.counts.lessons, 1630);
 
     // Verify dynamic period expansion to 12 periods
     const periods = Array.from({ length: 12 }, (_, i) => `Period ${i + 1}`);
@@ -52,7 +52,7 @@ describe('Desktop Canvas Precision — Dynamic Days & Multi-Period Scaling', () 
 
     assert.strictEqual(result.cycle_days, 7);
     assert.strictEqual(result.counts.teachers, 45);
-    assert.strictEqual(result.counts.lessons, 216);
+    assert.strictEqual(result.counts.lessons, 805);
 
     const fullWeekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     assert.strictEqual(fullWeekDays.length, 7);

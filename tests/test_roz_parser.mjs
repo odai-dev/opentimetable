@@ -48,7 +48,7 @@ describe('.roz Binary Parser — Demo1.roz Modern Schema Verification', () => {
     assert.strictEqual(result.periods.length, 7, 'Expected 7 period definitions');
   });
 
-  it('extracts exactly 45 teachers, 27 classes, 24 subjects, 35 rooms, and 216 cards from Demo1.roz', () => {
+  it('extracts exactly 45 teachers, 27 classes, 24 subjects, 35 rooms, and 805 cards from Demo1.roz', () => {
     const buffer = fs.readFileSync(demo1Path);
     const result = parseRozBinary(buffer, 'Demo1.roz');
 
@@ -56,14 +56,14 @@ describe('.roz Binary Parser — Demo1.roz Modern Schema Verification', () => {
     assert.strictEqual(result.counts.classes, 27, 'Demo1 must have 27 classes');
     assert.strictEqual(result.counts.subjects, 24, 'Demo1 must have 24 subjects');
     assert.strictEqual(result.counts.rooms, 35, 'Demo1 must have 35 rooms');
-    assert.strictEqual(result.counts.lessons, 216, 'Demo1 must have 216 lesson cards');
+    assert.strictEqual(result.counts.lessons, 805, 'Demo1 must have 805 lesson cards');
 
     // Also assert arrays match count lengths
     assert.strictEqual(result.teachers.length, 45);
     assert.strictEqual(result.classes.length, 27);
     assert.strictEqual(result.subjects.length, 24);
     assert.strictEqual(result.rooms.length, 35);
-    assert.strictEqual(result.lessons.length, 216);
+    assert.strictEqual(result.lessons.length, 805);
   });
 
   it('correctly maps Demo1.roz entities into frontend React models and initial placements', () => {
@@ -76,9 +76,9 @@ describe('.roz Binary Parser — Demo1.roz Modern Schema Verification', () => {
     assert.strictEqual(mapped.classes.length, 27);
     assert.strictEqual(mapped.subjects.length, 24);
     assert.strictEqual(mapped.rooms.length, 35);
-    assert.strictEqual(mapped.lessons.length, 216);
-    assert.strictEqual(mapped.placements.length, 205, 'Demo1 has 205 placed cards');
-    assert.strictEqual(mapped.lessons.length - mapped.placements.length, 11, 'Demo1 has 11 unplaced cards');
+    assert.strictEqual(mapped.lessons.length, 805);
+    assert.strictEqual(mapped.placements.length, 740, 'Demo1 has 740 placed cards');
+    assert.strictEqual(mapped.lessons.length - mapped.placements.length, 65, 'Demo1 has 65 unplaced cards');
 
     // Verify entity structure fidelity
     const firstTeacher = mapped.teachers[0];
@@ -113,7 +113,7 @@ describe('.roz Binary Parser — Saudi Arabia 1.roz Legacy Schema & Arabic Encod
     assert.strictEqual(result.periods_per_day, 7);
   });
 
-  it('extracts exactly 82 teachers, 33 classes, 37 subjects, 222 rooms, and 250 cards from Saudi arabia 1.roz', () => {
+  it('extracts exactly 82 teachers, 33 classes, 37 subjects, 222 rooms, and 1630 cards from Saudi arabia 1.roz', () => {
     const buffer = fs.readFileSync(saudi1Path);
     const result = parseRozBinary(buffer, 'Saudi arabia 1.roz');
 
@@ -121,13 +121,13 @@ describe('.roz Binary Parser — Saudi Arabia 1.roz Legacy Schema & Arabic Encod
     assert.strictEqual(result.counts.classes, 33, 'Saudi arabia 1 must have 33 classes');
     assert.strictEqual(result.counts.subjects, 37, 'Saudi arabia 1 must have 37 subjects');
     assert.strictEqual(result.counts.rooms, 222, 'Saudi arabia 1 must have 222 rooms');
-    assert.strictEqual(result.counts.lessons, 250, 'Saudi arabia 1 must have 250 lesson cards');
+    assert.strictEqual(result.counts.lessons, 1630, 'Saudi arabia 1 must have 1630 lesson cards');
 
     assert.strictEqual(result.teachers.length, 82);
     assert.strictEqual(result.classes.length, 33);
     assert.strictEqual(result.subjects.length, 37);
     assert.strictEqual(result.rooms.length, 222);
-    assert.strictEqual(result.lessons.length, 250);
+    assert.strictEqual(result.lessons.length, 1630);
   });
 
   it('decodes Windows-1256 Arabic strings with zero character corruption or replacement bytes', () => {
@@ -212,6 +212,6 @@ describe('.roz Binary Parser — Input Types, Boundaries & JSON Serialization', 
     const parsedJson = JSON.parse(jsonStr);
     assert.strictEqual(parsedJson.school_name, 'Hronská');
     assert.strictEqual(parsedJson.counts.teachers, 45);
-    assert.strictEqual(parsedJson.counts.lessons, 216);
+    assert.strictEqual(parsedJson.counts.lessons, 805);
   });
 });

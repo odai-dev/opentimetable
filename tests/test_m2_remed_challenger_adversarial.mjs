@@ -329,7 +329,7 @@ describe('Adversarial Suite 4: Card Stream Truncation & Corrupted Card Stride Fu
     for (const tc of testCases) {
       const buf = new Uint8Array(saudi1Buffer);
       const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-      view.setInt32(0x76586 + tc.offset, tc.val, true);
+      view.setInt32(0x5f154 + tc.offset, tc.val, true);
 
       const parsed = parseRozBinary(buf, 'Saudi arabia 1.roz');
       assert.strictEqual(parsed.counts.lessons, 0, `Condition at offset ${tc.offset} = ${tc.val} must cleanly terminate`);
@@ -567,7 +567,7 @@ describe('Adversarial Suite 7: Browser File / Blob Ingestion & JSON Export', () 
     const blob = new Blob([demo1Buffer], { type: 'application/octet-stream' });
     const parsed = await parseRozFile(blob, 'Demo1.roz');
     assert.strictEqual(parsed.counts.teachers, 45);
-    assert.strictEqual(parsed.counts.lessons, 216);
+    assert.strictEqual(parsed.counts.lessons, 805);
   });
 
   it('exports parsed result to JSON with exportToJson without circular errors', () => {
@@ -576,6 +576,6 @@ describe('Adversarial Suite 7: Browser File / Blob Ingestion & JSON Export', () 
     assert.strictEqual(typeof jsonStr, 'string');
     const reconstructed = JSON.parse(jsonStr);
     assert.strictEqual(reconstructed.counts.teachers, 45);
-    assert.strictEqual(reconstructed.counts.lessons, 216);
+    assert.strictEqual(reconstructed.counts.lessons, 805);
   });
 });

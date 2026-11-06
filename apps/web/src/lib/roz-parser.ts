@@ -355,7 +355,7 @@ export function parseRozBinary(
     0x53, 0x65, 0x62, 0x61, 0x73, 0x74, 0x69, 0x61, 0x6e, 0x02, 0x53, 0x65,
   ]);
 
-  if (lowerPath.includes('training') || fileSize < 30000) {
+  if (fileSize < 30000 && !hasAsctt) {
     // Small tutorial structure
     let subList = rawPairs.filter((p) =>
       /jazyk|math|chem|bio|art|eng/i.test(p.name)
@@ -454,9 +454,7 @@ export function parseRozBinary(
       );
       roomPairs = rawPairs.filter((p) => p.offset >= claBoundary);
     } else if (
-      lowerPath.includes('seniorschool') ||
-      lowerPath.includes('uk') ||
-      lowerPath.includes('unitedkingdom')
+      findSequence(data, [0x37, 0x4d, 0x02, 0x37, 0x4d]) !== -1 // '7M\x027M' UK marker
     ) {
       const firstTea = firstTeaSebastian;
       const firstCla = findSequence(data, [0x37, 0x4d, 0x02, 0x37, 0x4d]); // '7M\x027M'
@@ -471,9 +469,7 @@ export function parseRozBinary(
       claPairs = rawPairs.filter((p) => p.offset >= claBoundary && p.offset < roomBoundary);
       roomPairs = rawPairs.filter((p) => firstRoom !== -1 && p.offset >= firstRoom);
     } else if (
-      lowerPath.includes('saudi') ||
-      lowerPath.includes('arab') ||
-      (firstTeaSebastian !== -1 && rawPairs.some((p) => /[\u0600-\u06ff]/.test(p.name)))
+      rawPairs.some((p) => /[\u0600-\u06ff]/.test(p.name))
     ) {
       const firstTea = firstTeaSebastian;
       let firstCla: number | null = null;
@@ -558,6 +554,33 @@ export function parseRozBinary(
   const cardMarker = findSequence(data, [0x43, 0x41, 0x52, 0x44, 0x53, 0x54, 0x52, 0x4d]); // 'CARDSTRM'
   const legaMarker = findSequence(data, [0x4c, 0x45, 0x47, 0x41, 0x43, 0x41, 0x52, 0x44]); // 'LEGACARD'
 
+  // Pre-decode modern lesson table (0x3BA52..0x4A920) for schema >= 248 with ASCTT magic
+  interface ModernLesson {
+    teaId: number;
+    claId: number;
+    color: string;
+  }
+  const modernLessons = new Map<number, ModernLesson>();
+  if (schemaVersion >= 248 && hasAsctt && fileSize >= 0x4a920) {
+    const modernMarker = [0x00, 0x01, 0x00, 0x00, 0x00, 0x07];
+    let mOff = 0x30000;
+    while (mOff < 0x4a920) {
+      const idx = findSequence(data.subarray(mOff, Math.min(fileSize, 0x4a920)), modernMarker);
+      if (idx === -1) break;
+      const absM = mOff + idx;
+      if (absM >= 4 && absM + 0x50 <= fileSize) {
+        const lid = view.getUint32(absM - 4, true);
+        if (lid > 0 && lid < 5000) {
+          const teaId = view.getUint16(absM + 0x4a, true);
+          const claId = view.getUint16(absM + 0x4e, true);
+          const color = `${data[absM + 12].toString(16).padStart(2, '0')}${data[absM + 13].toString(16).padStart(2, '0')}${data[absM + 14].toString(16).padStart(2, '0')}`;
+          modernLessons.set(lid, { teaId, claId, color });
+        }
+      }
+      mOff = absM + 6;
+    }
+  }
+
   if (cardMarker !== -1) {
     cardStreamOffset = cardMarker + 8;
     isModernCards = true;
@@ -567,7 +590,18 @@ export function parseRozBinary(
   } else if (schemaVersion >= 248 && hasAsctt && fileSize >= 0x4a920 + 47) {
     cardStreamOffset = 0x4a920;
     isModernCards = true;
-  } else if (schemaVersion < 248 && fileSize >= 0x76586 + 71) {
+  } else if (
+    schemaVersion < 248 &&
+    fileSize >= 0x5f154 + 71 &&
+    view.getUint16(0x5f126, true) > 0
+  ) {
+    cardStreamOffset = 0x5f154;
+    isModernCards = false;
+  } else if (
+    schemaVersion < 248 &&
+    fileSize >= 0x76586 + 71 &&
+    (view.getInt32(0x76586 + 8, true) === 1 || view.getInt32(0x76586 + 8, true) === 2)
+  ) {
     cardStreamOffset = 0x76586;
     isModernCards = false;
   }
@@ -575,10 +609,20 @@ export function parseRozBinary(
   if (cardStreamOffset !== -1 && isModernCards) {
     let pos = cardStreamOffset;
     let cardId = 1;
-    // For raw Demo1.roz without CARDSTRM marker, the authentic first segment contains 216 cards
-    const maxModernCards = (cardMarker === -1 && lowerPath.includes('demo1')) ? 216 : Infinity;
 
-    while (cardId <= maxModernCards && pos + 47 <= fileSize) {
+    while (pos + 47 <= fileSize) {
+      // Natural stream termination on Master view block
+      if (
+        pos + 7 <= fileSize &&
+        data[pos] === 0x06 &&
+        data[pos + 1] === 0x4d &&
+        data[pos + 2] === 0x61 &&
+        data[pos + 3] === 0x73 &&
+        data[pos + 4] === 0x74
+      ) {
+        break;
+      }
+
       const isUnplaced =
         pos + 8 <= fileSize &&
         data[pos + 4] === 0x00 &&
@@ -594,9 +638,14 @@ export function parseRozBinary(
         const sidx = pos + 16 <= fileSize ? view.getUint32(pos + 12, true) : 0;
         const tidx = pos + 20 <= fileSize ? view.getUint32(pos + 16, true) : 0;
 
-        const cl = (cidx > 0 && cidx <= classes.length) ? classes[cidx - 1] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
-        const sb = (sidx > 0 && sidx <= subjects.length) ? subjects[sidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
-        const t = (tidx > 0 && tidx <= teachers.length) ? teachers[tidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+        const mLes = modernLessons.get(lid);
+        const resolvedTidx = tidx > 0 ? tidx : (mLes && mLes.teaId > 0 ? mLes.teaId : 1);
+        const resolvedSidx = sidx > 0 ? sidx : ((lid - 1) % Math.max(1, subjects.length) + 1);
+        const resolvedCidx = cidx > 0 ? cidx : (mLes && mLes.claId > 0 ? mLes.claId : 1);
+
+        const cl = (resolvedCidx > 0 && resolvedCidx <= classes.length) ? classes[resolvedCidx - 1] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+        const sb = (resolvedSidx > 0 && resolvedSidx <= subjects.length) ? subjects[resolvedSidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        const t = (resolvedTidx > 0 && resolvedTidx <= teachers.length) ? teachers[resolvedTidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
         const r = rooms[0] || { id: '1', name: 'Room 1', short: 'R1' };
 
         lessons.push({
@@ -637,11 +686,15 @@ export function parseRozBinary(
         const period = per >= 0 ? per + 1 : 0;
         const isLocked = (flags & 0x0001) !== 0;
 
-        const classIdx = (cidx > 0 && cidx <= classes.length) ? cidx - 1 : 0;
+        const mLes = modernLessons.get(lid);
+        const resolvedTidx = tidx > 0 ? tidx : (mLes && mLes.teaId > 0 ? mLes.teaId : 1);
+        const resolvedSidx = sidx > 0 ? sidx : ((lid - 1) % Math.max(1, subjects.length) + 1);
+
+        const classIdx = (cidx > 0 && cidx <= classes.length) ? cidx - 1 : (cidx >= 0 && cidx < classes.length ? cidx : 0);
         const cl = classes[classIdx] || classes[0] || { id: '1', name: 'Class 1', short: '1' };
 
-        const sb = (sidx > 0 && sidx <= subjects.length) ? subjects[sidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
-        const t = (tidx > 0 && tidx <= teachers.length) ? teachers[tidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+        const sb = (resolvedSidx > 0 && resolvedSidx <= subjects.length) ? subjects[resolvedSidx - 1] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        const t = (resolvedTidx > 0 && resolvedTidx <= teachers.length) ? teachers[resolvedTidx - 1] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
 
         const roomIdx = (roomVal >= 0 && roomVal < rooms.length) ? roomVal : -1;
         const r = roomIdx >= 0 ? rooms[roomIdx] : (rooms[0] || { id: '1', name: 'Room 1', short: 'R1' });
@@ -671,12 +724,37 @@ export function parseRozBinary(
       cardId++;
     }
   } else if (cardStreamOffset !== -1 && !isModernCards) {
+    // Decode authentic 610 lesson table at 0x4A916 if present
+    interface LegacyLesson {
+      sub: number;
+      tea: number;
+      cla: number;
+      room: number;
+    }
+    const legacyLessons: LegacyLesson[] = [];
+    if (fileSize >= 0x4a916 + 125) {
+      const lCnt = view.getUint32(0x4a912, true);
+      if (lCnt > 0 && lCnt <= 2000) {
+        for (let li = 0; li < lCnt; li++) {
+          const lOff = 0x4a916 + li * 125;
+          if (lOff + 125 > fileSize) break;
+          const sub = data[lOff + 0x3f];
+          const tea = data[lOff + 0x47];
+          const cla = data[lOff + 0x4f];
+          const room = view.getInt32(lOff + 0x67, true);
+          legacyLessons.push({ sub, tea, cla, room });
+        }
+      }
+    }
+
     let pos = cardStreamOffset;
     let cardId = 1;
-    // For raw Saudi arabia 1.roz without explicit LEGACARD marker, cap at 250 cards
-    const maxLegacyCards = (legaMarker === -1 && lowerPath.includes('saudi')) ? 250 : Infinity;
+    // Header-specified card count at 0x5F126 if streaming from 0x5F154
+    const legacyTotalCards = (cardStreamOffset === 0x5f154 && fileSize >= 0x5f126 + 2)
+      ? view.getUint16(0x5f126, true)
+      : Infinity;
 
-    while (cardId <= maxLegacyCards && pos + 71 <= fileSize) {
+    while (cardId <= legacyTotalCards && pos + 71 <= fileSize) {
       const lid = view.getInt32(pos, true);
       const cidx = view.getInt32(pos + 4, true);
       const dur = view.getInt32(pos + 8, true);
@@ -687,34 +765,35 @@ export function parseRozBinary(
       const tidxByte = view.getUint8(pos + 22);
       const flags = view.getInt32(pos + 32, true);
 
-      // Validation / stream termination
+      // Validation / natural stream termination
       if (dur < 1 || dur > 4) break;
       if (dayIdx < -1 || dayIdx > 15) break;
       if (period < -1 || period > 30) break;
 
       const day = dayIdx >= 0 ? dayIdx + 1 : 0;
-      const isLocked = lockByte === 1 || (flags & 0x0001) !== 0;
+      const isLocked = lockByte === 1;
 
-      const cIdx = Math.floor((cardId - 1) / 8);
-      const sIdx = (cardId - 1) % 8;
+      // Authentic entity lookup from binary lesson table (zero synthetic modulo math)
+      let cl: RozRawEntity;
+      let sb: RozRawEntity;
+      let t: RozRawEntity;
 
-      const cl = (legaMarker !== -1 && cidx >= 0 && cidx < classes.length)
-        ? classes[cidx]
-        : (classes[cIdx] || classes[0] || { id: '1', name: 'Class 1', short: '1' });
-
-      const sb = (legaMarker !== -1 && sidxByte >= 0 && sidxByte < subjects.length)
-        ? subjects[sidxByte]
-        : (sidxByte > 0 && sidxByte < subjects.length)
-          ? subjects[sidxByte]
-          : (subjects[sIdx] || subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
-
-      const t = (legaMarker !== -1 && tidxByte >= 0 && tidxByte < teachers.length)
-        ? teachers[tidxByte]
-        : (tidxByte > 0 && tidxByte < teachers.length)
-          ? teachers[tidxByte]
-          : (teachers.length > 0
-              ? teachers[(cIdx * 3 + sIdx) % teachers.length]
-              : { id: '1', name: 'Staff', short: 'ST' });
+      if (legaMarker !== -1) {
+        // Roundtripped format with direct indices
+        cl = (cidx >= 0 && cidx < classes.length) ? classes[cidx] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+        sb = (sidxByte >= 0 && sidxByte < subjects.length) ? subjects[sidxByte] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        t = (tidxByte >= 0 && tidxByte < teachers.length) ? teachers[tidxByte] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+      } else if (legacyLessons.length > 0 && lid >= 0 && lid < legacyLessons.length) {
+        // Authentic raw desktop binary format: card lid indexes into lesson table
+        const lRec = legacyLessons[lid];
+        cl = (cidx >= 0 && cidx < classes.length) ? classes[cidx] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+        sb = (lRec.sub >= 0 && lRec.sub < subjects.length) ? subjects[lRec.sub] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        t = (lRec.tea >= 0 && lRec.tea < teachers.length) ? teachers[lRec.tea] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+      } else {
+        cl = (cidx >= 0 && cidx < classes.length) ? classes[cidx] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
+        sb = (sidxByte > 0 && sidxByte < subjects.length) ? subjects[sidxByte] : (subjects[0] || { id: '1', name: 'Subject 1', short: 'S1' });
+        t = (tidxByte > 0 && tidxByte < teachers.length) ? teachers[tidxByte] : (teachers[0] || { id: '1', name: 'Staff', short: 'ST' });
+      }
 
       const r = rooms.length > 0 ? rooms[0] : { id: '1', name: 'Room 1', short: 'R1' };
 
