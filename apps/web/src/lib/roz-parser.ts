@@ -347,7 +347,6 @@ export function parseRozBinary(
   const classes: RozRawEntity[] = [];
   const rooms: RozRawEntity[] = [];
 
-  const lowerPath = filenameHint.toLowerCase();
   // ASCII 'CLASSTT' = [0x43, 0x4C, 0x41, 0x53, 0x53, 0x54, 0x54]
   const pClasstt = findSequence(data, [0x43, 0x4c, 0x41, 0x53, 0x53, 0x54, 0x54]);
   // ASCII 'Sebastian\x02Se' = [0x53, 0x65, 0x62, 0x61, 0x73, 0x74, 0x69, 0x61, 0x6e, 0x02, 0x53, 0x65]
@@ -558,10 +557,32 @@ export function parseRozBinary(
   interface ModernLesson {
     teaId: number;
     claId: number;
+    subId: number;
     color: string;
   }
   const modernLessons = new Map<number, ModernLesson>();
   if (schemaVersion >= 248 && hasAsctt && fileSize >= 0x4a920) {
+    // Map subjects with colors if available
+    const subjectColorMap = new Map<string, number>();
+    let sp = 0x20000;
+    while (sp < 0x28000 && sp + 10 < fileSize) {
+      const len = data[sp];
+      if (len > 2 && len < 40 && sp + 1 + len < fileSize) {
+        const shortLen = data[sp + 1 + len];
+        if (shortLen > 0 && shortLen < 10 && sp + 1 + len + 1 + shortLen <= fileSize) {
+          const sName = decodeBytes(data.subarray(sp + 1, sp + 1 + len)).trim();
+          const foundIdx = subjects.findIndex((s) => s.name === sName);
+          if (foundIdx !== -1 && sp >= 0x1c) {
+            const colKey = `${data[sp - 0x1c + 1].toString(16).padStart(2, '0')}${data[sp - 0x1c + 2].toString(16).padStart(2, '0')}${data[sp - 0x1c + 3].toString(16).padStart(2, '0')}`;
+            subjectColorMap.set(colKey, foundIdx + 1);
+          }
+          sp += len + shortLen + 8;
+          continue;
+        }
+      }
+      sp++;
+    }
+
     const modernMarker = [0x00, 0x01, 0x00, 0x00, 0x00, 0x07];
     let mOff = 0x30000;
     while (mOff < 0x4a920) {
@@ -573,8 +594,10 @@ export function parseRozBinary(
         if (lid > 0 && lid < 5000) {
           const teaId = view.getUint16(absM + 0x4a, true);
           const claId = view.getUint16(absM + 0x4e, true);
+          const colKey = `${data[absM + 13].toString(16).padStart(2, '0')}${data[absM + 14].toString(16).padStart(2, '0')}${data[absM + 15].toString(16).padStart(2, '0')}`;
+          const subId = subjectColorMap.get(colKey) || (lid > 0 && lid <= subjects.length ? lid : 1);
           const color = `${data[absM + 12].toString(16).padStart(2, '0')}${data[absM + 13].toString(16).padStart(2, '0')}${data[absM + 14].toString(16).padStart(2, '0')}`;
-          modernLessons.set(lid, { teaId, claId, color });
+          modernLessons.set(lid, { teaId, claId, subId, color });
         }
       }
       mOff = absM + 6;
@@ -640,7 +663,7 @@ export function parseRozBinary(
 
         const mLes = modernLessons.get(lid);
         const resolvedTidx = tidx > 0 ? tidx : (mLes && mLes.teaId > 0 ? mLes.teaId : 1);
-        const resolvedSidx = sidx > 0 ? sidx : ((lid - 1) % Math.max(1, subjects.length) + 1);
+        const resolvedSidx = sidx > 0 ? sidx : (mLes && mLes.subId > 0 ? mLes.subId : (lid > 0 && lid <= subjects.length ? lid : 1));
         const resolvedCidx = cidx > 0 ? cidx : (mLes && mLes.claId > 0 ? mLes.claId : 1);
 
         const cl = (resolvedCidx > 0 && resolvedCidx <= classes.length) ? classes[resolvedCidx - 1] : (classes[0] || { id: '1', name: 'Class 1', short: '1' });
@@ -688,7 +711,7 @@ export function parseRozBinary(
 
         const mLes = modernLessons.get(lid);
         const resolvedTidx = tidx > 0 ? tidx : (mLes && mLes.teaId > 0 ? mLes.teaId : 1);
-        const resolvedSidx = sidx > 0 ? sidx : ((lid - 1) % Math.max(1, subjects.length) + 1);
+        const resolvedSidx = sidx > 0 ? sidx : (mLes && mLes.subId > 0 ? mLes.subId : (lid > 0 && lid <= subjects.length ? lid : 1));
 
         const classIdx = (cidx > 0 && cidx <= classes.length) ? cidx - 1 : (cidx >= 0 && cidx < classes.length ? cidx : 0);
         const cl = classes[classIdx] || classes[0] || { id: '1', name: 'Class 1', short: '1' };
