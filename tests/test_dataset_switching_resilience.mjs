@@ -49,7 +49,7 @@ describe('1. Initial State in page.tsx — Elimination of Mock Data', () => {
     assert.match(content, /useState<Subject\[\]>\(\[\]\)/, 'subjects must initialize to []');
     assert.match(content, /useState<Lesson\[\]>\(\[\]\)/, 'lessons must initialize to []');
     assert.match(content, /useState<Placement\[\]>\(\[\]\)/, 'placements must initialize to []');
-    assert.match(content, /useState<Placement\[\]\[\]>\(\[\]\)/, 'history must initialize to []');
+    assert.match(content, /useState<\{\s*placements:\s*Placement\[\];\s*lessons:\s*Lesson\[\]\s*\}\[\]>\(\[\]\)/, 'history must initialize to []');
     assert.match(content, /useState<string>\(''\)/, 'selectedEntityId must initialize to empty string');
   });
 });

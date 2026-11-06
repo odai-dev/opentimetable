@@ -114,8 +114,8 @@ export default function TimetableStudioPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('class');
   const [selectedEntityId, setSelectedEntityId] = useState<string>('');
   const [placements, setPlacements] = useState<Placement[]>([]);
-  const [history, setHistory] = useState<Placement[][]>([]);
-  const [redoStack, setRedoStack] = useState<Placement[][]>([]);
+  const [history, setHistory] = useState<{ placements: Placement[]; lessons: Lesson[] }[]>([]);
+  const [redoStack, setRedoStack] = useState<{ placements: Placement[]; lessons: Lesson[] }[]>([]);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
 
   // Dynamic entities state initialized with clean empty defaults (no 5-teacher mock data)
@@ -806,27 +806,29 @@ export default function TimetableStudioPage() {
     if (history.length === 0 || isReadOnly) return;
     const prev = history[history.length - 1];
     setRedoStack((r) => {
-      const nextRedo = [...r, placements];
+      const nextRedo = [...r, { placements, lessons }];
       return nextRedo.length > MAX_HISTORY
         ? nextRedo.slice(nextRedo.length - MAX_HISTORY)
         : nextRedo;
     });
-    setPlacements(prev);
+    setPlacements(prev.placements);
+    setLessons(prev.lessons);
     setHistory((h) => h.slice(0, -1));
-  }, [history, placements, isReadOnly]);
+  }, [history, placements, lessons, isReadOnly]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0 || isReadOnly) return;
     const next = redoStack[redoStack.length - 1];
     setHistory((h) => {
-      const nextHistory = [...h, placements];
+      const nextHistory = [...h, { placements, lessons }];
       return nextHistory.length > MAX_HISTORY
         ? nextHistory.slice(nextHistory.length - MAX_HISTORY)
         : nextHistory;
     });
-    setPlacements(next);
+    setPlacements(next.placements);
+    setLessons(next.lessons);
     setRedoStack((r) => r.slice(0, -1));
-  }, [redoStack, placements, isReadOnly]);
+  }, [redoStack, placements, lessons, isReadOnly]);
 
   // Dual-Persistence: LocalStorage + Binary .roz File Download
   const handleSaveFile = useCallback(() => {
@@ -1028,13 +1030,13 @@ export default function TimetableStudioPage() {
   // Record history helper (capped at MAX_HISTORY = 50 snapshots)
   const recordHistory = useCallback(() => {
     setHistory((prev) => {
-      const nextHistory = [...prev, placements];
+      const nextHistory = [...prev, { placements, lessons }];
       return nextHistory.length > MAX_HISTORY
         ? nextHistory.slice(nextHistory.length - MAX_HISTORY)
         : nextHistory;
     });
     setRedoStack([]);
-  }, [placements]);
+  }, [placements, lessons]);
 
   // Place a lesson (from deck into specific or first free slot)
   const handlePlaceLesson = (
@@ -1044,6 +1046,12 @@ export default function TimetableStudioPage() {
     roomId?: string
   ) => {
     if (isReadOnly) return;
+    const existingPlacement = placements.find((p) => p.lessonId === lessonId);
+    if (existingPlacement?.isLocked) {
+      // Locked card cannot be moved or replaced
+      return;
+    }
+
     recordHistory();
 
     const lesson = lessonMap.get(lessonId);
@@ -1123,6 +1131,11 @@ export default function TimetableStudioPage() {
   // Remove a placement (unplaces card back to bottom deck)
   const handleRemovePlacement = (lessonId: string) => {
     if (isReadOnly) return;
+    const target = placements.find((p) => p.lessonId === lessonId);
+    if (target?.isLocked) {
+      // Locked card is immutable
+      return;
+    }
     recordHistory();
     setPlacements((prev) => prev.filter((p) => p.lessonId !== lessonId));
   };
@@ -1130,6 +1143,11 @@ export default function TimetableStudioPage() {
   // Move placed card to new slot
   const handleMovePlacement = (lessonId: string, targetDay: number, targetPeriod: number) => {
     if (isReadOnly) return;
+    const target = placements.find((p) => p.lessonId === lessonId);
+    if (target?.isLocked) {
+      // Locked card is immutable
+      return;
+    }
     recordHistory();
     setPlacements((prev) =>
       prev.map((p) =>
@@ -1193,7 +1211,7 @@ export default function TimetableStudioPage() {
       return;
     }
     recordHistory();
-    setPlacements([]);
+    setPlacements((prev) => prev.filter((p) => p.isLocked));
   };
 
   // Create clean new timetable with confirmation if data exists
@@ -1276,6 +1294,7 @@ export default function TimetableStudioPage() {
     recordHistory();
     setPlacements((prev) =>
       prev.filter((p) => {
+        if (p.isLocked) return true; // Retain pinned cards immutably
         const lesson = lessonMap.get(p.lessonId);
         return (
           lesson?.classId !== entityId &&
@@ -1447,23 +1466,131 @@ export default function TimetableStudioPage() {
   };
 
   // ==========================================
-  // Placement Pinning & Locking Handlers (R1)
+  // Placement Pinning & Locking Handlers (R1 & M3)
   // ==========================================
   const handleToggleLockPlacement = useCallback((lessonId: string) => {
+    recordHistory();
     setPlacements((prev) =>
       prev.map((p) =>
         p.lessonId === lessonId ? { ...p, isLocked: !p.isLocked } : p
       )
     );
-  }, []);
+  }, [recordHistory]);
 
   const handleLockAllPlacements = useCallback(() => {
+    recordHistory();
     setPlacements((prev) => prev.map((p) => ({ ...p, isLocked: true })));
-  }, []);
+  }, [recordHistory]);
 
   const handleUnlockAllPlacements = useCallback(() => {
+    recordHistory();
     setPlacements((prev) => prev.map((p) => ({ ...p, isLocked: false })));
-  }, []);
+  }, [recordHistory]);
+
+  // ==========================================
+  // Lesson Splitting & Merging Handlers (M3)
+  // ==========================================
+  const handleSplitLesson = useCallback(
+    (lessonId: string, mode: 'duration' | 'groups' = 'duration') => {
+      if (isReadOnly) return;
+      const targetLesson = lessons.find((l) => l.id === lessonId);
+      if (!targetLesson) return;
+
+      recordHistory();
+
+      if (mode === 'duration' && targetLesson.duration > 1) {
+        // Split multi-period lesson into single periods
+        const newLessonId = `${lessonId}_s${Date.now() % 10000}`;
+        const updatedOriginal: Lesson = {
+          ...targetLesson,
+          duration: targetLesson.duration - 1,
+        };
+        const newSplitLesson: Lesson = {
+          ...targetLesson,
+          id: newLessonId,
+          duration: 1,
+        };
+
+        setLessons((prev) =>
+          prev.map((l) => (l.id === lessonId ? updatedOriginal : l)).concat(newSplitLesson)
+        );
+      } else if (mode === 'groups') {
+        // Split whole class lesson into two divided elective/language groups
+        const newLessonId = `${lessonId}_g2_${Date.now() % 10000}`;
+        const group1Name = isRtl ? 'فوج 1' : 'Group 1';
+        const group2Name = isRtl ? 'فوج 2' : 'Group 2';
+
+        const updatedOriginal: Lesson = {
+          ...targetLesson,
+          entireClass: false,
+          isSplitGroup: true,
+          groupId: 'G1',
+          groupName: group1Name,
+        };
+        const newGroupLesson: Lesson = {
+          ...targetLesson,
+          id: newLessonId,
+          entireClass: false,
+          isSplitGroup: true,
+          groupId: 'G2',
+          groupName: group2Name,
+        };
+
+        setLessons((prev) =>
+          prev.map((l) => (l.id === lessonId ? updatedOriginal : l)).concat(newGroupLesson)
+        );
+
+        // If the original was placed, place the new group lesson at the same slot so they render as diagonal split card
+        const currentPlc = placements.find((p) => p.lessonId === lessonId);
+        if (currentPlc) {
+          setPlacements((prev) => [
+            ...prev,
+            {
+              lessonId: newLessonId,
+              dayIndex: currentPlc.dayIndex,
+              periodIndex: currentPlc.periodIndex,
+              roomId: currentPlc.roomId,
+              isLocked: currentPlc.isLocked,
+            },
+          ]);
+        }
+      }
+    },
+    [lessons, placements, isReadOnly, isRtl, recordHistory]
+  );
+
+  const handleMergeLessons = useCallback(
+    (lessonId1: string, lessonId2: string) => {
+      if (isReadOnly) return;
+      const l1 = lessons.find((l) => l.id === lessonId1);
+      const l2 = lessons.find((l) => l.id === lessonId2);
+      if (!l1 || !l2) return;
+
+      if (
+        l1.classId !== l2.classId ||
+        l1.teacherId !== l2.teacherId ||
+        l1.subjectId !== l2.subjectId
+      ) {
+        return;
+      }
+
+      recordHistory();
+
+      const mergedDuration = (l1.duration || 1) + (l2.duration || 1);
+      const updatedL1: Lesson = {
+        ...l1,
+        duration: mergedDuration,
+      };
+
+      setLessons((prev) =>
+        prev
+          .filter((l) => l.id !== lessonId2)
+          .map((l) => (l.id === lessonId1 ? updatedL1 : l))
+      );
+      setPlacements((prev) => prev.filter((p) => p.lessonId !== lessonId2));
+    },
+    [lessons, isReadOnly, recordHistory]
+  );
 
   // ==========================================
   // Local Search Improvement Solve Mode (R1)
@@ -2049,6 +2176,8 @@ export default function TimetableStudioPage() {
         bellSchedule={dynamicBells}
         cardLayout={cardLayout}
         onToggleLockPlacement={handleToggleLockPlacement}
+        onSplitLesson={handleSplitLesson}
+        onMergeLessons={handleMergeLessons}
         selectedPlacement={selectedPlacement}
         onSelectPlacement={(p) => setSelectedPlacement(p)}
       />
@@ -2071,6 +2200,7 @@ export default function TimetableStudioPage() {
           onPlaceLesson={handlePlaceLesson}
           onRemovePlacement={handleRemovePlacement}
           onAutoPlaceAll={handleAutoPlaceAll}
+          onSplitLesson={handleSplitLesson}
           onClearEntityPlacements={handleClearEntityPlacements}
           isReadOnly={isReadOnly}
         />

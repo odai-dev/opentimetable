@@ -41,6 +41,7 @@ interface BottomCardDeckProps {
   onRemovePlacement: (lessonId: string) => void;
   onAutoPlaceAll: () => void;
   onClearEntityPlacements: (entityId: string) => void;
+  onSplitLesson?: (lessonId: string, mode: 'duration' | 'groups') => void;
   isReadOnly: boolean;
 }
 
@@ -61,6 +62,7 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
   onRemovePlacement,
   onAutoPlaceAll,
   onClearEntityPlacements,
+  onSplitLesson,
   isReadOnly,
 }) => {
   const t = translations[lang];
@@ -316,6 +318,18 @@ export const BottomCardDeck: React.FC<BottomCardDeckProps> = ({
                     {subject?.code || (isRtl ? subject?.nameAr || subject?.name : subject?.name)}
                   </span>
                   <div className="flex items-center gap-0.5">
+                    {lesson.duration > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSplitLesson?.(lesson.id, 'duration');
+                        }}
+                        title={isRtl ? `حصة متعددة الفترات (${lesson.duration}) - انقر للتقسيم إلى حصص مفردة` : `Multi-period (${lesson.duration}) - Click to split into single periods`}
+                        className="text-[8px] px-1 rounded bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold border border-sky-300 transition"
+                      >
+                        {lesson.duration}h ✂️
+                      </button>
+                    )}
                     {groupBadge && (
                       <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300/60 truncate max-w-[38px]" title={groupBadge}>
                         {groupBadge}

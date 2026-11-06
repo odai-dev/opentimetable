@@ -44,6 +44,8 @@ interface TimetableGridProps {
   bellSchedule?: string[];
   cardLayout?: CardLayoutConfig;
   onToggleLockPlacement?: (lessonId: string) => void;
+  onSplitLesson?: (lessonId: string, mode: 'duration' | 'groups') => void;
+  onMergeLessons?: (lessonId1: string, lessonId2: string) => void;
   selectedPlacement?: Placement | null;
   onSelectPlacement?: (placement: Placement | null) => void;
 }
@@ -78,6 +80,8 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   bellSchedule,
   cardLayout,
   onToggleLockPlacement,
+  onSplitLesson,
+  onMergeLessons,
   selectedPlacement,
   onSelectPlacement,
 }) => {
@@ -173,9 +177,27 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   // Hovered lesson tracking for keyboard shortcuts (e.g. 'L' for lock/unlock)
   const [hoveredLessonId, setHoveredLessonId] = useState<string | null>(null);
 
+  // Desktop right-click context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    lessonId: string;
+    placement: Placement;
+  } | null>(null);
+
+  React.useEffect(() => {
+    const handleCloseMenu = () => setContextMenu(null);
+    window.addEventListener('click', handleCloseMenu);
+    return () => window.removeEventListener('click', handleCloseMenu);
+  }, []);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'Escape') {
+        setContextMenu(null);
+        return;
+      }
       if (e.key === 'l' || e.key === 'L') {
         const targetId = hoveredLessonId || selectedPlacement?.lessonId;
         if (targetId && onToggleLockPlacement && !isReadOnly) {
@@ -225,6 +247,11 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
   // HTML5 Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, lessonId: string, day: number, period: number) => {
     if (isReadOnly) return;
+    const plc = placements.find((p) => p.lessonId === lessonId);
+    if (plc?.isLocked) {
+      e.preventDefault();
+      return;
+    }
     const dragItem: DragItem = {
       type: 'grid',
       lessonId,
@@ -569,9 +596,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                             >
                               {isCompact ? (
                                 <div
-                                  draggable={!isReadOnly}
+                                  draggable={!isReadOnly && !isLocked}
                                   onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
                                   onClick={() => onSelectPlacement?.(p)}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setContextMenu({ x: e.clientX, y: e.clientY, lessonId: lesson.id, placement: p });
+                                  }}
                                   onMouseEnter={() => setHoveredLessonId(lesson.id)}
                                   onMouseLeave={() => setHoveredLessonId(null)}
                                   className={`lesson-card h-full rounded border select-none p-0.5 flex flex-col justify-center items-center text-center cursor-grab active:cursor-grabbing shadow-2xs overflow-hidden transition relative ${
@@ -602,9 +634,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 </div>
                               ) : (
                                 <div
-                                  draggable={!isReadOnly}
+                                  draggable={!isReadOnly && !isLocked}
                                   onDragStart={(e) => handleDragStart(e, lesson.id, dIdx, pIdx)}
                                   onClick={() => onSelectPlacement?.(p)}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setContextMenu({ x: e.clientX, y: e.clientY, lessonId: lesson.id, placement: p });
+                                  }}
                                   onMouseEnter={() => setHoveredLessonId(lesson.id)}
                                   onMouseLeave={() => setHoveredLessonId(null)}
                                   className={`lesson-card h-full rounded border select-none p-1 flex flex-col justify-between text-xs relative group cursor-grab active:cursor-grabbing shadow-xs transition ${
@@ -666,7 +703,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                           <AlertTriangle className="w-3 h-3 text-rose-600 animate-bounce" />
                                         </span>
                                       )}
-                                      {!isReadOnly && (
+                                      {!isReadOnly && !isLocked && (
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -757,8 +794,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                                 {/* Top-Left Half (Diagonal Split) */}
                                 <div
-                                  draggable={!isReadOnly && !!l1}
+                                  draggable={!isReadOnly && !!l1 && !p1?.isLocked}
                                   onDragStart={(e) => l1 && handleDragStart(e, l1.id, dIdx, pIdx)}
+                                  onClick={() => onSelectPlacement?.(p1)}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setContextMenu({ x: e.clientX, y: e.clientY, lessonId: p1.lessonId, placement: p1 });
+                                  }}
                                   className="absolute inset-0 cursor-grab active:cursor-grabbing p-1"
                                   style={{
                                     clipPath: 'polygon(0 0, 100% 0, 0 100%)',
@@ -767,6 +810,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                   }}
                                 >
                                   <div className="flex items-center gap-0.5 max-w-[50%]">
+                                    {p1?.isLocked && (
+                                      <Lock className="w-2.5 h-2.5 text-amber-600 fill-amber-100 flex-shrink-0" />
+                                    )}
                                     <span className="font-extrabold text-[10px] text-slate-900 block truncate">
                                       {s1?.code || s1?.name}
                                     </span>
@@ -783,8 +829,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
 
                                 {/* Bottom-Right Half (Diagonal Split) */}
                                 <div
-                                  draggable={!isReadOnly && !!l2}
+                                  draggable={!isReadOnly && !!l2 && !p2?.isLocked}
                                   onDragStart={(e) => l2 && handleDragStart(e, l2.id, dIdx, pIdx)}
+                                  onClick={() => onSelectPlacement?.(p2)}
+                                  onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setContextMenu({ x: e.clientX, y: e.clientY, lessonId: p2.lessonId, placement: p2 });
+                                  }}
                                   className="absolute inset-0 cursor-grab active:cursor-grabbing flex flex-col justify-end items-end p-1 text-right"
                                   style={{
                                     clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
@@ -796,6 +848,9 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                     {t2 ? (isRtl ? t2.nameAr?.split(' ')[0] || t2.name : t2.name.split(' ').slice(-1)[0]) : ''}
                                   </span>
                                   <div className="flex items-center gap-0.5 max-w-[50%] justify-end">
+                                    {p2?.isLocked && (
+                                      <Lock className="w-2.5 h-2.5 text-amber-600 fill-amber-100 flex-shrink-0" />
+                                    )}
                                     {g2 && (
                                       <span className="text-[7px] px-0.5 rounded bg-amber-200 text-amber-900 font-bold truncate max-w-[28px]" title={g2}>
                                         {g2}
@@ -857,8 +912,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                 return (
                                   <div
                                     key={sp.lessonId}
-                                    draggable={!isReadOnly && !!l}
+                                    draggable={!isReadOnly && !!l && !sp.isLocked}
                                     onDragStart={(e) => l && handleDragStart(e, l.id, dIdx, pIdx)}
+                                    onClick={() => onSelectPlacement?.(sp)}
+                                    onContextMenu={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setContextMenu({ x: e.clientX, y: e.clientY, lessonId: sp.lessonId, placement: sp });
+                                    }}
                                     className="rounded p-0.5 flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing text-[8px]"
                                     style={{
                                       backgroundColor: clr + '30',
@@ -867,9 +928,12 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                     title={`${s?.name || ''} - ${tc?.name || ''}${gb ? ` [${gb}]` : ''}`}
                                   >
                                     <div className="flex items-center justify-between gap-0.5">
-                                      <span className="font-bold text-slate-900 truncate">
-                                        {s?.code || s?.name.slice(0, 3)}
-                                      </span>
+                                      <div className="flex items-center gap-0.5 truncate">
+                                        {sp.isLocked && <Lock className="w-2 h-2 text-amber-600 fill-amber-100 flex-shrink-0" />}
+                                        <span className="font-bold text-slate-900 truncate">
+                                          {s?.code || s?.name.slice(0, 3)}
+                                        </span>
+                                      </div>
                                       {gb && (
                                         <span className="text-[6px] px-0.5 rounded bg-amber-200 text-amber-900 font-bold truncate max-w-[20px]">
                                           {gb}
@@ -894,6 +958,118 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
           </table>
         </div>
       </div>
+
+      {/* aSc Desktop Right-Click Context Menu */}
+      {contextMenu && (
+        <div
+          role="menu"
+          aria-label={isRtl ? 'قائمة سياق المحاضرة' : 'Lecture Context Menu'}
+          style={{
+            position: 'fixed',
+            left: `${Math.min(contextMenu.x, typeof window !== 'undefined' ? window.innerWidth - 240 : contextMenu.x)}px`,
+            top: `${Math.min(contextMenu.y, typeof window !== 'undefined' ? window.innerHeight - 260 : contextMenu.y)}px`,
+            zIndex: 9999,
+          }}
+          className="bg-white rounded-lg shadow-2xl border border-slate-200 py-1.5 min-w-[220px] text-xs font-sans animate-in fade-in zoom-in-95 duration-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {(() => {
+            const menuPlacement = contextMenu.placement;
+            const menuLesson = lessonMap.get(contextMenu.lessonId);
+            const isMenuLocked = Boolean(menuPlacement.isLocked);
+
+            return (
+              <>
+                <div className="px-3 py-1.5 border-b border-slate-100 font-bold text-slate-700 flex items-center justify-between">
+                  <span className="truncate max-w-[150px]">
+                    {menuLesson ? (subjectMap.get(menuLesson.subjectId)?.name || menuLesson.id) : contextMenu.lessonId}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    d{menuPlacement.dayIndex + 1}:p{menuPlacement.periodIndex + 1}
+                  </span>
+                </div>
+
+                {/* Lock / Unlock */}
+                {onToggleLockPlacement && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      onToggleLockPlacement(contextMenu.lessonId);
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left rtl:text-right flex items-center gap-2 hover:bg-slate-50 transition text-slate-800 font-medium"
+                  >
+                    {isMenuLocked ? (
+                      <>
+                        <Unlock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{isRtl ? 'فك تثبيت المحاضرة (L)' : 'Unlock Placement (L)'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-amber-600 fill-amber-100" />
+                        <span>{isRtl ? 'تثبيت وقفل في الجدول (L)' : 'Lock In Place (L)'}</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Split Duration (e.g. 2h -> 1h + 1h) */}
+                {menuLesson && menuLesson.duration > 1 && onSplitLesson && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      onSplitLesson(contextMenu.lessonId, 'duration');
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left rtl:text-right flex items-center gap-2 hover:bg-sky-50 text-sky-800 transition font-medium"
+                  >
+                    <span className="text-sm">✂️</span>
+                    <span>
+                      {isRtl
+                        ? `تقسيم الحصة المزدوجة (${menuLesson.duration} س) إلى حصص مفردة`
+                        : `Split Multi-Period (${menuLesson.duration}h) into Single Hours`}
+                    </span>
+                  </button>
+                )}
+
+                {/* Split Class into Groups */}
+                {menuLesson && menuLesson.entireClass !== false && onSplitLesson && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      onSplitLesson(contextMenu.lessonId, 'groups');
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left rtl:text-right flex items-center gap-2 hover:bg-amber-50 text-amber-900 transition font-medium"
+                  >
+                    <Users className="w-3.5 h-3.5 text-amber-600" />
+                    <span>
+                      {isRtl ? 'تقسيم الفصل إلى مجموعتين (أ / ب)' : 'Split Class into 2 Groups (G1/G2)'}
+                    </span>
+                  </button>
+                )}
+
+                <div className="my-1 border-t border-slate-100" />
+
+                {/* Unplace / Return to Bank */}
+                {!isReadOnly && !isMenuLocked && (
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      onRemovePlacement(contextMenu.lessonId);
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-3 py-2 text-left rtl:text-right flex items-center gap-2 hover:bg-rose-50 text-rose-700 transition font-medium"
+                  >
+                    <X className="w-3.5 h-3.5 text-rose-500" />
+                    <span>{isRtl ? 'إرجاع إلى بنك الحصص' : 'Return to Card Deck'}</span>
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 };

@@ -26,6 +26,9 @@ node --test tests/test_m2_remed_challenger_adversarial.mjs
 echo "==> Running Milestone 3 Modal & CRUD Parity Verification Suite..."
 node --test tests/test_modal_crud_parity.mjs
 
+echo "==> Running Milestone 3 Scheduling Workflows, Locking, Split/Merge & SIS Suite..."
+node --test tests/test_m3_scheduling_workflows.mjs
+
 echo "==> Running Milestone 4 Canvas & Card Deck Precision Verification Suite..."
 node --test tests/test_canvas_card_deck_precision.mjs
 
