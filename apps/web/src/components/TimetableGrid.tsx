@@ -210,6 +210,15 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [hoveredLessonId, selectedPlacement, onToggleLockPlacement, isReadOnly]);
 
+  // Ref to active selected row for smooth navigation scrolling
+  const selectedRowRef = React.useRef<HTMLTableRowElement | null>(null);
+
+  React.useEffect(() => {
+    if (selectedRowRef.current) {
+      selectedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedEntityId]);
+
   // Entities displayed as rows in the matrix
   const rowEntities = React.useMemo(() => {
     if (viewMode === 'class' || viewMode === 'wall') {
@@ -441,6 +450,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                 return (
                   <tr
                     key={entity.id}
+                    ref={isSelectedRow ? selectedRowRef : undefined}
                     role="row"
                     onClick={() => setSelectedEntityId(entity.id)}
                     className={`border-b border-slate-200 transition-colors cursor-pointer ${
@@ -564,9 +574,19 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                             }
                           };
 
-                          const line1Text = cardLayout ? getFieldText(cardLayout.line1) : (subject.code || (isRtl ? subject.nameAr || subject.name : subject.name));
-                          const line2Text = cardLayout ? getFieldText(cardLayout.line2) : (entity.type === 'teacher' ? classFullName : teacherShortName);
-                          const line3Text = cardLayout ? getFieldText(cardLayout.line3) : (entity.type === 'room' ? (classShortCode || 'Cls') : (room ? room.id : 'N/A'));
+                          const line1Text = cardLayout
+                            ? getFieldText(cardLayout.line1)
+                            : (subject.code || (isRtl ? subject.nameAr || subject.name : subject.name));
+
+                          // Perspective-aware line2: when on teacher row, display class name instead of repeating teacher
+                          const line2Text = entity.type === 'teacher' && (!cardLayout || cardLayout.line2 === 'teacher_name')
+                            ? (classFullName || classShortCode)
+                            : (cardLayout ? getFieldText(cardLayout.line2) : teacherShortName);
+
+                          // Perspective-aware line3: when on room row, display class/teacher instead of repeating room
+                          const line3Text = entity.type === 'room' && (!cardLayout || cardLayout.line3 === 'room_name')
+                            ? (classShortCode || classFullName || teacherShortName)
+                            : (cardLayout ? getFieldText(cardLayout.line3) : (room ? (isRtl ? room.nameAr || room.name : room.name) : 'N/A'));
 
                           return (
                             <td
