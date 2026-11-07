@@ -20,7 +20,7 @@ interface StartupWelcomeModalProps {
   lang: 'en' | 'ar';
   onCreateNew: () => void;
   onOpenFile: () => void;
-  onLoadSample: (sample: 'saudi' | 'demo1') => void;
+  onLoadSample: (sample: 'arrasheed' | 'saudi' | 'demo1') => void;
 }
 
 export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
@@ -61,7 +61,7 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
     onOpenFile();
   };
 
-  const handleSelectSample = (sample: 'saudi' | 'demo1') => {
+  const handleSelectSample = (sample: 'arrasheed' | 'saudi' | 'demo1') => {
     if (dontShowAgain && typeof window !== 'undefined') {
       localStorage.setItem('opentimetable_skip_startup_dialog', 'true');
     }
@@ -178,6 +178,27 @@ export const StartupWelcomeModal: React.FC<StartupWelcomeModalProps> = ({
 
             {showSampleOptions && (
               <div className="p-3 pt-0 flex flex-col gap-2 border-t border-slate-100 bg-slate-50/50">
+                <button
+                  onClick={() => handleSelectSample('arrasheed')}
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-sky-50/80 border border-sky-300 hover:border-sky-500 hover:bg-sky-100/70 text-xs text-slate-800 transition shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5 text-start">
+                    <span className="text-base">🇾🇪</span>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sky-950">
+                        {isRtl ? 'جامعة الرشيد الذكية - صنعاء' : "Ar-Rasheed Smart University (Sana'a)"}
+                      </span>
+                      <span className="text-[10px] text-slate-600">
+                        {isRtl
+                          ? 'جدول واقعي 18 فترة، كليات الأسنان، الذكاء الاصطناعي، الأمن السيبراني، الجرافيك، والمختبرات'
+                          : '18 periods, Dentistry, AI, Cybersecurity, Multimedia & Labs'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-sky-600 text-white font-bold px-1.5 py-0.5 rounded shrink-0">
+                    {isRtl ? 'جامعي (صنعاء)' : 'University'}
+                  </span>
+                </button>
                 <button
                   onClick={() => handleSelectSample('saudi')}
                   className="flex items-center justify-between px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-xs text-slate-700 transition"

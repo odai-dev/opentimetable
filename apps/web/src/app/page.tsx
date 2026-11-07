@@ -133,7 +133,7 @@ export default function TimetableStudioPage() {
   const [scheduleCycleKind, setScheduleCycleKind] = useState<ScheduleCycleKind>('standard');
   const [cycleDays, setCycleDays] = useState<number>(5);
   const [periodsPerDay, setPeriodsPerDay] = useState<number>(7);
-  const [currentSampleId, setCurrentSampleId] = useState<'saudi' | 'demo1' | 'blank'>('blank');
+  const [currentSampleId, setCurrentSampleId] = useState<'arrasheed' | 'saudi' | 'demo1' | 'blank'>('blank');
   const [isStartupModalOpen, setIsStartupModalOpen] = useState<boolean>(false);
 
   // Time-Off Matrix state: `${entityId}-${dayIndex}-${periodIndex}` -> AvailabilityState (1=Avail, 0=Blocked, 2=Disfavored)
@@ -426,8 +426,44 @@ export default function TimetableStudioPage() {
 
   // One-Click Real-School Sample Switcher
   const loadNamedSample = useCallback(
-    async (sample: 'saudi' | 'demo1' | 'blank') => {
-      if (sample === 'saudi') {
+    async (sample: 'arrasheed' | 'saudi' | 'demo1' | 'blank') => {
+      if (sample === 'arrasheed') {
+        setCurrentSampleId('arrasheed');
+        try {
+          const res = await fetch('/demos/Ar_Rasheed_Smart_University.json');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.teachers)) setTeachers(data.teachers);
+            if (Array.isArray(data.classes)) setClasses(data.classes);
+            if (Array.isArray(data.rooms)) setRooms(data.rooms);
+            if (Array.isArray(data.subjects)) setSubjects(data.subjects);
+            if (Array.isArray(data.lessons)) setLessons(data.lessons);
+            if (Array.isArray(data.placements)) setPlacements(data.placements);
+            if (data.timeOffMatrix) setTimeOffMatrix(data.timeOffMatrix);
+            setSchoolName(data.schoolName || 'جامعة الرشيد الذكية - صنعاء');
+            setAcademicYear(data.academicYear || '2025/2026');
+            setCycleDays(data.cycleDays || 6);
+            setPeriodsPerDay(data.periodsPerDay || 18);
+            if (Array.isArray(data.bellSchedule)) setCustomBellSchedule(data.bellSchedule);
+            setCurrentFileName('Ar_Rasheed_Smart_University.roz');
+            setSchemaVersion(314);
+            if (data.classes && data.classes.length > 0) {
+              setSelectedEntityId(data.classes[0].id);
+              setViewMode('class');
+            }
+            setHistory([]);
+            setRedoStack([]);
+            return;
+          }
+          const rozRes = await fetch('/demos/Ar_Rasheed_Smart_University.roz');
+          if (rozRes.ok) {
+            const buf = await rozRes.arrayBuffer();
+            loadRozBuffer(buf, 'Ar_Rasheed_Smart_University.roz');
+          }
+        } catch (err) {
+          console.error('Failed loading Ar-Rasheed Smart University sample:', err);
+        }
+      } else if (sample === 'saudi') {
         setCurrentSampleId('saudi');
         try {
           let res = await fetch('/demos/Saudi_Arabia_1.roz');
@@ -1244,7 +1280,7 @@ export default function TimetableStudioPage() {
     fileInputRef.current?.click();
   };
 
-  const handleLoadSampleFromStartup = (sample: 'saudi' | 'demo1') => {
+  const handleLoadSampleFromStartup = (sample: 'arrasheed' | 'saudi' | 'demo1') => {
     setIsStartupModalOpen(false);
     loadNamedSample(sample);
   };

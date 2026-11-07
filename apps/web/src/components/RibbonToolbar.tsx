@@ -71,8 +71,8 @@ interface RibbonToolbarProps {
   onImportRoz: () => void;
   onPrintPreview: () => void;
   onOpenAdvancedRelations?: () => void;
-  onLoadSample?: (sample: 'saudi' | 'demo1' | 'blank') => void;
-  currentSampleId?: 'saudi' | 'demo1' | 'blank';
+  onLoadSample?: (sample: 'arrasheed' | 'saudi' | 'demo1' | 'blank') => void;
+  currentSampleId?: 'arrasheed' | 'saudi' | 'demo1' | 'blank';
   zoomLevel: number;
   setZoomLevel: React.Dispatch<React.SetStateAction<number>>;
   schoolName?: string;
@@ -620,6 +620,23 @@ export const RibbonToolbar: React.FC<RibbonToolbarProps> = ({
                       {isRtl ? 'نماذج جاهزة' : 'Samples'}
                     </span>
                   </button>
+
+                  {onLoadSample && (
+                    <button
+                      onClick={() => onLoadSample('arrasheed')}
+                      className={`flex flex-col items-center justify-center p-1.5 rounded-md border transition w-20 ${
+                        currentSampleId === 'arrasheed'
+                          ? 'bg-sky-100 border-sky-400 text-sky-950 font-bold'
+                          : 'hover:bg-sky-50 border-transparent hover:border-sky-200 text-slate-700'
+                      }`}
+                      title={isRtl ? 'تحميل جدول جامعة الرشيد الذكية - صنعاء (18 فترة، كليات ومعامل)' : "Load Ar-Rasheed Smart University (Sana'a) Sample"}
+                    >
+                      <Building2 className="w-7 h-7 text-sky-700 mb-1" />
+                      <span className="text-[10px] font-semibold text-center leading-tight">
+                        {isRtl ? 'جامعة الرشيد' : 'Ar-Rasheed'}
+                      </span>
+                    </button>
+                  )}
                 </div>
                 <span className="text-[9px] font-medium text-slate-400 text-center tracking-wider pt-0.5 border-t border-slate-100">
                   {isRtl ? 'قوالب ونماذج' : 'Templates'}

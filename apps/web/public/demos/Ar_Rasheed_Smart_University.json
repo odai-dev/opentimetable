@@ -1,0 +1,1863 @@
+{
+  "schoolName": "جامعة الرشيد الذكية - صنعاء",
+  "academicYear": "2025/2026",
+  "cycleDays": 6,
+  "periodsPerDay": 18,
+  "bellSchedule": [
+    "08:00 - 08:29",
+    "08:30 - 08:59",
+    "09:00 - 09:29",
+    "09:30 - 09:59",
+    "10:00 - 10:29",
+    "10:30 - 10:59",
+    "11:00 - 11:29",
+    "11:30 - 11:59",
+    "12:00 - 12:29",
+    "12:30 - 12:59",
+    "13:00 - 13:29",
+    "13:30 - 13:59",
+    "14:00 - 14:29",
+    "14:30 - 14:59",
+    "15:00 - 15:29",
+    "15:30 - 15:59",
+    "16:00 - 16:29",
+    "16:30 - 16:59"
+  ],
+  "teachers": [
+    {
+      "id": "T_SENAN",
+      "name": "Senan Ghlab , Dr.",
+      "nameAr": "د. سنان غلاب",
+      "speciality": "Data Science",
+      "color": "#2563eb"
+    },
+    {
+      "id": "T_ANWAR",
+      "name": "Anwar Al-Thari Dr.",
+      "nameAr": "د. أنور الظاهري",
+      "speciality": "Algorithms",
+      "color": "#4f46e5"
+    },
+    {
+      "id": "T_GOFI",
+      "name": "Ahmed Al-Gofi Dr.",
+      "nameAr": "د. أحمد الجوفي",
+      "speciality": "Medical Bacteriology",
+      "color": "#16a34a"
+    },
+    {
+      "id": "T_MEKHLAFI",
+      "name": "Abdul-salam Al-mekhlafi Dr.",
+      "nameAr": "د. عبد السلام المخلافي",
+      "speciality": "Parasitology",
+      "color": "#ca8a04"
+    },
+    {
+      "id": "T_HADAD",
+      "name": "Dr.Ibrahim Al-Hadad",
+      "nameAr": "د. إبراهيم الحداد",
+      "speciality": "Database & OS",
+      "color": "#dc2626"
+    },
+    {
+      "id": "T_FAIROZ",
+      "name": "Dr. Fairoz",
+      "nameAr": "د. فيروز",
+      "speciality": "Biochemistry",
+      "color": "#9333ea"
+    },
+    {
+      "id": "T_RUMIMA",
+      "name": "Asmaa Al-Rumima Dr.",
+      "nameAr": "د. أسماء الرميمة",
+      "speciality": "Operative Dentistry",
+      "color": "#e11d48"
+    },
+    {
+      "id": "T_SAM",
+      "name": "Sam Abdulkareem Dr.",
+      "nameAr": "د. سام عبد الكريم",
+      "speciality": "Oral Surgery",
+      "color": "#ea580c"
+    },
+    {
+      "id": "T_ZARIKA",
+      "name": "Abeer Al-Zarika D",
+      "nameAr": "د. عبير الزريقي",
+      "speciality": "Microbiology & Immunity",
+      "color": "#0284c7"
+    },
+    {
+      "id": "T_ZAID",
+      "name": "Ahmed Zaid Dr.",
+      "nameAr": "د. أحمد زيد",
+      "speciality": "General Surgery",
+      "color": "#059669"
+    },
+    {
+      "id": "T_JAMEEL",
+      "name": "Jameel Dr.",
+      "nameAr": "د. جميل",
+      "speciality": "Cybersecurity Risk",
+      "color": "#b91c1c"
+    },
+    {
+      "id": "T_SHAIMA",
+      "name": "Shaima Al-harazi eng",
+      "nameAr": "م. شيماء الحرازي",
+      "speciality": "Networks Lab",
+      "color": "#0d9488"
+    },
+    {
+      "id": "T_OSAMA",
+      "name": "Osama Al-kabudi",
+      "nameAr": "م. أسامة الكبودي",
+      "speciality": "Machine Learning Lab",
+      "color": "#6366f1"
+    },
+    {
+      "id": "T_QUSAI",
+      "name": "Qusai Almansoor",
+      "nameAr": "م. قصي المنصور",
+      "speciality": "Web Dev Tut",
+      "color": "#d97706"
+    },
+    {
+      "id": "T_RAGHAD",
+      "name": "Raghad Eng.",
+      "nameAr": "م. رغد",
+      "speciality": "Database Security Lab",
+      "color": "#c026d3"
+    },
+    {
+      "id": "T_ROAA",
+      "name": "Roa'a Salem",
+      "nameAr": "م. رؤى سالم",
+      "speciality": "OS Lab",
+      "color": "#475569"
+    },
+    {
+      "id": "T_ASEEL",
+      "name": "Aseel Al-Qubati",
+      "nameAr": "م. أسيل القبطي",
+      "speciality": "Cryptography Lab",
+      "color": "#e11d48"
+    },
+    {
+      "id": "T_YASSER",
+      "name": "Yasser Alkhateeb T.",
+      "nameAr": "أ. ياسر الخطيب",
+      "speciality": "3D & Visual Identity",
+      "color": "#0891b2"
+    },
+    {
+      "id": "T_BODOUR",
+      "name": "Bodour Eng.",
+      "nameAr": "م. بدور",
+      "speciality": "Web Design Lab",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "T_AFRA",
+      "name": "Afra Al-Sharghbi",
+      "nameAr": "أ. عفراء الشرجبي",
+      "speciality": "2D Animation",
+      "color": "#ec4899"
+    },
+    {
+      "id": "T_ARWA",
+      "name": "Arwa Al-Shargab, T.",
+      "nameAr": "أ. أروى الشرجبي",
+      "speciality": "Web Technologies",
+      "color": "#84cc16"
+    },
+    {
+      "id": "T_RIASHI",
+      "name": "Saleh Al-Riashi T.",
+      "nameAr": "أ. صالح الرياشي",
+      "speciality": "Switching & Routing",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "T_HOFAFI",
+      "name": "Abdulalalh Al-hofafi",
+      "nameAr": "أ. عبد الإله الحفافي",
+      "speciality": "Cryptography",
+      "color": "#64748b"
+    },
+    {
+      "id": "T_SAMI",
+      "name": "Sami",
+      "nameAr": "أ. سامي",
+      "speciality": "Networks",
+      "color": "#10b981"
+    },
+    {
+      "id": "T_BELAL",
+      "name": "Belal",
+      "nameAr": "أ. بلال",
+      "speciality": "Machine Learning",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "T_BOSHRA",
+      "name": "Boshra Al Absi",
+      "nameAr": "أ. بشرى العبسي",
+      "speciality": "Hematology",
+      "color": "#f43f5e"
+    },
+    {
+      "id": "T_YOSRA",
+      "name": "Yosra Al- Malhani",
+      "nameAr": "أ. يسرى الملحاني",
+      "speciality": "Hematology Lab",
+      "color": "#14b8a6"
+    },
+    {
+      "id": "T_THURIA",
+      "name": "Thuria Hany",
+      "nameAr": "أ. ثريا هاني",
+      "speciality": "Biochemistry Lab",
+      "color": "#a855f7"
+    },
+    {
+      "id": "T_WALEED",
+      "name": "Waleed Almuraisi",
+      "nameAr": "أ. وليد المريسي",
+      "speciality": "Parasitology Lab",
+      "color": "#f97316"
+    },
+    {
+      "id": "T_AHLAM",
+      "name": "Ahlam Alhababi",
+      "nameAr": "أ. أحلام الحبابي",
+      "speciality": "Oral Pathology Lab",
+      "color": "#06b6d4"
+    },
+    {
+      "id": "T_RADFAN",
+      "name": "Radfan Al-abdi",
+      "nameAr": "أ. ردفان العبدي",
+      "speciality": "Head & Neck Lab",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "T_ELHAM",
+      "name": "Elham Qeshashah",
+      "nameAr": "أ. إلهام قشاشة",
+      "speciality": "Digital Typography",
+      "color": "#ec4899"
+    },
+    {
+      "id": "T_YOUSIEF",
+      "name": "Yousief Mojali",
+      "nameAr": "أ. يوسف مجلي",
+      "speciality": "Audio & Video",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "T_RAFEQ",
+      "name": "Zaid Al-Rafeq",
+      "nameAr": "أ. زيد الرافق",
+      "speciality": "Culture 2",
+      "color": "#10b981"
+    }
+  ],
+  "classes": [
+    {
+      "id": "C_CYS_L2_G1",
+      "name": "CyberSecuirtyLevel2-G1",
+      "short": "CYS-L2-G1",
+      "nameAr": "الأمن السيبراني - المستوى 2 - قاعة 1",
+      "grade": "2",
+      "color": "#0284c7"
+    },
+    {
+      "id": "C_AI_L2_G1",
+      "name": "Artificial Intelligence-L2-G1",
+      "short": "AI-L2-G1",
+      "nameAr": "الذكاء الاصطناعي - المستوى 2 - قاعة 1",
+      "grade": "2",
+      "color": "#7c3aed"
+    },
+    {
+      "id": "C_DENT_L2",
+      "name": "Denstistry-L2",
+      "short": "Dent-L2",
+      "nameAr": "طب وجراحة الفم والأسنان - المستوى 2",
+      "grade": "2",
+      "color": "#0891b2"
+    },
+    {
+      "id": "C_GMM_L2_G1A",
+      "name": "Graphics and Multimedia-L2- G1-A",
+      "short": "GMM-L2-G1A",
+      "nameAr": "الجرافيك والوسائط - المستوى 2 - م1-أ",
+      "grade": "2",
+      "color": "#db2777"
+    },
+    {
+      "id": "C_LAB_L2",
+      "name": "Laboratory -L2",
+      "short": "Lab-L2",
+      "nameAr": "المختبرات الطبية - المستوى 2",
+      "grade": "2",
+      "color": "#059669"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "R_D401",
+      "name": "D401 (50)",
+      "capacity": 50,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D402",
+      "name": "D402 (70)",
+      "capacity": 70,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D404",
+      "name": "D404 (50)",
+      "capacity": 50,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D405",
+      "name": "D405 (70)",
+      "capacity": 70,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D406",
+      "name": "D406 (60)",
+      "capacity": 60,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D407",
+      "name": "D407 (70)",
+      "capacity": 70,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D408",
+      "name": "D408 (70)",
+      "capacity": 70,
+      "building": "Building D"
+    },
+    {
+      "id": "R_D102",
+      "name": "D102 (70)",
+      "capacity": 70,
+      "building": "Building D"
+    },
+    {
+      "id": "R_B401",
+      "name": "B401",
+      "capacity": 40,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B404",
+      "name": "B404",
+      "capacity": 40,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B410",
+      "name": "B410",
+      "capacity": 35,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B411",
+      "name": "B411",
+      "capacity": 35,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B412",
+      "name": "B412",
+      "capacity": 35,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B103",
+      "name": "B103",
+      "capacity": 30,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B105",
+      "name": "B105",
+      "capacity": 30,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B108",
+      "name": "B108",
+      "capacity": 30,
+      "building": "Building B"
+    },
+    {
+      "id": "R_B109",
+      "name": "B109",
+      "capacity": 45,
+      "building": "Building B"
+    },
+    {
+      "id": "R_C_LAB_D403",
+      "name": "C-Lab-D403",
+      "capacity": 35,
+      "building": "Building D"
+    },
+    {
+      "id": "R_C_LAB_D503",
+      "name": "C-Lab-D503",
+      "capacity": 35,
+      "building": "Building D"
+    },
+    {
+      "id": "R_C_LAB_103",
+      "name": "C-Lab-103",
+      "capacity": 30,
+      "building": "Building C"
+    },
+    {
+      "id": "R_CLAB_C202",
+      "name": "CLab-C202",
+      "capacity": 30,
+      "building": "Building C"
+    },
+    {
+      "id": "R_CLAB_A105",
+      "name": "CLab-A105",
+      "capacity": 30,
+      "building": "Building A"
+    },
+    {
+      "id": "R_CYSLAB3_A302",
+      "name": "CYSLab3-A302",
+      "capacity": 30,
+      "building": "Building A"
+    },
+    {
+      "id": "R_GMMLAB_A202",
+      "name": "GMMLab-A202",
+      "capacity": 30,
+      "building": "Building A"
+    },
+    {
+      "id": "R_PHOTO_STUDIO",
+      "name": "Photo. Studio",
+      "capacity": 25,
+      "building": "Building A"
+    },
+    {
+      "id": "R_DLAB001",
+      "name": "DLab001",
+      "capacity": 30,
+      "building": "Building D"
+    },
+    {
+      "id": "R_DLAB003",
+      "name": "DLab003",
+      "capacity": 30,
+      "building": "Building D"
+    },
+    {
+      "id": "R_BIOCHEM_B303",
+      "name": "BioChem-Lab-B303",
+      "capacity": 30,
+      "building": "Building B"
+    },
+    {
+      "id": "R_PHANTOM_LAB",
+      "name": "Phantom Lab",
+      "capacity": 30,
+      "building": "Medical Center"
+    },
+    {
+      "id": "R_DENTAL_MAT_LAB",
+      "name": "Dental Material Lab",
+      "capacity": 30,
+      "building": "Medical Center"
+    }
+  ],
+  "subjects": [
+    {
+      "id": "S_CRYPTO",
+      "name": "Cryptography",
+      "short": "Crypto",
+      "nameAr": "علم التشفير",
+      "color": "#0284c7"
+    },
+    {
+      "id": "S_CRYPTO_LAB",
+      "name": "Cryptography_lab",
+      "short": "CryptoLab",
+      "nameAr": "معمل التشفير",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "S_CYS_RISK",
+      "name": "Cybersecurity Risk Managment",
+      "short": "CYSRisk",
+      "nameAr": "إدارة مخاطر الأمن السيبراني",
+      "color": "#e11d48"
+    },
+    {
+      "id": "S_CYS_RISK_LAB",
+      "name": "Cybersecurity Risk Managment lab",
+      "short": "CYSRiskLab",
+      "nameAr": "معمل إدارة مخاطر الأمن السيبراني",
+      "color": "#fb7185"
+    },
+    {
+      "id": "S_DB_SEC",
+      "name": "Database Management and Security",
+      "short": "DBSec",
+      "nameAr": "أمن وإدارة قواعد البيانات",
+      "color": "#7c3aed"
+    },
+    {
+      "id": "S_DB_SEC_LAB",
+      "name": "Database Management and SecurityL",
+      "short": "DBSecLab",
+      "nameAr": "معمل أمن قواعد البيانات",
+      "color": "#a78bfa"
+    },
+    {
+      "id": "S_NET_ROUTING",
+      "name": "Networks Switching and Routing",
+      "short": "NetRoute",
+      "nameAr": "توجيه وتبديل الشبكات",
+      "color": "#059669"
+    },
+    {
+      "id": "S_NET_ROUTING_LAB",
+      "name": "Networks Switching and Routing_lab",
+      "short": "NetRouteLab",
+      "nameAr": "معمل توجيه وتبديل الشبكات",
+      "color": "#34d399"
+    },
+    {
+      "id": "S_OS",
+      "name": "Operating Systems",
+      "short": "OS",
+      "nameAr": "أنظمة التشغيل",
+      "color": "#475569"
+    },
+    {
+      "id": "S_OS_LAB",
+      "name": "Operating System-Lab",
+      "short": "OSLab",
+      "nameAr": "معمل أنظمة التشغيل",
+      "color": "#94a3b8"
+    },
+    {
+      "id": "S_WEB_TECH",
+      "name": "Web Technologies",
+      "short": "WebTech",
+      "nameAr": "تقنيات الويب المتقدمة",
+      "color": "#d97706"
+    },
+    {
+      "id": "S_ML",
+      "name": "Machine Learning",
+      "short": "ML",
+      "nameAr": "تعلم الآلة",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "S_ML_LAB",
+      "name": "Machine Learning lab",
+      "short": "MLLab",
+      "nameAr": "معمل تعلم الآلة",
+      "color": "#c4b5fd"
+    },
+    {
+      "id": "S_DATA_SCI",
+      "name": "Introduction to Data Science",
+      "short": "DataSci",
+      "nameAr": "مقدمة في علم البيانات",
+      "color": "#2563eb"
+    },
+    {
+      "id": "S_ALGO",
+      "name": "Design and Analysis of Algorithms",
+      "short": "Algo",
+      "nameAr": "تصميم وتحليل الخوارزميات",
+      "color": "#4f46e5"
+    },
+    {
+      "id": "S_MOBILE_DEV",
+      "name": "Mobile Application Development",
+      "short": "MobileDev",
+      "nameAr": "تطوير تطبيقات الأجهزة الذكية",
+      "color": "#06b6d4"
+    },
+    {
+      "id": "S_WEB_DEV_TUT",
+      "name": "Web Design and Development-Tut",
+      "short": "WebDevTut",
+      "nameAr": "تمارين تصميم وتطوير الويب",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "S_NETWORKS",
+      "name": "Computer Networks",
+      "short": "Networks",
+      "nameAr": "شبكات الحاسوب",
+      "color": "#10b981"
+    },
+    {
+      "id": "S_NETWORKS_LAB",
+      "name": "Computer Networks lab",
+      "short": "NetLab",
+      "nameAr": "معمل شبكات الحاسوب",
+      "color": "#6ee7b7"
+    },
+    {
+      "id": "S_ORAL_SURG",
+      "name": "Oral Surgery",
+      "short": "OralSurg",
+      "nameAr": "جراحة الفم والأسنان",
+      "color": "#ea580c"
+    },
+    {
+      "id": "S_GEN_SURG",
+      "name": "General Surgery",
+      "short": "GenSurg",
+      "nameAr": "الجراحة العامة",
+      "color": "#059669"
+    },
+    {
+      "id": "S_OPERATIVE",
+      "name": "Introduction to Operative",
+      "short": "Operative",
+      "nameAr": "مقدمة في المداواة السنية",
+      "color": "#e11d48"
+    },
+    {
+      "id": "S_DENT_MAT_LAB",
+      "name": "Dental Material Lab",
+      "short": "DentMatLab",
+      "nameAr": "معمل مواد طب الأسنان",
+      "color": "#0284c7"
+    },
+    {
+      "id": "S_MICRO_IMMUN_LAB",
+      "name": "Microbiology and Immunity 2 lab",
+      "short": "MicroLab",
+      "nameAr": "معمل الأحياء الدقيقة والمناعة",
+      "color": "#14b8a6"
+    },
+    {
+      "id": "S_HEAD_NECK_LAB",
+      "name": "Head&Neck Lab",
+      "short": "HeadNeckLab",
+      "nameAr": "تشريح الرأس والعنق",
+      "color": "#9333ea"
+    },
+    {
+      "id": "S_ORAL_PATH_LAB",
+      "name": "Oral Pathology Lab",
+      "short": "OralPathLab",
+      "nameAr": "معمل أمراض الفم",
+      "color": "#db2777"
+    },
+    {
+      "id": "S_DIGITAL_TYPO",
+      "name": "Digital Typography",
+      "short": "DigiTypo",
+      "nameAr": "التايبوغرافي الرقمي",
+      "color": "#ec4899"
+    },
+    {
+      "id": "S_3D_DESIGN",
+      "name": "3D Design",
+      "short": "3DDesign",
+      "nameAr": "التصميم ثلاثي الأبعاد",
+      "color": "#0891b2"
+    },
+    {
+      "id": "S_AUDIO_VIDEO",
+      "name": "Digital Audio and Video Production",
+      "short": "AudioVideo",
+      "nameAr": "إنتاج الصوت والفيديو الرقمي",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "S_GMM_WEB",
+      "name": "Web Design",
+      "short": "GMMWeb",
+      "nameAr": "تصميم مواقع الويب",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "S_2D_ANIM",
+      "name": "2D Animation",
+      "short": "2DAnim",
+      "nameAr": "الرسوم المتحركة ثنائية الأبعاد",
+      "color": "#f43f5e"
+    },
+    {
+      "id": "S_VISUAL_ID",
+      "name": "Visual Identity",
+      "short": "VisualId",
+      "nameAr": "الهوية البصرية والعلامات التجارية",
+      "color": "#10b981"
+    },
+    {
+      "id": "S_HEMATO_2",
+      "name": "Hematology 2",
+      "short": "Hemato2",
+      "nameAr": "أمراض الدم 2",
+      "color": "#f43f5e"
+    },
+    {
+      "id": "S_HEMATO_2_LAB",
+      "name": "Hematology 2-Lab",
+      "short": "HematoLab",
+      "nameAr": "معمل أمراض الدم 2",
+      "color": "#fb7185"
+    },
+    {
+      "id": "S_MED_BACT",
+      "name": "Medical Bacteriology",
+      "short": "MedBact",
+      "nameAr": "البكتيريا الطبية",
+      "color": "#16a34a"
+    },
+    {
+      "id": "S_MED_BACT_LAB",
+      "name": "Medical Bacteriology 1 Lab",
+      "short": "MedBactLab",
+      "nameAr": "معمل البكتيريا الطبية",
+      "color": "#4ade80"
+    },
+    {
+      "id": "S_IMMUN",
+      "name": "Basics of Immunology",
+      "short": "Immun",
+      "nameAr": "أساسيات علم المناعة",
+      "color": "#0284c7"
+    },
+    {
+      "id": "S_IMMUN_LAB",
+      "name": "Basic of Immunology Lab",
+      "short": "ImmunLab",
+      "nameAr": "معمل أساسيات علم المناعة",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "S_PARASIT",
+      "name": "Medical Parasitology 2",
+      "short": "Parasit",
+      "nameAr": "الطفيليات الطبية 2",
+      "color": "#ca8a04"
+    },
+    {
+      "id": "S_PARASIT_LAB",
+      "name": "Medical Parasitology 2 Lab",
+      "short": "ParasitLab",
+      "nameAr": "معمل الطفيليات الطبية 2",
+      "color": "#facc15"
+    },
+    {
+      "id": "S_BIOCHEM_2",
+      "name": "Biochemistry-2",
+      "short": "BioChem2",
+      "nameAr": "الكيمياء الحيوية 2",
+      "color": "#9333ea"
+    },
+    {
+      "id": "S_BIOCHEM_2_LAB",
+      "name": "Biochemistry-2-Lab",
+      "short": "BioChemLab",
+      "nameAr": "معمل الكيمياء الحيوية 2",
+      "color": "#c084fc"
+    },
+    {
+      "id": "S_CULTURE_2",
+      "name": "Culture 2",
+      "short": "Culture2",
+      "nameAr": "الثقافة الوطنية 2",
+      "color": "#10b981"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "L_1",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CRYPTO",
+      "teacherId": "T_HOFAFI",
+      "roomId": "R_D406",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_2",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CYS_RISK",
+      "teacherId": "T_JAMEEL",
+      "roomId": "R_D406",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_3",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_DB_SEC_LAB",
+      "teacherId": "T_RAGHAD",
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_4",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_WEB_TECH",
+      "teacherId": "T_ARWA",
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_5",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_WEB_TECH",
+      "teacherId": "T_ARWA",
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_6",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_DB_SEC_LAB",
+      "teacherId": "T_RAGHAD",
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_7",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CRYPTO_LAB",
+      "teacherId": "T_ASEEL",
+      "roomId": "R_CLAB_C202",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_8",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_NET_ROUTING",
+      "teacherId": "T_SAMI",
+      "roomId": "R_D408",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_9",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_OS",
+      "teacherId": "T_RIASHI",
+      "roomId": "R_D408",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_10",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CULTURE_2",
+      "teacherId": "T_RAFEQ",
+      "roomId": "R_D405",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_11",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_NET_ROUTING_LAB",
+      "teacherId": "T_SHAIMA",
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_12",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_DB_SEC",
+      "teacherId": "T_HADAD",
+      "roomId": "R_D406",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_13",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_NET_ROUTING_LAB",
+      "teacherId": "T_SHAIMA",
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_14",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CYS_RISK_LAB",
+      "teacherId": "T_ASEEL",
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_15",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_OS_LAB",
+      "teacherId": "T_ROAA",
+      "roomId": "R_DLAB001",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_16",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CRYPTO_LAB",
+      "teacherId": "T_ASEEL",
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_17",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_CYS_RISK_LAB",
+      "teacherId": "T_ASEEL",
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_18",
+      "classId": "C_CYS_L2_G1",
+      "subjectId": "S_OS_LAB",
+      "teacherId": "T_ROAA",
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_19",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_MOBILE_DEV",
+      "teacherId": "T_OSAMA",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_20",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_WEB_DEV_TUT",
+      "teacherId": "T_QUSAI",
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_21",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_NETWORKS",
+      "teacherId": "T_SAMI",
+      "roomId": "R_D404",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_22",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_DATA_SCI",
+      "teacherId": "T_SENAN",
+      "roomId": "R_D102",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_23",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_DATA_SCI",
+      "teacherId": "T_SENAN",
+      "roomId": "R_D404",
+      "duration": 2,
+      "periodsPerWeek": 2
+    },
+    {
+      "id": "L_24",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_ML",
+      "teacherId": "T_BELAL",
+      "roomId": "R_D402",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_25",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_ALGO",
+      "teacherId": "T_ANWAR",
+      "roomId": "R_D406",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_26",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_CULTURE_2",
+      "teacherId": "T_RAFEQ",
+      "roomId": "R_D405",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_27",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_ML_LAB",
+      "teacherId": "T_OSAMA",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_28",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_ALGO",
+      "teacherId": "T_ANWAR",
+      "roomId": "R_D408",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_29",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_ML_LAB",
+      "teacherId": "T_OSAMA",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_30",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_WEB_DEV_TUT",
+      "teacherId": "T_QUSAI",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_31",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_NETWORKS_LAB",
+      "teacherId": "T_SHAIMA",
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(A)"
+    },
+    {
+      "id": "L_32",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_MOBILE_DEV",
+      "teacherId": "T_OSAMA",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_33",
+      "classId": "C_AI_L2_G1",
+      "subjectId": "S_NETWORKS_LAB",
+      "teacherId": "T_SHAIMA",
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group(B)"
+    },
+    {
+      "id": "L_34",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_ORAL_SURG",
+      "teacherId": "T_SAM",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_35",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_GEN_SURG",
+      "teacherId": "T_ZAID",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_36",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_DENT_MAT_LAB",
+      "teacherId": "T_RUMIMA",
+      "roomId": "R_B410",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "GA"
+    },
+    {
+      "id": "L_37",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_MICRO_IMMUN_LAB",
+      "teacherId": "T_ZARIKA",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "GB"
+    },
+    {
+      "id": "L_38",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_MICRO_IMMUN_LAB",
+      "teacherId": "T_ZARIKA",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "GA"
+    },
+    {
+      "id": "L_39",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_DENT_MAT_LAB",
+      "teacherId": "T_RUMIMA",
+      "roomId": "R_B410",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "GB"
+    },
+    {
+      "id": "L_40",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_OPERATIVE",
+      "teacherId": "T_RUMIMA",
+      "roomId": "R_B412",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_41",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_HEAD_NECK_LAB",
+      "teacherId": "T_RADFAN",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group 1"
+    },
+    {
+      "id": "L_42",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_ORAL_PATH_LAB",
+      "teacherId": "T_AHLAM",
+      "roomId": "R_B412",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group 2"
+    },
+    {
+      "id": "L_43",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_ORAL_PATH_LAB",
+      "teacherId": "T_AHLAM",
+      "roomId": "R_B412",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group 1"
+    },
+    {
+      "id": "L_44",
+      "classId": "C_DENT_L2",
+      "subjectId": "S_HEAD_NECK_LAB",
+      "teacherId": "T_RADFAN",
+      "roomId": "R_B401",
+      "duration": 4,
+      "periodsPerWeek": 4,
+      "group": "Group 2"
+    },
+    {
+      "id": "L_45",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_DIGITAL_TYPO",
+      "teacherId": "T_ELHAM",
+      "roomId": "R_CLAB_C202",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_46",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_3D_DESIGN",
+      "teacherId": "T_YASSER",
+      "roomId": "R_GMMLAB_A202",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_47",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_AUDIO_VIDEO",
+      "teacherId": "T_YOUSIEF",
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_48",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_GMM_WEB",
+      "teacherId": "T_BODOUR",
+      "roomId": "R_CYSLAB3_A302",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_49",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_2D_ANIM",
+      "teacherId": "T_AFRA",
+      "roomId": "R_CYSLAB3_A302",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_50",
+      "classId": "C_GMM_L2_G1A",
+      "subjectId": "S_VISUAL_ID",
+      "teacherId": "T_YASSER",
+      "roomId": "R_GMMLAB_A202",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_51",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_HEMATO_2",
+      "teacherId": "T_BOSHRA",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_52",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_MED_BACT_LAB",
+      "teacherId": "T_ZARIKA",
+      "roomId": "R_B109",
+      "duration": 2,
+      "periodsPerWeek": 2
+    },
+    {
+      "id": "L_53",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_HEMATO_2_LAB",
+      "teacherId": "T_YOSRA",
+      "roomId": "R_B404",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_54",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_IMMUN",
+      "teacherId": "T_GOFI",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_55",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_IMMUN_LAB",
+      "teacherId": "T_ZARIKA",
+      "roomId": "R_B109",
+      "duration": 2,
+      "periodsPerWeek": 2
+    },
+    {
+      "id": "L_56",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_CULTURE_2",
+      "teacherId": "T_RAFEQ",
+      "roomId": "R_B404",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_57",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_PARASIT_LAB",
+      "teacherId": "T_WALEED",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_58",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_PARASIT",
+      "teacherId": "T_MEKHLAFI",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_59",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_BIOCHEM_2",
+      "teacherId": "T_FAIROZ",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_60",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_MED_BACT",
+      "teacherId": "T_GOFI",
+      "roomId": "R_B109",
+      "duration": 4,
+      "periodsPerWeek": 4
+    },
+    {
+      "id": "L_61",
+      "classId": "C_LAB_L2",
+      "subjectId": "S_BIOCHEM_2_LAB",
+      "teacherId": "T_THURIA",
+      "roomId": "R_BIOCHEM_B303",
+      "duration": 4,
+      "periodsPerWeek": 4
+    }
+  ],
+  "placements": [
+    {
+      "lessonId": "L_1",
+      "dayIndex": 1,
+      "periodIndex": 8,
+      "roomId": "R_D406",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_2",
+      "dayIndex": 1,
+      "periodIndex": 12,
+      "roomId": "R_D406",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_3",
+      "dayIndex": 2,
+      "periodIndex": 0,
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_4",
+      "dayIndex": 2,
+      "periodIndex": 0,
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_5",
+      "dayIndex": 2,
+      "periodIndex": 6,
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_6",
+      "dayIndex": 2,
+      "periodIndex": 6,
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_7",
+      "dayIndex": 2,
+      "periodIndex": 12,
+      "roomId": "R_CLAB_C202",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_8",
+      "dayIndex": 3,
+      "periodIndex": 0,
+      "roomId": "R_D408",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_9",
+      "dayIndex": 3,
+      "periodIndex": 4,
+      "roomId": "R_D408",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_10",
+      "dayIndex": 3,
+      "periodIndex": 8,
+      "roomId": "R_D405",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_11",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_12",
+      "dayIndex": 4,
+      "periodIndex": 4,
+      "roomId": "R_D406",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_13",
+      "dayIndex": 4,
+      "periodIndex": 8,
+      "roomId": "R_CLAB_A105",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_14",
+      "dayIndex": 4,
+      "periodIndex": 8,
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_15",
+      "dayIndex": 5,
+      "periodIndex": 0,
+      "roomId": "R_DLAB001",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_16",
+      "dayIndex": 5,
+      "periodIndex": 0,
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_17",
+      "dayIndex": 5,
+      "periodIndex": 4,
+      "roomId": "R_C_LAB_D403",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_18",
+      "dayIndex": 5,
+      "periodIndex": 4,
+      "roomId": "R_DLAB003",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_19",
+      "dayIndex": 0,
+      "periodIndex": 0,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_20",
+      "dayIndex": 0,
+      "periodIndex": 0,
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_21",
+      "dayIndex": 1,
+      "periodIndex": 0,
+      "roomId": "R_D404",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_22",
+      "dayIndex": 1,
+      "periodIndex": 4,
+      "roomId": "R_D102",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_23",
+      "dayIndex": 1,
+      "periodIndex": 8,
+      "roomId": "R_D404",
+      "duration": 2,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_24",
+      "dayIndex": 2,
+      "periodIndex": 0,
+      "roomId": "R_D402",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_25",
+      "dayIndex": 2,
+      "periodIndex": 4,
+      "roomId": "R_D406",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_26",
+      "dayIndex": 2,
+      "periodIndex": 8,
+      "roomId": "R_D405",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_27",
+      "dayIndex": 2,
+      "periodIndex": 14,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_28",
+      "dayIndex": 3,
+      "periodIndex": 4,
+      "roomId": "R_D408",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_29",
+      "dayIndex": 3,
+      "periodIndex": 10,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_30",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_31",
+      "dayIndex": 4,
+      "periodIndex": 12,
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_32",
+      "dayIndex": 5,
+      "periodIndex": 4,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_33",
+      "dayIndex": 5,
+      "periodIndex": 14,
+      "roomId": "R_C_LAB_103",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_34",
+      "dayIndex": 1,
+      "periodIndex": 4,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_35",
+      "dayIndex": 2,
+      "periodIndex": 0,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_36",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_B410",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_37",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_38",
+      "dayIndex": 4,
+      "periodIndex": 4,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_39",
+      "dayIndex": 4,
+      "periodIndex": 4,
+      "roomId": "R_B410",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_40",
+      "dayIndex": 5,
+      "periodIndex": 0,
+      "roomId": "R_B412",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_41",
+      "dayIndex": 5,
+      "periodIndex": 6,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_42",
+      "dayIndex": 5,
+      "periodIndex": 6,
+      "roomId": "R_B412",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_43",
+      "dayIndex": 5,
+      "periodIndex": 10,
+      "roomId": "R_B412",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_44",
+      "dayIndex": 5,
+      "periodIndex": 10,
+      "roomId": "R_B401",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_45",
+      "dayIndex": 0,
+      "periodIndex": 0,
+      "roomId": "R_CLAB_C202",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_46",
+      "dayIndex": 0,
+      "periodIndex": 10,
+      "roomId": "R_GMMLAB_A202",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_47",
+      "dayIndex": 1,
+      "periodIndex": 0,
+      "roomId": "R_C_LAB_D503",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_48",
+      "dayIndex": 2,
+      "periodIndex": 6,
+      "roomId": "R_CYSLAB3_A302",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_49",
+      "dayIndex": 2,
+      "periodIndex": 10,
+      "roomId": "R_CYSLAB3_A302",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_50",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_GMMLAB_A202",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_51",
+      "dayIndex": 1,
+      "periodIndex": 4,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_52",
+      "dayIndex": 1,
+      "periodIndex": 8,
+      "roomId": "R_B109",
+      "duration": 2,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_53",
+      "dayIndex": 2,
+      "periodIndex": 0,
+      "roomId": "R_B404",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_54",
+      "dayIndex": 2,
+      "periodIndex": 4,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_55",
+      "dayIndex": 2,
+      "periodIndex": 8,
+      "roomId": "R_B109",
+      "duration": 2,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_56",
+      "dayIndex": 3,
+      "periodIndex": 0,
+      "roomId": "R_B404",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_57",
+      "dayIndex": 3,
+      "periodIndex": 4,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_58",
+      "dayIndex": 4,
+      "periodIndex": 0,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_59",
+      "dayIndex": 4,
+      "periodIndex": 4,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_60",
+      "dayIndex": 5,
+      "periodIndex": 0,
+      "roomId": "R_B109",
+      "duration": 4,
+      "isLocked": true
+    },
+    {
+      "lessonId": "L_61",
+      "dayIndex": 5,
+      "periodIndex": 4,
+      "roomId": "R_BIOCHEM_B303",
+      "duration": 4,
+      "isLocked": true
+    }
+  ],
+  "timeOffMatrix": {},
+  "schemaVersion": 314
+}

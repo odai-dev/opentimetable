@@ -59,6 +59,9 @@ node --test tests/test_m2_features.mjs
 echo "==> Running University aSc Timetable Print & Solver Parity Suite (18 Periods, u128 Bitmasks)..."
 node --test tests/test_university_asc_print_parity.mjs
 
+echo "==> Running Ar-Rasheed Smart University (Sana'a) Sample Dataset Verification Suite..."
+node --test tests/test_arrasheed_sample.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="
