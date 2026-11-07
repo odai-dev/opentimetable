@@ -33,7 +33,7 @@ export interface SchoolDataUpdate {
   bellSchedule?: string[];
 }
 
-function generateDefaultBells(count: number): string[] {
+export function generateDefaultBells(count: number): string[] {
   const bells: string[] = [];
   let currentHour = 8;
   let currentMinute = 0;

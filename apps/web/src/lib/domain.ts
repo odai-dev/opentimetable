@@ -620,3 +620,31 @@ export function validateScheduleConstraints(params: {
   };
 }
 
+/**
+ * Generate default bell schedule intervals given a period count.
+ * Each period is 45 minutes with a 5-minute passing period starting at 08:00.
+ */
+export function generateDefaultBells(count: number): string[] {
+  const bells: string[] = [];
+  let currentHour = 8;
+  let currentMinute = 0;
+  for (let i = 0; i < count; i++) {
+    const startH = String(currentHour).padStart(2, '0');
+    const startM = String(currentMinute).padStart(2, '0');
+    currentMinute += 45;
+    if (currentMinute >= 60) {
+      currentHour += Math.floor(currentMinute / 60);
+      currentMinute %= 60;
+    }
+    const endH = String(currentHour).padStart(2, '0');
+    const endM = String(currentMinute).padStart(2, '0');
+    bells.push(`${startH}:${startM} - ${endH}:${endM}`);
+    currentMinute += 5; // 5 min passing period
+    if (currentMinute >= 60) {
+      currentHour += Math.floor(currentMinute / 60);
+      currentMinute %= 60;
+    }
+  }
+  return bells;
+}
+
