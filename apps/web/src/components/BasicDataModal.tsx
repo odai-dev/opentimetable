@@ -21,8 +21,23 @@ import {
   Network,
   CheckSquare,
   Square,
+  GitFork,
+  Sparkles,
+  Settings2,
 } from 'lucide-react';
-import { BasicDataTab, Subject, ClassGroup, Room, Teacher, Lesson, Student, CourseGroup } from '../lib/types';
+import {
+  BasicDataTab,
+  Subject,
+  ClassGroup,
+  Room,
+  Teacher,
+  Lesson,
+  Student,
+  CourseGroup,
+  Faculty,
+  AcademicMajor,
+  SubGroupConfig,
+} from '../lib/types';
 import { translations } from '../lib/i18n';
 
 export interface SchoolDataUpdate {
@@ -33,7 +48,7 @@ export interface SchoolDataUpdate {
   bellSchedule?: string[];
 }
 
-import { generateDefaultBells } from '../lib/domain';
+import { generateDefaultBells, generateUniversityGroups, GenerateUniversityGroupsParams } from '../lib/domain';
 export { generateDefaultBells };
 
 interface BasicDataModalProps {
@@ -46,6 +61,8 @@ interface BasicDataModalProps {
   rooms: Room[];
   teachers: Teacher[];
   lessons: Lesson[];
+  faculties?: Faculty[];
+  majors?: AcademicMajor[];
   schoolName?: string;
   academicYear?: string;
   cycleDays?: number;
@@ -68,6 +85,14 @@ interface BasicDataModalProps {
   onAddLesson?: (lesson: Lesson) => void;
   onEditLesson?: (lesson: Lesson) => void;
   onDeleteLesson?: (id: string) => void;
+  // University Structure Callbacks
+  onAddFaculty?: (faculty: Faculty) => void;
+  onEditFaculty?: (faculty: Faculty) => void;
+  onDeleteFaculty?: (id: string) => void;
+  onAddMajor?: (major: AcademicMajor) => void;
+  onEditMajor?: (major: AcademicMajor) => void;
+  onDeleteMajor?: (id: string) => void;
+  onGenerateUniversityGroups?: (params: GenerateUniversityGroupsParams) => void;
   students?: Student[];
   seminars?: CourseGroup[];
   onAddStudent?: (student: Student) => void;
@@ -123,6 +148,15 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  faculties = [],
+  majors = [],
+  onAddFaculty,
+  onEditFaculty,
+  onDeleteFaculty,
+  onAddMajor,
+  onEditMajor,
+  onDeleteMajor,
+  onGenerateUniversityGroups,
   schoolName: propSchoolName = 'Saudi Arabia 1',
   academicYear: propAcademicYear = '2025 - 2026',
   cycleDays: propCycleDays = 5,
@@ -132,6 +166,27 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<BasicDataTab>(initialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // University Structure Sub-Tab & Filters State
+  const [structureSubTab, setStructureSubTab] = useState<'classes' | 'colleges' | 'configurator'>('classes');
+  const [selectedFacultyFilter, setSelectedFacultyFilter] = useState<string>('ALL');
+  const [selectedMajorFilter, setSelectedMajorFilter] = useState<string>('ALL');
+
+  // Quick Cohort & Subgroup Generator State
+  const [genFacultyId, setGenFacultyId] = useState<string>(faculties[0]?.id || 'fac-engineering');
+  const [genMajorId, setGenMajorId] = useState<string>(majors[0]?.id || 'maj-cybersecurity');
+  const [genLevel, setGenLevel] = useState<number>(2);
+  const [genGroupCount, setGenGroupCount] = useState<number>(2);
+  const [genSubgroupsPerGroup, setGenSubgroupsPerGroup] = useState<number>(2);
+  const [genGroupCapacity, setGenGroupCapacity] = useState<number>(50);
+  const [genSubgroupCapacity, setGenSubgroupCapacity] = useState<number>(25);
+  const [genSuccessMsg, setGenSuccessMsg] = useState<string | null>(null);
+
+  // Faculty and Major dialog states
+  const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
+  const [editingMajor, setEditingMajor] = useState<AcademicMajor | null>(null);
+  const [isFacultyDialogOpen, setIsFacultyDialogOpen] = useState<boolean>(false);
+  const [isMajorDialogOpen, setIsMajorDialogOpen] = useState<boolean>(false);
 
   // School Tab State
   const [localSchoolName, setLocalSchoolName] = useState(propSchoolName);
@@ -159,6 +214,16 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
       setSchoolSavedFeedback(false);
     }
   }, [isOpen, propSchoolName, propAcademicYear, propCycleDays, propPeriodsPerDay, propBellSchedule]);
+
+  // Keep generator defaults in sync when faculties/majors load
+  useEffect(() => {
+    if (faculties.length > 0 && !faculties.some((f) => f.id === genFacultyId)) {
+      setGenFacultyId(faculties[0].id);
+    }
+    if (majors.length > 0 && !majors.some((m) => m.id === genMajorId)) {
+      setGenMajorId(majors[0].id);
+    }
+  }, [faculties, majors, genFacultyId, genMajorId]);
 
   const handlePeriodsChange = (newPeriods: number) => {
     setLocalPeriodsPerDay(newPeriods);
@@ -214,6 +279,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
     name: '',
     nameAr: '',
     grade: 1,
+    facultyId: '',
+    majorId: '',
+    groupNumber: 1,
+    studentCount: 50,
+    subgroups: [],
   });
   const [formRoom, setFormRoom] = useState<Partial<Room>>({
     id: '',
@@ -277,11 +347,21 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         requiredRoomType: 'STANDARD',
       });
     } else if (entityType === 'class') {
+      const defFac = faculties[0]?.id || 'fac-engineering';
+      const defMaj = majors.find((m) => m.facultyId === defFac)?.id || majors[0]?.id || '';
       setFormClass({
         id: `C_${randomSuffix}`,
         name: '',
         nameAr: '',
         grade: 1,
+        facultyId: defFac,
+        majorId: defMaj,
+        groupNumber: 1,
+        studentCount: 50,
+        subgroups: [
+          { id: `sub-${randomSuffix}-a`, name: 'Lab A', nameAr: 'معمل أ', code: 'A', studentCount: 25 },
+          { id: `sub-${randomSuffix}-b`, name: 'Lab B', nameAr: 'معمل ب', code: 'B', studentCount: 25 },
+        ],
       });
     } else if (entityType === 'room') {
       setFormRoom({
@@ -325,8 +405,21 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
     setFormError(null);
 
     if (entityType === 'subject') setFormSubject({ ...entity });
-    else if (entityType === 'class') setFormClass({ ...entity });
-    else if (entityType === 'room') setFormRoom({ ...entity });
+    else if (entityType === 'class') {
+      setFormClass({
+        ...entity,
+        facultyId: entity.facultyId || faculties[0]?.id || '',
+        majorId: entity.majorId || majors[0]?.id || '',
+        groupNumber: entity.groupNumber || 1,
+        studentCount: entity.studentCount || 50,
+        subgroups: entity.subgroups && entity.subgroups.length > 0
+          ? entity.subgroups
+          : [
+              { id: `${entity.id}-sub-a`, name: `${entity.name} - Lab A`, nameAr: `${entity.nameAr || entity.name} - معمل أ`, code: 'A', studentCount: Math.round((entity.studentCount || 50) / 2) },
+              { id: `${entity.id}-sub-b`, name: `${entity.name} - Lab B`, nameAr: `${entity.nameAr || entity.name} - معمل ب`, code: 'B', studentCount: Math.round((entity.studentCount || 50) / 2) },
+            ],
+      });
+    } else if (entityType === 'room') setFormRoom({ ...entity });
     else if (entityType === 'teacher') setFormTeacher({ ...entity });
     else if (entityType === 'lesson') setFormLesson({ ...entity });
   };
@@ -353,7 +446,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
       else onEditSubject?.(item);
     } else if (editingEntityType === 'class') {
       if (!formClass.name?.trim()) {
-        setFormError(isRtl ? 'يرجى إدخال اسم الفصل' : 'Class Name is required');
+        setFormError(isRtl ? 'يرجى إدخال اسم الدفعة / الشعبة' : 'Group Name is required');
         return;
       }
       const item: ClassGroup = {
@@ -361,6 +454,11 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
         name: formClass.name.trim(),
         nameAr: formClass.nameAr?.trim() || undefined,
         grade: Number(formClass.grade) || 1,
+        facultyId: formClass.facultyId || undefined,
+        majorId: formClass.majorId || undefined,
+        groupNumber: formClass.groupNumber ? Number(formClass.groupNumber) : undefined,
+        studentCount: formClass.studentCount ? Number(formClass.studentCount) : undefined,
+        subgroups: formClass.subgroups || undefined,
       };
       if (dialogMode === 'add') onAddClass?.(item);
       else onEditClass?.(item);
@@ -420,6 +518,55 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
     setEditingEntityType(null);
   };
 
+  // University Quick Cohort Generator execution
+  const handleRunGenerator = () => {
+    const selMajor = majors.find((m) => m.id === genMajorId);
+    const selFac = faculties.find((f) => f.id === genFacultyId) || faculties[0];
+    const majorName = selMajor ? selMajor.name : 'Program';
+    const majorNameAr = selMajor?.nameAr;
+    const majorCode = selMajor ? selMajor.code : 'MAJ';
+
+    const generated = generateUniversityGroups({
+      facultyId: genFacultyId,
+      majorId: genMajorId,
+      majorName,
+      majorNameAr,
+      majorCode,
+      level: genLevel,
+      groupCount: genGroupCount,
+      subgroupsPerGroup: genSubgroupsPerGroup,
+      groupCapacity: genGroupCapacity,
+      subgroupCapacity: genSubgroupCapacity,
+    });
+
+    if (onGenerateUniversityGroups) {
+      onGenerateUniversityGroups({
+        facultyId: genFacultyId,
+        majorId: genMajorId,
+        majorName,
+        majorNameAr,
+        majorCode,
+        level: genLevel,
+        groupCount: genGroupCount,
+        subgroupsPerGroup: genSubgroupsPerGroup,
+        groupCapacity: genGroupCapacity,
+        subgroupCapacity: genSubgroupCapacity,
+      });
+    } else {
+      for (const gc of generated) {
+        onAddClass?.(gc);
+      }
+    }
+
+    setGenSuccessMsg(
+      isRtl
+        ? `✅ تم بنجاح توليد ${generated.length} شعب مع ${generated.length * genSubgroupsPerGroup} مجموعات معامل لـ (${majorNameAr || majorName} - مستوى ${genLevel})!`
+        : `✅ Successfully generated ${generated.length} lecture groups with ${generated.length * genSubgroupsPerGroup} lab subgroups for (${majorName} - Level ${genLevel})!`
+    );
+    setTimeout(() => setGenSuccessMsg(null), 4000);
+    setStructureSubTab('classes');
+  };
+
   // Filtered entity lists based on search
   const filteredSubjects = subjects.filter(
     (s) =>
@@ -428,12 +575,15 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
       (s.nameAr && s.nameAr.includes(searchQuery))
   );
 
-  const filteredClasses = classes.filter(
-    (c) =>
+  const filteredClasses = classes.filter((c) => {
+    const matchesSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.nameAr && c.nameAr.includes(searchQuery)) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      c.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFaculty = selectedFacultyFilter === 'ALL' || c.facultyId === selectedFacultyFilter;
+    const matchesMajor = selectedMajorFilter === 'ALL' || c.majorId === selectedMajorFilter;
+    return matchesSearch && matchesFaculty && matchesMajor;
+  });
 
   const filteredRooms = rooms.filter(
     (r) =>
@@ -870,63 +1020,474 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
             </div>
           )}
 
-          {/* 3. Groups & Sections Tab */}
+          {/* 3. University Academic Structure & Groups */}
           {activeTab === 'classes' && (
             <div className="flex flex-col gap-3">
-              <table className="w-full border-collapse border border-slate-200">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
-                    <th className="p-2 border-r border-slate-200 w-20 text-center">ID</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم الدفعة / الشعبة' : 'Group / Section Name'}</th>
-                    <th className="p-2 border-r border-slate-200">{isRtl ? 'المستوى الدراسي / السنة' : 'Academic Level / Year'}</th>
-                    <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredClasses.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-4 text-center text-slate-400">
-                        {isRtl ? 'لا توجد شعب أو دفعات مطابقة' : 'No matching groups or sections'}
-                      </td>
+              {/* Feedback Alert */}
+              {genSuccessMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs font-bold animate-in fade-in flex items-center justify-between">
+                  <span>{genSuccessMsg}</span>
+                  <button onClick={() => setGenSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* University Sub-Navigation & Filters */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                <div className="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setStructureSubTab('classes')}
+                    className={`px-3 py-1 rounded transition flex items-center gap-1.5 ${
+                      structureSubTab === 'classes'
+                        ? 'bg-white text-indigo-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>{isRtl ? 'الشعب والمجموعات الأكاديمية' : 'Groups & Cohorts'} ({classes.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStructureSubTab('colleges')}
+                    className={`px-3 py-1 rounded transition flex items-center gap-1.5 ${
+                      structureSubTab === 'colleges'
+                        ? 'bg-white text-indigo-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>{isRtl ? 'الكليات والأقسام' : 'Colleges & Majors'} ({faculties.length} / {majors.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStructureSubTab('configurator')}
+                    className={`px-3 py-1 rounded transition flex items-center gap-1.5 ${
+                      structureSubTab === 'configurator'
+                        ? 'bg-white text-indigo-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{isRtl ? 'مولّد الشعب والمعامل الأكاديمي' : 'Cohort & Lab Configurator'}</span>
+                  </button>
+                </div>
+
+                {structureSubTab === 'classes' && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedFacultyFilter}
+                      onChange={(e) => setSelectedFacultyFilter(e.target.value)}
+                      className="text-xs bg-white border border-slate-300 rounded px-2 py-1 text-slate-700 focus:outline-none"
+                    >
+                      <option value="ALL">{isRtl ? 'كل الكليات' : 'All Colleges'}</option>
+                      {faculties.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {isRtl ? f.nameAr || f.name : f.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={selectedMajorFilter}
+                      onChange={(e) => setSelectedMajorFilter(e.target.value)}
+                      className="text-xs bg-white border border-slate-300 rounded px-2 py-1 text-slate-700 focus:outline-none"
+                    >
+                      <option value="ALL">{isRtl ? 'كل التخصصات' : 'All Majors'}</option>
+                      {majors
+                        .filter((m) => selectedFacultyFilter === 'ALL' || m.facultyId === selectedFacultyFilter)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {isRtl ? m.nameAr || m.name : m.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Sub-View 1: Classes & Cohorts Table */}
+              {structureSubTab === 'classes' && (
+                <table className="w-full border-collapse border border-slate-200">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 text-start font-bold border-b border-slate-200">
+                      <th className="p-2 border-r border-slate-200 w-24 text-center">ID / Code</th>
+                      <th className="p-2 border-r border-slate-200">{isRtl ? 'اسم الشعبة / الدفعة' : 'Cohort / Section Name'}</th>
+                      <th className="p-2 border-r border-slate-200">{isRtl ? 'الكلية والتخصص' : 'Faculty & Major'}</th>
+                      <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'المستوى' : 'Level'}</th>
+                      <th className="p-2 border-r border-slate-200 text-center">{isRtl ? 'السعة الكلية' : 'Capacity'}</th>
+                      <th className="p-2 border-r border-slate-200">{isRtl ? 'مجموعات المعامل (Subgroups)' : 'Lab Subgroups'}</th>
+                      <th className="p-2 text-center w-24">{isRtl ? 'الإجراءات' : 'Actions'}</th>
                     </tr>
-                  ) : (
-                    filteredClasses.map((c) => (
-                      <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 group">
-                        <td className="p-2 border-r border-slate-200 text-center font-mono font-bold text-slate-600">{c.id}</td>
-                        <td className="p-2 border-r border-slate-200 font-bold text-slate-900">
-                          {isRtl ? c.nameAr || c.name : c.name}
-                          {c.nameAr && !isRtl && (
-                            <span className="text-slate-400 text-[10px] ml-2">({c.nameAr})</span>
-                          )}
-                        </td>
-                        <td className="p-2 border-r border-slate-200 text-slate-600 font-medium">
-                          {t.terms.levelFormat ? t.terms.levelFormat(c.grade) : (isRtl ? `المستوى ${c.grade}` : `Level ${c.grade}`)}
-                        </td>
-                        <td className="p-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEdit('class', c)}
-                              className="p-1 rounded hover:bg-indigo-100 text-indigo-700 transition"
-                              title={isRtl ? 'تعديل' : 'Edit'}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onDeleteClass?.(c.id)}
-                              className="p-1 rounded hover:bg-rose-100 text-rose-700 transition"
-                              title={isRtl ? 'حذف' : 'Delete'}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                  </thead>
+                  <tbody>
+                    {filteredClasses.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-6 text-center text-slate-400">
+                          {isRtl ? 'لا توجد شعب أو دفعات مطابقة للفلترة الحالية' : 'No matching university cohorts found'}
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredClasses.map((c) => {
+                        const fac = faculties.find((f) => f.id === c.facultyId);
+                        const maj = majors.find((m) => m.id === c.majorId);
+                        return (
+                          <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 group">
+                            <td className="p-2 border-r border-slate-200 text-center font-mono font-bold text-slate-600 text-[11px]">
+                              {c.id}
+                            </td>
+                            <td className="p-2 border-r border-slate-200 font-bold text-slate-900">
+                              <div>{isRtl ? c.nameAr || c.name : c.name}</div>
+                              {c.nameAr && !isRtl && (
+                                <div className="text-slate-400 text-[10px]">{c.nameAr}</div>
+                              )}
+                            </td>
+                            <td className="p-2 border-r border-slate-200 text-xs">
+                              <div className="flex flex-wrap gap-1">
+                                {fac && (
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">
+                                    {isRtl ? fac.nameAr || fac.name : fac.code}
+                                  </span>
+                                )}
+                                {maj && (
+                                  <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold text-[10px] border border-indigo-200">
+                                    {isRtl ? maj.nameAr || maj.name : maj.name}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-2 border-r border-slate-200 text-center font-bold text-slate-700">
+                              {t.terms.levelFormat ? t.terms.levelFormat(c.grade) : (isRtl ? `المستوى ${c.grade}` : `L${c.grade}`)}
+                            </td>
+                            <td className="p-2 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
+                              👥 {c.studentCount || 50}
+                            </td>
+                            <td className="p-2 border-r border-slate-200">
+                              {c.subgroups && c.subgroups.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {c.subgroups.map((sub) => (
+                                    <span
+                                      key={sub.id}
+                                      className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200 text-[10px]"
+                                      title={isRtl ? sub.nameAr || sub.name : sub.name}
+                                    >
+                                      🔬 {sub.code} ({sub.studentCount || 25})
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">{isRtl ? 'دفعة كاملة' : 'Full Cohort'}</span>
+                              )}
+                            </td>
+                            <td className="p-2 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit('class', c)}
+                                  className="p-1 rounded hover:bg-indigo-100 text-indigo-700 transition"
+                                  title={isRtl ? 'تعديل' : 'Edit'}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onDeleteClass?.(c.id)}
+                                  className="p-1 rounded hover:bg-rose-100 text-rose-700 transition"
+                                  title={isRtl ? 'حذف' : 'Delete'}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Sub-View 2: Faculties & Majors Management */}
+              {structureSubTab === 'colleges' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Faculties Column */}
+                  <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col gap-2">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                        <span>{isRtl ? 'الكليات الجامعية' : 'Colleges & Faculties'} ({faculties.length})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newId = `fac_${Date.now()}`;
+                          const f: Faculty = {
+                            id: newId,
+                            name: 'Faculty of Science',
+                            nameAr: 'كلية العلوم',
+                            code: 'FSC',
+                            color: '#0284c7',
+                          };
+                          onAddFaculty?.(f);
+                        }}
+                        className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] transition flex items-center gap-1 shadow-xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{isRtl ? 'إضافة كلية' : 'Add Faculty'}</span>
+                      </button>
+                    </div>
+
+                    <div className="overflow-y-auto max-h-[360px] flex flex-col gap-1.5">
+                      {faculties.map((f) => (
+                        <div
+                          key={f.id}
+                          className="bg-white border border-slate-200 rounded p-2 flex items-center justify-between text-xs"
+                        >
+                          <div>
+                            <div className="font-bold text-slate-900">{isRtl ? f.nameAr || f.name : f.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">Code: {f.code}</div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-slate-300"
+                              style={{ backgroundColor: f.color || '#3b82f6' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onDeleteFaculty?.(f.id)}
+                              className="p-1 rounded hover:bg-rose-100 text-rose-600 transition"
+                              title={isRtl ? 'حذف' : 'Delete'}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Majors Column */}
+                  <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col gap-2">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                        <GraduationCap className="w-4 h-4 text-indigo-600" />
+                        <span>{isRtl ? 'الأقسام والتخصصات الأكاديمية' : 'Academic Majors & Programs'} ({majors.length})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newId = `maj_${Date.now()}`;
+                          const targetFac = faculties[0]?.id || 'fac-engineering';
+                          const m: AcademicMajor = {
+                            id: newId,
+                            facultyId: targetFac,
+                            name: 'Software Engineering',
+                            nameAr: 'هندسة البرمجيات',
+                            code: 'SWE',
+                            totalLevels: 4,
+                            degreeType: 'BACHELOR',
+                          };
+                          onAddMajor?.(m);
+                        }}
+                        className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] transition flex items-center gap-1 shadow-xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{isRtl ? 'إضافة تخصص' : 'Add Major'}</span>
+                      </button>
+                    </div>
+
+                    <div className="overflow-y-auto max-h-[360px] flex flex-col gap-1.5">
+                      {majors.map((m) => {
+                        const parentFac = faculties.find((f) => f.id === m.facultyId);
+                        return (
+                          <div
+                            key={m.id}
+                            className="bg-white border border-slate-200 rounded p-2 flex items-center justify-between text-xs"
+                          >
+                            <div>
+                              <div className="font-bold text-slate-900">{isRtl ? m.nameAr || m.name : m.name}</div>
+                              <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                                <span className="font-mono">Code: {m.code}</span>
+                                {parentFac && <span>• {isRtl ? parentFac.nameAr || parentFac.name : parentFac.code}</span>}
+                                <span>• {m.totalLevels} {isRtl ? 'سنوات' : 'Levels'}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteMajor?.(m.id)}
+                              className="p-1 rounded hover:bg-rose-100 text-rose-600 transition"
+                              title={isRtl ? 'حذف' : 'Delete'}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-View 3: Cohort & Lab Subgroups Quick Configurator */}
+              {structureSubTab === 'configurator' && (
+                <div className="border border-indigo-200 rounded-xl bg-linear-to-b from-indigo-50/50 to-white p-4 flex flex-col gap-4 shadow-xs">
+                  <div className="flex items-center gap-2 text-indigo-900 font-bold text-sm">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>{isRtl ? 'مولّد دفعات التخصص والمجموعات الفرعية للمعامل' : 'University Cohort & Lab Subgroups Quick-Builder'}</span>
+                  </div>
+                  <p className="text-slate-600 text-xs">
+                    {isRtl
+                      ? 'حدد الكلية والتخصص والمستوى وعدد الشعب والمعامل لكل شعبة، ليقوم النظام بتوليد بنية الدفعات كاملة بالأسماء الإنجليزية والعربية وسعات الحضور.'
+                      : 'Configure the college, major, academic level, and number of lecture groups and lab subgroups to immediately generate university cohorts.'}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'الكلية' : 'College / Faculty'}</label>
+                      <select
+                        value={genFacultyId}
+                        onChange={(e) => {
+                          setGenFacultyId(e.target.value);
+                          const firstMaj = majors.find((m) => m.facultyId === e.target.value);
+                          if (firstMaj) setGenMajorId(firstMaj.id);
+                        }}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      >
+                        {faculties.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {isRtl ? f.nameAr || f.name : f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'القسم / التخصص' : 'Academic Major'}</label>
+                      <select
+                        value={genMajorId}
+                        onChange={(e) => setGenMajorId(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      >
+                        {majors
+                          .filter((m) => m.facultyId === genFacultyId)
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {isRtl ? m.nameAr || m.name : m.name} ({m.code})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'المستوى الدراسي' : 'Academic Level'}</label>
+                      <select
+                        value={genLevel}
+                        onChange={(e) => setGenLevel(parseInt(e.target.value, 10) || 1)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      >
+                        {[1, 2, 3, 4, 5].map((lvl) => (
+                          <option key={lvl} value={lvl}>
+                            {isRtl ? `المستوى ${lvl}` : `Level ${lvl}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'عدد مجموعات المحاضرات' : 'Lecture Groups'}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={6}
+                        value={genGroupCount}
+                        onChange={(e) => setGenGroupCount(parseInt(e.target.value, 10) || 1)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'سعة شعبة المحاضرة' : 'Lecture Group Headcount'}</label>
+                      <input
+                        type="number"
+                        min={10}
+                        max={300}
+                        value={genGroupCapacity}
+                        onChange={(e) => setGenGroupCapacity(parseInt(e.target.value, 10) || 50)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'معامل فرعية لكل شعبة' : 'Lab Subgroups per Group'}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={4}
+                        value={genSubgroupsPerGroup}
+                        onChange={(e) => setGenSubgroupsPerGroup(parseInt(e.target.value, 10) || 2)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">{isRtl ? 'سعة المعمل الفرعي' : 'Lab Subgroup Headcount'}</label>
+                      <input
+                        type="number"
+                        min={5}
+                        max={100}
+                        value={genSubgroupCapacity}
+                        onChange={(e) => setGenSubgroupCapacity(parseInt(e.target.value, 10) || 25)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Generation Preview Box */}
+                  <div className="bg-white border border-indigo-200 rounded-lg p-3 flex flex-col gap-2">
+                    <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      {isRtl ? 'معاينة المجموعات التي سيتم إنشاؤها:' : 'Preview Generated University Cohorts:'}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {Array.from({ length: genGroupCount }).map((_, idx) => {
+                        const gNum = idx + 1;
+                        const selMaj = majors.find((m) => m.id === genMajorId);
+                        const code = selMaj ? selMaj.code : 'MAJ';
+                        return (
+                          <div key={gNum} className="border border-slate-200 rounded p-2 bg-slate-50 text-xs">
+                            <div className="font-bold text-indigo-900 flex items-center justify-between">
+                              <span>🎓 {code}-L{genLevel}-G{gNum}</span>
+                              <span className="text-slate-500 font-mono text-[11px]">👥 {genGroupCapacity} {isRtl ? 'طالب' : 'students'}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-600 mt-1 flex flex-wrap gap-1">
+                              {Array.from({ length: genSubgroupsPerGroup }).map((__, sIdx) => {
+                                const letters = ['A', 'B', 'C', 'D'];
+                                const subCode = letters[sIdx] || `${sIdx + 1}`;
+                                return (
+                                  <span key={subCode} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-emerald-800 font-bold">
+                                    🔬 Lab {gNum}{subCode} ({genSubgroupCapacity})
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleRunGenerator}
+                      className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>{isRtl ? '🚀 توليد وإضافة المجموعات الأكاديمية للجدول' : '🚀 Generate & Add University Cohorts'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1421,41 +1982,188 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                       disabled={dialogMode === 'edit'}
                       value={formClass.id || ''}
                       onChange={(e) => setFormClass({ ...formClass, id: e.target.value })}
-                      className="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono text-slate-600 disabled:opacity-70"
+                      className="w-full bg-slate-100 border border-slate-300 rounded px-2.5 py-1.5 font-mono text-slate-600 disabled:opacity-70 text-xs"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الكلية' : 'Faculty / College'}</label>
+                      <select
+                        value={formClass.facultyId || ''}
+                        onChange={(e) => {
+                          const fId = e.target.value;
+                          const mId = majors.find((m) => m.facultyId === fId)?.id || '';
+                          setFormClass({ ...formClass, facultyId: fId, majorId: mId });
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="">{isRtl ? '-- حدد الكلية --' : '-- Select Faculty --'}</option>
+                        {faculties.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {isRtl ? f.nameAr || f.name : f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'القسم الأكاديمي' : 'Major / Program'}</label>
+                      <select
+                        value={formClass.majorId || ''}
+                        onChange={(e) => setFormClass({ ...formClass, majorId: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="">{isRtl ? '-- حدد التخصص --' : '-- Select Major --'}</option>
+                        {majors
+                          .filter((m) => !formClass.facultyId || m.facultyId === formClass.facultyId)
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {isRtl ? m.nameAr || m.name : m.name} ({m.code})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم الدفعة / الشعبة' : 'Group / Section Name'} *</label>
+                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'اسم الشعبة / الدفعة (EN)' : 'Group / Cohort Name (EN)'} *</label>
                     <input
                       type="text"
                       required
                       value={formClass.name || ''}
                       onChange={(e) => setFormClass({ ...formClass, name: e.target.value })}
-                      placeholder="e.g. CyberSecurity-L2-SecA"
-                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      placeholder="e.g. CYS-L2-G1"
+                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
+
                   <div>
                     <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'الاسم (عربي)' : 'Arabic Name'}</label>
                     <input
                       type="text"
                       value={formClass.nameAr || ''}
                       onChange={(e) => setFormClass({ ...formClass, nameAr: e.target.value })}
-                      placeholder="مثال: أمن سيبراني - مستوى 2 - شعبة أ"
-                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      placeholder="مثال: الأمن السيبراني - المستوى 2 - شعبة 1"
+                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
-                  <div>
-                    <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المستوى الدراسي / السنة' : 'Academic Level / Year'} *</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={16}
-                      required
-                      value={formClass.grade || 1}
-                      onChange={(e) => setFormClass({ ...formClass, grade: parseInt(e.target.value) || 1 })}
-                      className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    />
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'المستوى' : 'Level'} *</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={6}
+                        required
+                        value={formClass.grade || 1}
+                        onChange={(e) => setFormClass({ ...formClass, grade: parseInt(e.target.value) || 1 })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'رقم الشعبة' : 'Group #'}</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={formClass.groupNumber || 1}
+                        onChange={(e) => setFormClass({ ...formClass, groupNumber: parseInt(e.target.value) || 1 })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold block mb-1 text-slate-700">{isRtl ? 'السعة الكلية' : 'Headcount'}</label>
+                      <input
+                        type="number"
+                        min={5}
+                        max={500}
+                        value={formClass.studentCount || 50}
+                        onChange={(e) => setFormClass({ ...formClass, studentCount: parseInt(e.target.value) || 50 })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subgroups (Labs / Practicals) Configurator inside Edit */}
+                  <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-800">
+                        🔬 {isRtl ? 'مجموعات المعامل الفرعية (Subgroups)' : 'Lab Subgroups'} ({(formClass.subgroups || []).length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = formClass.subgroups || [];
+                          const letters = ['A', 'B', 'C', 'D', 'E'];
+                          const nextCode = letters[current.length] || `${current.length + 1}`;
+                          const newSub: SubGroupConfig = {
+                            id: `sub_${Date.now()}`,
+                            code: nextCode,
+                            name: `Lab ${nextCode}`,
+                            nameAr: `معمل ${nextCode}`,
+                            studentCount: Math.round((formClass.studentCount || 50) / (current.length + 1)),
+                          };
+                          setFormClass({ ...formClass, subgroups: [...current, newSub] });
+                        }}
+                        className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] transition flex items-center gap-1 shadow-xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{isRtl ? 'إضافة معمل' : 'Add Lab'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
+                      {(formClass.subgroups || []).map((sub, sIdx) => (
+                        <div key={sub.id || sIdx} className="flex items-center gap-2 bg-white p-1.5 rounded border border-slate-200 text-xs">
+                          <input
+                            type="text"
+                            value={sub.code}
+                            onChange={(e) => {
+                              const updated = [...(formClass.subgroups || [])];
+                              updated[sIdx] = { ...updated[sIdx], code: e.target.value };
+                              setFormClass({ ...formClass, subgroups: updated });
+                            }}
+                            className="w-12 px-1.5 py-0.5 border border-slate-300 rounded font-mono font-bold text-center text-xs"
+                            placeholder="Code"
+                          />
+                          <input
+                            type="text"
+                            value={sub.name}
+                            onChange={(e) => {
+                              const updated = [...(formClass.subgroups || [])];
+                              updated[sIdx] = { ...updated[sIdx], name: e.target.value };
+                              setFormClass({ ...formClass, subgroups: updated });
+                            }}
+                            className="flex-1 px-1.5 py-0.5 border border-slate-300 rounded text-xs"
+                            placeholder="Name"
+                          />
+                          <input
+                            type="number"
+                            value={sub.studentCount || 25}
+                            onChange={(e) => {
+                              const updated = [...(formClass.subgroups || [])];
+                              updated[sIdx] = { ...updated[sIdx], studentCount: parseInt(e.target.value, 10) || 0 };
+                              setFormClass({ ...formClass, subgroups: updated });
+                            }}
+                            className="w-16 px-1.5 py-0.5 border border-slate-300 rounded text-center text-xs font-mono"
+                            title="Subgroup Capacity"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (formClass.subgroups || []).filter((_, idx) => idx !== sIdx);
+                              setFormClass({ ...formClass, subgroups: updated });
+                            }}
+                            className="p-1 text-rose-600 hover:bg-rose-50 rounded"
+                            title={isRtl ? 'حذف' : 'Remove'}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

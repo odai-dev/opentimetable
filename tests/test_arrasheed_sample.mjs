@@ -79,7 +79,7 @@ describe('Ar-Rasheed Smart University (Sana\'a) Sample Dataset Suite', () => {
       for (const c of data.classes) {
         assert.ok(c.name && c.name.length > 0, `Class ${c.id} must have English name`);
         assert.ok(c.nameAr && c.nameAr.length > 0, `Class ${c.id} must have Arabic name`);
-        assert.strictEqual(c.grade, '2', 'All verified sample sections are Level 2');
+        assert.strictEqual(Number(c.grade), 2, 'All verified sample sections are Level 2');
       }
     });
   });

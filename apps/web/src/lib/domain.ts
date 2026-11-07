@@ -23,6 +23,9 @@ import {
   BasicDataTab,
   DragItem,
   AdvisorDiagnostic,
+  Faculty,
+  AcademicMajor,
+  SubGroupConfig,
 } from './types';
 
 // Re-export standard presentation and interaction types
@@ -43,6 +46,9 @@ export type {
   Placement,
   Conflict,
   AdvisorDiagnostic,
+  Faculty,
+  AcademicMajor,
+  SubGroupConfig,
 };
 
 /**
@@ -741,5 +747,251 @@ export function collectEntityClassrooms(
 
   return roomNames.join(', ');
 }
+
+/**
+ * University academic structure inference & generation helpers
+ */
+
+export interface InferredUniversityStructure {
+  faculties: Faculty[];
+  majors: AcademicMajor[];
+  updatedClasses: ClassGroup[];
+}
+
+/**
+ * Automatically infers university colleges, majors, levels, and lab subgroups
+ * from an array of classes. Ensures backwards compatibility with existing datasets.
+ */
+export function inferUniversityHierarchy(classes: ClassGroup[]): InferredUniversityStructure {
+  const facultyMap = new Map<string, Faculty>();
+  const majorMap = new Map<string, AcademicMajor>();
+
+  // Standard predefined faculties for recognized departments
+  const defaultFaculties: Faculty[] = [
+    {
+      id: 'fac-engineering',
+      name: 'Faculty of Engineering & Technology',
+      nameAr: 'كلية الهندسة والتكنولوجيا',
+      code: 'FET',
+      color: '#3b82f6',
+    },
+    {
+      id: 'fac-medical',
+      name: 'Faculty of Medical & Health Sciences',
+      nameAr: 'كلية العلوم الطبية والصحية',
+      code: 'FMHS',
+      color: '#10b981',
+    },
+    {
+      id: 'fac-business',
+      name: 'Faculty of Financial & Administrative Sciences',
+      nameAr: 'كلية العلوم الإدارية والمالية',
+      code: 'FFAS',
+      color: '#8b5cf6',
+    },
+    {
+      id: 'fac-general',
+      name: 'General University Programs',
+      nameAr: 'برامج الجامعة العامة',
+      code: 'GEN',
+      color: '#64748b',
+    },
+  ];
+
+  for (const f of defaultFaculties) {
+    facultyMap.set(f.id, f);
+  }
+
+  const updatedClasses: ClassGroup[] = classes.map((c) => {
+    // If class already has complete university links, return enriched copy
+    if (c.facultyId && c.majorId) {
+      return {
+        ...c,
+        subgroups: c.subgroups && c.subgroups.length > 0 ? c.subgroups : [
+          { id: `${c.id}-sub-a`, name: `${c.name} - Lab A`, nameAr: `${c.nameAr || c.name} - معمل أ`, code: 'A', studentCount: Math.round((c.studentCount || 50) / 2) },
+          { id: `${c.id}-sub-b`, name: `${c.name} - Lab B`, nameAr: `${c.nameAr || c.name} - معمل ب`, code: 'B', studentCount: Math.round((c.studentCount || 50) / 2) },
+        ],
+      };
+    }
+
+    const nameLower = c.name.toLowerCase();
+    let facultyId = 'fac-engineering';
+    let majorId = 'maj-general';
+    let majorName = 'General Program';
+    let majorNameAr = 'برنامج عام';
+    let majorCode = 'GEN';
+    let groupNum = 1;
+
+    // Detect Cybersecurity
+    if (nameLower.includes('cyber') || nameLower.includes('cys')) {
+      facultyId = 'fac-engineering';
+      majorId = 'maj-cybersecurity';
+      majorName = 'Cybersecurity';
+      majorNameAr = 'الأمن السيبراني';
+      majorCode = 'CYS';
+    }
+    // Detect Artificial Intelligence
+    else if (nameLower.includes('ai') || nameLower.includes('intel') || nameLower.includes('ذكاء')) {
+      facultyId = 'fac-engineering';
+      majorId = 'maj-ai';
+      majorName = 'Artificial Intelligence';
+      majorNameAr = 'الذكاء الاصطناعي';
+      majorCode = 'AI';
+    }
+    // Detect Dentistry
+    else if (nameLower.includes('dent') || nameLower.includes('أسنان') || nameLower.includes('اسنان')) {
+      facultyId = 'fac-medical';
+      majorId = 'maj-dentistry';
+      majorName = 'Dentistry';
+      majorNameAr = 'طب وجراحة الفم والأسنان';
+      majorCode = 'DENT';
+    }
+    // Detect General Medicine / Clinical
+    else if (nameLower.includes('gmm') || nameLower.includes('med') || nameLower.includes('طب')) {
+      facultyId = 'fac-medical';
+      majorId = 'maj-general-medicine';
+      majorName = 'General Medicine';
+      majorNameAr = 'الطب البشري والجراحة';
+      majorCode = 'GMM';
+    }
+    // Detect IT / Computer Science
+    else if (nameLower.includes('cs') || nameLower.includes('it') || nameLower.includes('حاسوب') || nameLower.includes('lab')) {
+      facultyId = 'fac-engineering';
+      majorId = 'maj-cs';
+      majorName = 'Computer Science & IT';
+      majorNameAr = 'علوم الحاسوب وتكنولوجيا المعلومات';
+      majorCode = 'CS';
+    }
+
+    // Extract group number (e.g. G1 -> 1, G2 -> 2)
+    const gMatch = c.name.match(/[-_ ](?:G|Group|الشعبة|شعبة)\s*(\d+)/i);
+    if (gMatch && gMatch[1]) {
+      groupNum = parseInt(gMatch[1], 10);
+    }
+
+    if (!majorMap.has(majorId)) {
+      majorMap.set(majorId, {
+        id: majorId,
+        facultyId,
+        name: majorName,
+        nameAr: majorNameAr,
+        code: majorCode,
+        totalLevels: facultyId === 'fac-medical' ? 5 : 4,
+        degreeType: 'BACHELOR',
+      });
+    }
+
+    const defaultCapacity = c.studentCount || 50;
+    const subCount = Math.round(defaultCapacity / 2);
+
+    const defaultSubgroups: SubGroupConfig[] = c.subgroups && c.subgroups.length > 0
+      ? c.subgroups
+      : [
+          {
+            id: `${c.id}-sub-a`,
+            name: `${c.name} - Lab A`,
+            nameAr: `${c.nameAr || c.name} - معمل أ`,
+            code: 'A',
+            studentCount: subCount,
+          },
+          {
+            id: `${c.id}-sub-b`,
+            name: `${c.name} - Lab B`,
+            nameAr: `${c.nameAr || c.name} - معمل ب`,
+            code: 'B',
+            studentCount: defaultCapacity - subCount,
+          },
+        ];
+
+    return {
+      ...c,
+      facultyId,
+      majorId,
+      groupNumber: groupNum,
+      studentCount: defaultCapacity,
+      subgroups: defaultSubgroups,
+    };
+  });
+
+  // Filter faculties that actually contain registered majors or retain all default
+  const activeFaculties = Array.from(facultyMap.values());
+  const activeMajors = Array.from(majorMap.values());
+
+  return {
+    faculties: activeFaculties,
+    majors: activeMajors,
+    updatedClasses,
+  };
+}
+
+/**
+ * Generates structured university lecture groups and lab subgroups for a given major and level.
+ */
+export interface GenerateUniversityGroupsParams {
+  majorId: string;
+  facultyId: string;
+  majorName: string;
+  majorNameAr?: string;
+  majorCode: string;
+  level: number;
+  groupCount: number;
+  subgroupsPerGroup: number;
+  groupCapacity: number;
+  subgroupCapacity: number;
+}
+
+export function generateUniversityGroups(params: GenerateUniversityGroupsParams): ClassGroup[] {
+  const {
+    majorId,
+    facultyId,
+    majorName,
+    majorNameAr,
+    majorCode,
+    level,
+    groupCount,
+    subgroupsPerGroup,
+    groupCapacity,
+    subgroupCapacity,
+  } = params;
+
+  const newClasses: ClassGroup[] = [];
+
+  for (let g = 1; g <= groupCount; g++) {
+    const classId = `C_${majorCode}_L${level}_G${g}`;
+    const className = `${majorCode}-L${level}-G${g}`;
+    const classNameAr = `${majorNameAr || majorName} - مستوى ${level} - شعبة ${g}`;
+
+    const subgroups: SubGroupConfig[] = [];
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const arabicLetters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+
+    for (let s = 0; s < subgroupsPerGroup; s++) {
+      const code = letters[s] || `${s + 1}`;
+      const codeAr = arabicLetters[s] || `${s + 1}`;
+      subgroups.push({
+        id: `${classId}-sub-${code.toLowerCase()}`,
+        name: `Group ${g} - Lab ${code}`,
+        nameAr: `شعبة ${g} - معمل ${codeAr}`,
+        code: `${g}${code}`,
+        studentCount: subgroupCapacity,
+      });
+    }
+
+    newClasses.push({
+      id: classId,
+      name: className,
+      nameAr: classNameAr,
+      grade: level,
+      facultyId,
+      majorId,
+      groupNumber: g,
+      studentCount: groupCapacity,
+      subgroups,
+    });
+  }
+
+  return newClasses;
+}
+
 
 

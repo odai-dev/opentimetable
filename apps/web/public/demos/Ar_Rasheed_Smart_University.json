@@ -263,46 +263,209 @@
       "color": "#10b981"
     }
   ],
+  "faculties": [
+    {
+      "id": "fac-engineering",
+      "name": "Faculty of Engineering & Technology",
+      "nameAr": "كلية الهندسة والتكنولوجيا",
+      "code": "FET",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "fac-medical",
+      "name": "Faculty of Medical & Health Sciences",
+      "nameAr": "كلية العلوم الطبية والصحية",
+      "code": "FMHS",
+      "color": "#10b981"
+    }
+  ],
+  "majors": [
+    {
+      "id": "maj-cybersecurity",
+      "facultyId": "fac-engineering",
+      "name": "Cybersecurity",
+      "nameAr": "الأمن السيبراني",
+      "code": "CYS",
+      "totalLevels": 4,
+      "degreeType": "BACHELOR"
+    },
+    {
+      "id": "maj-ai",
+      "facultyId": "fac-engineering",
+      "name": "Artificial Intelligence",
+      "nameAr": "الذكاء الاصطناعي",
+      "code": "AI",
+      "totalLevels": 4,
+      "degreeType": "BACHELOR"
+    },
+    {
+      "id": "maj-gmm",
+      "facultyId": "fac-engineering",
+      "name": "Graphic & Multimedia",
+      "nameAr": "الجرافيكس والوسائط المتعددة",
+      "code": "GMM",
+      "totalLevels": 4,
+      "degreeType": "BACHELOR"
+    },
+    {
+      "id": "maj-dentistry",
+      "facultyId": "fac-medical",
+      "name": "Dentistry",
+      "nameAr": "طب وجراحة الفم والأسنان",
+      "code": "DENT",
+      "totalLevels": 5,
+      "degreeType": "BACHELOR"
+    },
+    {
+      "id": "maj-medlab",
+      "facultyId": "fac-medical",
+      "name": "Medical Laboratories",
+      "nameAr": "المختبرات الطبية",
+      "code": "MLAB",
+      "totalLevels": 4,
+      "degreeType": "BACHELOR"
+    }
+  ],
   "classes": [
     {
       "id": "C_CYS_L2_G1",
       "name": "CyberSecuirtyLevel2-G1",
       "short": "CYS-L2-G1",
       "nameAr": "الأمن السيبراني - المستوى 2 - قاعة 1",
-      "grade": "2",
-      "color": "#0284c7"
+      "grade": 2,
+      "color": "#0284c7",
+      "facultyId": "fac-engineering",
+      "majorId": "maj-cybersecurity",
+      "groupNumber": 1,
+      "studentCount": 50,
+      "subgroups": [
+        {
+          "id": "C_CYS_L2_G1-sub-a",
+          "name": "Group 1 - Lab A",
+          "nameAr": "شعبة 1 - معمل أ",
+          "code": "1A",
+          "studentCount": 25
+        },
+        {
+          "id": "C_CYS_L2_G1-sub-b",
+          "name": "Group 1 - Lab B",
+          "nameAr": "شعبة 1 - معمل ب",
+          "code": "1B",
+          "studentCount": 25
+        }
+      ]
     },
     {
       "id": "C_AI_L2_G1",
       "name": "Artificial Intelligence-L2-G1",
       "short": "AI-L2-G1",
       "nameAr": "الذكاء الاصطناعي - المستوى 2 - قاعة 1",
-      "grade": "2",
-      "color": "#7c3aed"
+      "grade": 2,
+      "color": "#7c3aed",
+      "facultyId": "fac-engineering",
+      "majorId": "maj-ai",
+      "groupNumber": 1,
+      "studentCount": 50,
+      "subgroups": [
+        {
+          "id": "C_AI_L2_G1-sub-a",
+          "name": "Group 1 - Lab A",
+          "nameAr": "شعبة 1 - معمل أ",
+          "code": "1A",
+          "studentCount": 25
+        },
+        {
+          "id": "C_AI_L2_G1-sub-b",
+          "name": "Group 1 - Lab B",
+          "nameAr": "شعبة 1 - معمل ب",
+          "code": "1B",
+          "studentCount": 25
+        }
+      ]
     },
     {
       "id": "C_DENT_L2",
       "name": "Denstistry-L2",
       "short": "Dent-L2",
       "nameAr": "طب وجراحة الفم والأسنان - المستوى 2",
-      "grade": "2",
-      "color": "#0891b2"
+      "grade": 2,
+      "color": "#0891b2",
+      "facultyId": "fac-medical",
+      "majorId": "maj-dentistry",
+      "groupNumber": 1,
+      "studentCount": 45,
+      "subgroups": [
+        {
+          "id": "C_DENT_L2-sub-a",
+          "name": "Clinic Section A",
+          "nameAr": "عيادة سريرية أ",
+          "code": "A",
+          "studentCount": 22
+        },
+        {
+          "id": "C_DENT_L2-sub-b",
+          "name": "Clinic Section B",
+          "nameAr": "عيادة سريرية ب",
+          "code": "B",
+          "studentCount": 23
+        }
+      ]
     },
     {
       "id": "C_GMM_L2_G1A",
       "name": "Graphics and Multimedia-L2- G1-A",
       "short": "GMM-L2-G1A",
       "nameAr": "الجرافيك والوسائط - المستوى 2 - م1-أ",
-      "grade": "2",
-      "color": "#db2777"
+      "grade": 2,
+      "color": "#db2777",
+      "facultyId": "fac-engineering",
+      "majorId": "maj-gmm",
+      "groupNumber": 1,
+      "studentCount": 35,
+      "subgroups": [
+        {
+          "id": "C_GMM_L2_G1A-sub-a",
+          "name": "Design Lab A",
+          "nameAr": "معمل تصميم أ",
+          "code": "1A",
+          "studentCount": 18
+        },
+        {
+          "id": "C_GMM_L2_G1A-sub-b",
+          "name": "Design Lab B",
+          "nameAr": "معمل تصميم ب",
+          "code": "1B",
+          "studentCount": 17
+        }
+      ]
     },
     {
       "id": "C_LAB_L2",
       "name": "Laboratory -L2",
       "short": "Lab-L2",
       "nameAr": "المختبرات الطبية - المستوى 2",
-      "grade": "2",
-      "color": "#059669"
+      "grade": 2,
+      "color": "#059669",
+      "facultyId": "fac-medical",
+      "majorId": "maj-medlab",
+      "groupNumber": 1,
+      "studentCount": 40,
+      "subgroups": [
+        {
+          "id": "C_LAB_L2-sub-a",
+          "name": "Histology Lab A",
+          "nameAr": "معمل أنسجة أ",
+          "code": "A",
+          "studentCount": 20
+        },
+        {
+          "id": "C_LAB_L2-sub-b",
+          "name": "Histology Lab B",
+          "nameAr": "معمل أنسجة ب",
+          "code": "B",
+          "studentCount": 20
+        }
+      ]
     }
   ],
   "rooms": [

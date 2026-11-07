@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   Layers,
 } from 'lucide-react';
-import { ViewMode, ClassGroup, Teacher, Room, Conflict } from '../lib/types';
+import { ViewMode, ClassGroup, Teacher, Room, Conflict, Faculty, AcademicMajor } from '../lib/types';
 import { translations } from '../lib/i18n';
 
 interface ViewNavigatorProps {
@@ -18,6 +18,8 @@ interface ViewNavigatorProps {
   classes: ClassGroup[];
   teachers: Teacher[];
   rooms: Room[];
+  faculties?: Faculty[];
+  majors?: AcademicMajor[];
   conflicts: Conflict[];
   totalLessons: number;
   placedLessonsCount: number;
@@ -34,6 +36,8 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
   classes,
   teachers,
   rooms,
+  faculties = [],
+  majors = [],
   conflicts,
   totalLessons,
   placedLessonsCount,
@@ -43,6 +47,10 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
 }) => {
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
+
+  // Cascading filters for university structure navigation
+  const [navFacultyId, setNavFacultyId] = React.useState<string>('ALL');
+  const [navMajorId, setNavMajorId] = React.useState<string>('ALL');
 
   const viewTabs: { mode: ViewMode; labelEn: string; labelAr: string }[] = [
     { mode: 'class', labelEn: 'Levels & Sections', labelAr: 'المستويات والشعب' },
@@ -64,10 +72,36 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
     }
   };
 
+  // Filter classes according to cascading university filters
+  const filteredClasses = React.useMemo(() => {
+    return classes.filter((c) => {
+      const matchFac = navFacultyId === 'ALL' || c.facultyId === navFacultyId;
+      const matchMaj = navMajorId === 'ALL' || c.majorId === navMajorId;
+      return matchFac && matchMaj;
+    });
+  }, [classes, navFacultyId, navMajorId]);
+
+  // Keep selection valid when filters change
+  React.useEffect(() => {
+    if (viewMode === 'class' && filteredClasses.length > 0) {
+      if (!filteredClasses.some((c) => c.id === selectedEntityId)) {
+        setSelectedEntityId(filteredClasses[0].id);
+      }
+    }
+  }, [filteredClasses, selectedEntityId, setSelectedEntityId, viewMode]);
+
   // Get active entities list for navigation
   const entities = React.useMemo(() => {
     if (viewMode === 'class') {
-      return classes.map((c) => ({ id: c.id, label: isRtl ? c.nameAr || c.name : c.name }));
+      return filteredClasses.map((c) => {
+        const maj = majors.find((m) => m.id === c.majorId);
+        const prefix = maj ? `[${maj.code}] ` : '';
+        const cap = c.studentCount ? ` (👥 ${c.studentCount})` : '';
+        return {
+          id: c.id,
+          label: `${prefix}${isRtl ? c.nameAr || c.name : c.name}${cap}`,
+        };
+      });
     }
     if (viewMode === 'teacher') {
       return teachers.map((tc) => ({
@@ -82,7 +116,7 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
       }));
     }
     return [];
-  }, [viewMode, classes, teachers, rooms, isRtl]);
+  }, [viewMode, filteredClasses, teachers, rooms, majors, isRtl]);
 
   const currentIndex = entities.findIndex((e) => e.id === selectedEntityId);
 
@@ -124,6 +158,44 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
           })}
         </div>
 
+        {/* Cascading University Filters for Class View */}
+        {viewMode === 'class' && faculties.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <select
+              value={navFacultyId}
+              onChange={(e) => {
+                setNavFacultyId(e.target.value);
+                setNavMajorId('ALL');
+              }}
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-slate-700 font-medium text-xs shadow-xs focus:ring-1 focus:ring-sky-500"
+              title={isRtl ? 'فلترة حسب الكلية' : 'Filter by College'}
+            >
+              <option value="ALL">{isRtl ? '🏛️ كل الكليات' : '🏛️ All Colleges'}</option>
+              {faculties.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {isRtl ? f.nameAr || f.name : f.code}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={navMajorId}
+              onChange={(e) => setNavMajorId(e.target.value)}
+              className="bg-white border border-slate-300 rounded px-2 py-1 text-slate-700 font-medium text-xs shadow-xs focus:ring-1 focus:ring-sky-500"
+              title={isRtl ? 'فلترة حسب التخصص' : 'Filter by Major'}
+            >
+              <option value="ALL">{isRtl ? '🎓 كل التخصصات' : '🎓 All Majors'}</option>
+              {majors
+                .filter((m) => navFacultyId === 'ALL' || m.facultyId === navFacultyId)
+                .map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {isRtl ? m.nameAr || m.name : m.code}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
         <span className="font-semibold text-slate-600 hidden sm:inline">
           {t.viewNav.showing}
         </span>
@@ -141,7 +213,7 @@ export const ViewNavigator: React.FC<ViewNavigatorProps> = ({
             <select
               value={selectedEntityId}
               onChange={(e) => setSelectedEntityId(e.target.value)}
-              className="bg-transparent font-bold text-slate-800 px-3 py-1 focus:outline-none cursor-pointer text-xs"
+              className="bg-transparent font-bold text-slate-800 px-3 py-1 focus:outline-none cursor-pointer text-xs max-w-[280px] truncate"
             >
               {entities.map((e) => (
                 <option key={e.id} value={e.id}>

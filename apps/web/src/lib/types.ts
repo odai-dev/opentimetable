@@ -31,11 +31,42 @@ export interface Teacher {
   maxDailyHours?: number;
 }
 
+export interface Faculty {
+  id: string;
+  name: string;
+  nameAr?: string;
+  code: string;
+  color?: string;
+}
+
+export interface AcademicMajor {
+  id: string;
+  facultyId: string;
+  name: string;
+  nameAr?: string;
+  code: string;
+  totalLevels: number;
+  degreeType?: 'BACHELOR' | 'MASTER' | 'DIPLOMA';
+}
+
+export interface SubGroupConfig {
+  id: string;
+  name: string;
+  nameAr?: string;
+  code: string;
+  studentCount?: number;
+}
+
 export interface ClassGroup {
   id: string;
   name: string;
   nameAr?: string;
   grade: number;
+  facultyId?: string;
+  majorId?: string;
+  groupNumber?: number;
+  studentCount?: number;
+  subgroups?: SubGroupConfig[];
   unavailableSlots?: number[];
   homeRoomId?: string;
 }

@@ -22,10 +22,19 @@ import {
   Student,
   CourseGroup,
   AdvisorDiagnostic,
+  Faculty,
+  AcademicMajor,
+  SubGroupConfig,
 } from '../lib/types';
 import { parseRozBinary } from '../lib/roz-parser';
 import { serializeRozBinary, downloadRozFile } from '../lib/roz-serializer';
-import { isSplitExempt, extractSlotsFromTimeOffMatrix } from '../lib/domain';
+import {
+  isSplitExempt,
+  extractSlotsFromTimeOffMatrix,
+  inferUniversityHierarchy,
+  generateUniversityGroups,
+  GenerateUniversityGroupsParams,
+} from '../lib/domain';
 import { downloadAscttXml } from '../lib/export-xml';
 import { RibbonToolbar } from '../components/RibbonToolbar';
 import { ViewNavigator } from '../components/ViewNavigator';
@@ -121,6 +130,8 @@ export default function TimetableStudioPage() {
   // Dynamic entities state initialized with clean empty defaults (no 5-teacher mock data)
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<ClassGroup[]>([]);
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [majors, setMajors] = useState<AcademicMajor[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -287,8 +298,11 @@ export default function TimetableStudioPage() {
     (buffer: ArrayBuffer | Uint8Array, fileName: string) => {
       try {
         const parsed = parseRozBinary(buffer, fileName);
+        const inferred = inferUniversityHierarchy(parsed.mapped.classes);
         setTeachers(parsed.mapped.teachers);
-        setClasses(parsed.mapped.classes);
+        setClasses(inferred.updatedClasses);
+        setFaculties(inferred.faculties);
+        setMajors(inferred.majors);
         setRooms(parsed.mapped.rooms);
         setSubjects(parsed.mapped.subjects);
         setLessons(parsed.mapped.lessons);
@@ -368,8 +382,11 @@ export default function TimetableStudioPage() {
           const text = await file.text();
           const parsed = JSON.parse(text);
           if (parsed && (Array.isArray(parsed.teachers) || Array.isArray(parsed.classes))) {
+            const inferred = inferUniversityHierarchy(parsed.classes || []);
             setTeachers(parsed.teachers || []);
-            setClasses(parsed.classes || []);
+            setClasses(inferred.updatedClasses);
+            setFaculties(Array.isArray(parsed.faculties) ? parsed.faculties : inferred.faculties);
+            setMajors(Array.isArray(parsed.majors) ? parsed.majors : inferred.majors);
             setRooms(parsed.rooms || []);
             setSubjects(parsed.subjects || []);
             setLessons(parsed.lessons || []);
@@ -384,8 +401,8 @@ export default function TimetableStudioPage() {
             setHistory([]);
             setRedoStack([]);
 
-            if (parsed.classes && parsed.classes.length > 0) {
-              setSelectedEntityId(parsed.classes[0].id);
+            if (inferred.updatedClasses.length > 0) {
+              setSelectedEntityId(inferred.updatedClasses[0].id);
               setViewMode('class');
             } else if (parsed.teachers && parsed.teachers.length > 0) {
               setSelectedEntityId(parsed.teachers[0].id);
@@ -433,8 +450,11 @@ export default function TimetableStudioPage() {
           const res = await fetch('/demos/Ar_Rasheed_Smart_University.json');
           if (res.ok) {
             const data = await res.json();
+            const inferred = inferUniversityHierarchy(data.classes || []);
             if (Array.isArray(data.teachers)) setTeachers(data.teachers);
-            if (Array.isArray(data.classes)) setClasses(data.classes);
+            setClasses(inferred.updatedClasses);
+            setFaculties(Array.isArray(data.faculties) ? data.faculties : inferred.faculties);
+            setMajors(Array.isArray(data.majors) ? data.majors : inferred.majors);
             if (Array.isArray(data.rooms)) setRooms(data.rooms);
             if (Array.isArray(data.subjects)) setSubjects(data.subjects);
             if (Array.isArray(data.lessons)) setLessons(data.lessons);
@@ -556,7 +576,12 @@ export default function TimetableStudioPage() {
           ) {
             if (isMounted) {
               if (Array.isArray(targetState.teachers)) setTeachers(targetState.teachers);
-              if (Array.isArray(targetState.classes)) setClasses(targetState.classes);
+              if (Array.isArray(targetState.classes)) {
+                const inferred = inferUniversityHierarchy(targetState.classes);
+                setClasses(inferred.updatedClasses);
+                setFaculties(Array.isArray(targetState.faculties) ? targetState.faculties : inferred.faculties);
+                setMajors(Array.isArray(targetState.majors) ? targetState.majors : inferred.majors);
+              }
               if (Array.isArray(targetState.rooms)) setRooms(targetState.rooms);
               if (Array.isArray(targetState.subjects)) setSubjects(targetState.subjects);
               if (Array.isArray(targetState.lessons)) setLessons(targetState.lessons);
@@ -608,6 +633,8 @@ export default function TimetableStudioPage() {
       const stateToSave = {
         teachers,
         classes,
+        faculties,
+        majors,
         rooms,
         subjects,
         lessons,
@@ -630,6 +657,8 @@ export default function TimetableStudioPage() {
   }, [
     teachers,
     classes,
+    faculties,
+    majors,
     rooms,
     subjects,
     lessons,
@@ -872,6 +901,8 @@ export default function TimetableStudioPage() {
       const stateToSave = {
         teachers,
         classes,
+        faculties,
+        majors,
         rooms,
         subjects,
         lessons,
@@ -969,6 +1000,8 @@ export default function TimetableStudioPage() {
       const stateToSave = {
         teachers,
         classes,
+        faculties,
+        majors,
         rooms,
         subjects,
         lessons,
@@ -1483,6 +1516,19 @@ export default function TimetableStudioPage() {
     if (selectedEntityId === id) {
       const remaining = classes.filter((c) => c.id !== id);
       if (remaining.length > 0) setSelectedEntityId(remaining[0].id);
+    }
+  };
+
+  const handleGenerateUniversityGroups = (params: GenerateUniversityGroupsParams) => {
+    const newGroups = generateUniversityGroups(params);
+    setClasses((prev) => {
+      const newIds = new Set(newGroups.map((g) => g.id));
+      const filtered = prev.filter((c) => !newIds.has(c.id));
+      return [...filtered, ...newGroups];
+    });
+    if (newGroups.length > 0) {
+      setSelectedEntityId(newGroups[0].id);
+      setViewMode('class');
     }
   };
 
@@ -2113,6 +2159,8 @@ export default function TimetableStudioPage() {
           classes={classes}
           teachers={teachers}
           rooms={rooms}
+          faculties={faculties}
+          majors={majors}
           conflicts={conflicts}
           totalLessons={lessons.length}
           placedLessonsCount={placements.length}
@@ -2280,6 +2328,15 @@ export default function TimetableStudioPage() {
         initialTab={basicDataInitialTab}
         subjects={subjects}
         classes={classes}
+        faculties={faculties}
+        majors={majors}
+        onAddFaculty={(f) => setFaculties((prev) => [...prev, f])}
+        onEditFaculty={(f) => setFaculties((prev) => prev.map((item) => (item.id === f.id ? f : item)))}
+        onDeleteFaculty={(id) => setFaculties((prev) => prev.filter((item) => item.id !== id))}
+        onAddMajor={(m) => setMajors((prev) => [...prev, m])}
+        onEditMajor={(m) => setMajors((prev) => prev.map((item) => (item.id === m.id ? m : item)))}
+        onDeleteMajor={(id) => setMajors((prev) => prev.filter((item) => item.id !== id))}
+        onGenerateUniversityGroups={handleGenerateUniversityGroups}
         rooms={rooms}
         teachers={teachers}
         lessons={lessons}

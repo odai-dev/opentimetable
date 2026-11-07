@@ -588,6 +588,21 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                             ? (classShortCode || classFullName || teacherShortName)
                             : (cardLayout ? getFieldText(cardLayout.line3) : (room ? (isRtl ? room.nameAr || room.name : room.name) : 'N/A'));
 
+                          // Capacity & Headcount Validation
+                          const isSplit = lesson.isSplitGroup || Boolean(lesson.groupName);
+                          let targetHeadcount = targetClass?.studentCount || 50;
+                          if (isSplit && targetClass?.subgroups && targetClass.subgroups.length > 0) {
+                            const matchedSub = targetClass.subgroups.find(
+                              (sg) => sg.code === lesson.groupName || sg.name === lesson.groupName || sg.id === lesson.groupId
+                            );
+                            if (matchedSub?.studentCount) {
+                              targetHeadcount = matchedSub.studentCount;
+                            } else {
+                              targetHeadcount = Math.round(targetHeadcount / 2);
+                            }
+                          }
+                          const hasCapacityWarning = Boolean(room && room.capacity && room.capacity < targetHeadcount);
+
                           return (
                             <td
                               key={`${dIdx}-${pIdx}`}
@@ -685,6 +700,14 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({
                                       {groupBadge && (
                                         <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-800 font-bold border border-amber-300/60 truncate max-w-[36px]" title={groupBadge}>
                                           {groupBadge}
+                                        </span>
+                                      )}
+                                      {hasCapacityWarning && (
+                                        <span
+                                          className="text-[8px] px-1 rounded bg-rose-100 text-rose-800 font-bold border border-rose-300"
+                                          title={isRtl ? `تنبيه السعة: ${targetHeadcount} طالب في قاعة سعتها ${room?.capacity}` : `Capacity alert: ${targetHeadcount} students in room capacity ${room?.capacity}`}
+                                        >
+                                          ⚠️ {targetHeadcount}/{room?.capacity}
                                         </span>
                                       )}
                                     </div>

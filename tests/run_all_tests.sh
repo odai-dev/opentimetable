@@ -62,6 +62,9 @@ node --test tests/test_university_asc_print_parity.mjs
 echo "==> Running Ar-Rasheed Smart University (Sana'a) Sample Dataset Verification Suite..."
 node --test tests/test_arrasheed_sample.mjs
 
+echo "==> Running University Structure & Configuration Parity Suite..."
+node --test tests/test_university_structure_config.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="
