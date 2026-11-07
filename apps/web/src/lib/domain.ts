@@ -22,6 +22,7 @@ import {
   AvailabilityState,
   BasicDataTab,
   DragItem,
+  AdvisorDiagnostic,
 } from './types';
 
 // Re-export standard presentation and interaction types
@@ -41,6 +42,7 @@ export type {
   Lesson,
   Placement,
   Conflict,
+  AdvisorDiagnostic,
 };
 
 /**
@@ -338,5 +340,283 @@ export function isSplitExempt(l1: Lesson, l2: Lesson): boolean {
 
   // If one or both are split lessons with distinct IDs
   return l1.id !== l2.id;
+}
+
+/**
+ * Diagnostic analysis engine evaluating mathematical solvability & bottlenecks (R4, WF-SOL-02, WF-SOL-04)
+ */
+export function analyzeFeasibilityDiagnostics(params: {
+  teachers: Teacher[];
+  classes: ClassGroup[];
+  rooms: Room[];
+  subjects: Subject[];
+  lessons: Lesson[];
+  cycleDays: number;
+  periodsPerDay: number;
+  timeOffMatrix?: Record<string, AvailabilityState>;
+}): AdvisorDiagnostic[] {
+  const {
+    teachers = [],
+    classes = [],
+    rooms = [],
+    subjects = [],
+    lessons = [],
+    cycleDays,
+    periodsPerDay,
+    timeOffMatrix = {},
+  } = params;
+
+  const totalCycleSlots = cycleDays * periodsPerDay;
+  const list: AdvisorDiagnostic[] = [];
+
+  // 1. Faculty Workload vs Available Unblocked Slots (Pigeonhole Principle)
+  const teacherLessonHours = new Map<string, number>();
+  for (const l of lessons) {
+    const dur = l.duration || 1;
+    teacherLessonHours.set(l.teacherId, (teacherLessonHours.get(l.teacherId) || 0) + dur);
+  }
+
+  for (const teacher of teachers) {
+    const requiredHours = teacherLessonHours.get(teacher.id) || 0;
+    if (requiredHours === 0) continue;
+
+    // Count blocked slots
+    let blockedCount = 0;
+    const blockedSlots: number[] = [];
+    for (let d = 0; d < cycleDays; d++) {
+      for (let p = 0; p < periodsPerDay; p++) {
+        const key = `${teacher.id}-${d}-${p}`;
+        if (timeOffMatrix[key] === 0) {
+          blockedCount++;
+          blockedSlots.push(d * periodsPerDay + p);
+        }
+      }
+    }
+
+    const availableSlots = totalCycleSlots - blockedCount;
+    if (requiredHours > availableSlots) {
+      const shortage = requiredHours - availableSlots;
+      list.push({
+        id: `ADV_PIGEONHOLE_${teacher.id}`,
+        type: 'PIGEONHOLE_TEACHER',
+        severity: 'CRITICAL',
+        title: `Impossible Schedule for Faculty Member: ${teacher.name}`,
+        titleAr: `استحالة رياضية لتسكين جدول عضو هيئة التدريس: ${teacher.nameAr || teacher.name}`,
+        analysis: `Faculty member ${teacher.name} has ${requiredHours} required weekly lecture hours, but only ${availableSlots} available slots due to ${blockedCount} blocked lecture slots in Time-Off (Deficit: ${shortage} lectures).`,
+        analysisAr: `عضو هيئة التدريس ${teacher.nameAr || teacher.name} مطلوب منه تدريس ${requiredHours} محاضرة، بينما المتاح له فقط ${availableSlots} محاضرة بسبب حظر ${blockedCount} محاضرة في جدول تفريغه (العجز: ${shortage} محاضرة). التسكين مستحيل رياضياً.`,
+        suggestedAction: `Unblock at least ${shortage} lecture slots in ${teacher.name}'s Time-Off schedule.`,
+        suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} محاضرة في جدول تفريغ عضو هيئة التدريس ${teacher.nameAr || teacher.name}.`,
+        actionPayload: {
+          type: 'UNBLOCK_TIMEOFF',
+          teacherId: teacher.id,
+          slots: blockedSlots.slice(0, shortage),
+        },
+      });
+    }
+  }
+
+  // 2. Hall & Lab Type Depletion Bottleneck
+  const roomTypeCounts = new Map<string, number>();
+  for (const r of rooms) {
+    if (r.type && r.type !== 'STANDARD') {
+      roomTypeCounts.set(r.type, (roomTypeCounts.get(r.type) || 0) + 1);
+    }
+  }
+
+  const roomTypeDemand = new Map<string, number>();
+  for (const l of lessons) {
+    const sub = subjects.find((s) => s.id === l.subjectId);
+    if (sub?.requiredRoomType && sub.requiredRoomType !== 'STANDARD') {
+      const dur = l.duration || 1;
+      roomTypeDemand.set(
+        sub.requiredRoomType,
+        (roomTypeDemand.get(sub.requiredRoomType) || 0) + dur
+      );
+    }
+  }
+
+  for (const [rType, demandedHours] of roomTypeDemand.entries()) {
+    const physicalRooms = roomTypeCounts.get(rType) || 0;
+    const totalAvailableLabHours = physicalRooms * totalCycleSlots;
+    if (demandedHours > totalAvailableLabHours) {
+      list.push({
+        id: `ADV_ROOM_${rType}`,
+        type: 'ROOM_BOTTLENECK',
+        severity: 'CRITICAL',
+        title: `Severe Hall / Lab Shortage: ${rType}`,
+        titleAr: `عجز حاد في قاعات / معامل: ${rType}`,
+        analysis: `Total weekly demand for ${rType} is ${demandedHours} hours, but the institution only has ${physicalRooms} hall(s)/lab(s) of this type (${totalAvailableLabHours} max capacity).`,
+        analysisAr: `الطلب الأسبوعي على قاعات/معامل (${rType}) هو ${demandedHours} محاضرة، بينما المؤسسة تمتلك فقط ${physicalRooms} قاعة/معمل بطاقة قصوى ${totalAvailableLabHours} محاضرة.`,
+        suggestedAction: `Allow general lecture hall fallback or add another ${rType} facility.`,
+        suggestedActionAr: `السماح باستخدام المدرجات والقاعات العامة كبديل أو إضافة قاعة/معمل ${rType} إضافي.`,
+        actionPayload: {
+          type: 'FALLBACK_ROOM',
+          roomId: rType,
+        },
+      });
+    }
+  }
+
+  // 3. Group / Section Load Overload
+  const classTotalHours = new Map<string, number>();
+  for (const l of lessons) {
+    const dur = l.duration || 1;
+    classTotalHours.set(l.classId, (classTotalHours.get(l.classId) || 0) + dur);
+  }
+
+  for (const cls of classes) {
+    const totalH = classTotalHours.get(cls.id) || 0;
+    if (totalH > totalCycleSlots) {
+      list.push({
+        id: `ADV_CLASS_${cls.id}`,
+        type: 'UNRESOLVABLE_CLASH',
+        severity: 'CRITICAL',
+        title: `Over-allocated Curriculum for Section: ${cls.name}`,
+        titleAr: `حمولة محاضرات زائدة للدفعة/الشعبة: ${cls.nameAr || cls.name}`,
+        analysis: `Group/Section ${cls.name} has ${totalH} assigned weekly hours, which exceeds the entire cycle capacity of ${totalCycleSlots} lecture slots.`,
+        analysisAr: `الدفعة/الشعبة ${cls.nameAr || cls.name} تم إسناد ${totalH} محاضرة لها أسبوعياً، وهو ما يتجاوز الطاقة القصوى لكامل الأسبوع (${totalCycleSlots} محاضرة).`,
+        suggestedAction: `Reduce weekly lectures for this group/section by ${totalH - totalCycleSlots} lectures.`,
+        suggestedActionAr: `تقليص المحاضرات الأسبوعية لهذه الدفعة/الشعبة بمقدار ${totalH - totalCycleSlots} محاضرة.`,
+      });
+    }
+  }
+
+  return list;
+}
+
+/**
+ * Independent constraint validator for schedules (R4, WF-SOL-05)
+ * Verifies 0 hard teacher, class, room, or time-off clashes.
+ */
+export function validateScheduleConstraints(params: {
+  placements: Placement[];
+  lessons: Lesson[];
+  teachers: Teacher[];
+  classes: ClassGroup[];
+  rooms: Room[];
+  cycleDays: number;
+  periodsPerDay: number;
+  timeOffMatrix?: Record<string, AvailabilityState>;
+}): { isValid: boolean; conflicts: Conflict[] } {
+  const {
+    placements,
+    lessons,
+    teachers,
+    classes,
+    rooms,
+    cycleDays: _cycleDays,
+    periodsPerDay,
+    timeOffMatrix = {},
+  } = params;
+
+  const lessonMap = new Map(lessons.map((l) => [l.id, l]));
+  const teacherMap = new Map(teachers.map((t) => [t.id, t]));
+  const classMap = new Map(classes.map((c) => [c.id, c]));
+  const roomMap = new Map(rooms.map((r) => [r.id, r]));
+
+  const conflicts: Conflict[] = [];
+
+  // Group placements by occupied period slots
+  const slotOccupancy = new Map<number, Placement[]>();
+
+  for (const p of placements) {
+    const l = lessonMap.get(p.lessonId);
+    const duration = l?.duration || 1;
+    for (let offset = 0; offset < duration; offset++) {
+      const period = p.periodIndex + offset;
+      if (period >= periodsPerDay) continue;
+      const slotIndex = p.dayIndex * periodsPerDay + period;
+      const list = slotOccupancy.get(slotIndex) || [];
+      list.push(p);
+      slotOccupancy.set(slotIndex, list);
+
+      // Check time-off unavailability
+      if (l) {
+        // Teacher time-off
+        const tKey = `${l.teacherId}-${p.dayIndex}-${period}`;
+        if (timeOffMatrix[tKey] === 0) {
+          conflicts.push({
+            type: 'UNAVAILABLE_SLOT',
+            lessonId: l.id,
+            message: `Teacher ${teacherMap.get(l.teacherId)?.name || l.teacherId} is unavailable at Day ${p.dayIndex + 1}, Period ${period + 1}`,
+            messageAr: `المعلم غير متاح في اليوم ${p.dayIndex + 1}، الحصة ${period + 1}`,
+          });
+        }
+        // Class time-off
+        const cKey = `${l.classId}-${p.dayIndex}-${period}`;
+        if (timeOffMatrix[cKey] === 0) {
+          conflicts.push({
+            type: 'UNAVAILABLE_SLOT',
+            lessonId: l.id,
+            message: `Class ${classMap.get(l.classId)?.name || l.classId} is unavailable at Day ${p.dayIndex + 1}, Period ${period + 1}`,
+            messageAr: `الفصل غير متاح في اليوم ${p.dayIndex + 1}، الحصة ${period + 1}`,
+          });
+        }
+      }
+    }
+  }
+
+  // Check pairwise clashes within each slot
+  for (const [slotIndex, slotPlacements] of slotOccupancy.entries()) {
+    if (slotPlacements.length < 2) continue;
+    const day = Math.floor(slotIndex / periodsPerDay);
+    const period = slotIndex % periodsPerDay;
+
+    for (let i = 0; i < slotPlacements.length; i++) {
+      const p1 = slotPlacements[i];
+      const l1 = lessonMap.get(p1.lessonId);
+      if (!l1) continue;
+
+      for (let j = i + 1; j < slotPlacements.length; j++) {
+        const p2 = slotPlacements[j];
+        const l2 = lessonMap.get(p2.lessonId);
+        if (!l2) continue;
+
+        // 1. Teacher Clash
+        const t1Teachers = [l1.teacherId, ...(l1.teacherIds || []), ...(l1.coTeacherIds || [])];
+        const t2Teachers = [l2.teacherId, ...(l2.teacherIds || []), ...(l2.coTeacherIds || [])];
+        const sharedTeacher = t1Teachers.find((t) => t && t2Teachers.includes(t));
+        if (sharedTeacher) {
+          const tName = teacherMap.get(sharedTeacher)?.name || sharedTeacher;
+          conflicts.push({
+            type: 'TEACHER_CLASH',
+            lessonId: l1.id,
+            message: `Teacher clash: ${tName} assigned to both lessons at Day ${day + 1}, Period ${period + 1}`,
+            messageAr: `تعارض معلم: ${tName} مخصص لحصتين في نفس الوقت`,
+          });
+        }
+
+        // 2. Class Clash (unless split group exempt)
+        const c1Classes = [l1.classId, ...(l1.classIds || []), ...(l1.jointClassIds || [])];
+        const c2Classes = [l2.classId, ...(l2.classIds || []), ...(l2.jointClassIds || [])];
+        const sharedClass = c1Classes.find((c) => c && c2Classes.includes(c));
+        if (sharedClass && !isSplitExempt(l1, l2)) {
+          const cName = classMap.get(sharedClass)?.name || sharedClass;
+          conflicts.push({
+            type: 'CLASS_CLASH',
+            lessonId: l1.id,
+            message: `Class clash: ${cName} assigned to both lessons at Day ${day + 1}, Period ${period + 1}`,
+            messageAr: `تعارض فصل: ${cName} مخصص لحصتين في نفس الوقت`,
+          });
+        }
+
+        // 3. Room Clash
+        if (p1.roomId && p2.roomId && p1.roomId === p2.roomId) {
+          const rName = roomMap.get(p1.roomId)?.name || p1.roomId;
+          conflicts.push({
+            type: 'ROOM_CLASH',
+            lessonId: l1.id,
+            message: `Room clash: ${rName} double-booked at Day ${day + 1}, Period ${period + 1}`,
+            messageAr: `تعارض قاعة: ${rName} محجوزة لحصتين في نفس الوقت`,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    isValid: conflicts.length === 0,
+    conflicts,
+  };
 }
 

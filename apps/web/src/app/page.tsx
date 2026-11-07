@@ -1308,7 +1308,8 @@ export default function TimetableStudioPage() {
   // Run Background Web Worker WASM Solver
   const handleRunGenerate = async (
     complexity: GenerationComplexity,
-    options: { minimizeGaps: boolean; strictRooms: boolean; distributeSubjects: boolean }
+    options: { minimizeGaps: boolean; strictRooms: boolean; distributeSubjects: boolean },
+    mode: 'NEW' | 'IMPROVE' = 'NEW'
   ) => {
     if (isReadOnly) return;
     recordHistory();
@@ -1353,26 +1354,57 @@ export default function TimetableStudioPage() {
         (r) => r.type === 'DISTRIBUTION_ACROSS_DAYS' && r.enabled
       );
 
+      // Build placement map to enrich lessons with existing coordinates / locks
+      const placementMap = new Map(placements.map((p) => [p.lessonId, p]));
+      const enrichedLessons = lessons.map((l) => {
+        const plc = placementMap.get(l.id);
+        const isLocked = Boolean(plc?.isLocked);
+        const slot = plc ? plc.dayIndex * periodsPerDay + plc.periodIndex : undefined;
+        return {
+          ...l,
+          isPinned: isLocked,
+          pinnedSlot: isLocked ? slot : undefined,
+          pinnedRoomId: isLocked && plc ? plc.roomId : undefined,
+          initialSlot: slot,
+          initialRoomId: plc?.roomId,
+        };
+      });
+
       const solvedPlacements = await runWasmSolve({
-        lessons: lessons,
+        lessons: enrichedLessons,
         teachers: enrichedTeachers,
         classes: enrichedClasses,
         rooms: rooms,
         subjects: subjects,
+        placements: placements,
         complexity,
         options,
+        solveMode: mode,
         config: {
           days: cycleDays,
           periodsPerDay: periodsPerDay,
           maxConsecutivePeriods: maxConsecutiveRule?.parameterValue ?? 2,
           gapWeight: gapLimitsRule ? 30 : 10,
           distributionWeight: distribRule ? 25 : 10,
+          solveMode: mode,
         },
       });
 
-      setPlacements(solvedPlacements);
+      // Restore isLocked: true for any placement whose lesson was previously locked
+      const finalPlacements = solvedPlacements.map((p) => {
+        const prev = placementMap.get(p.lessonId);
+        if (prev?.isLocked) {
+          return { ...p, isLocked: true };
+        }
+        return p;
+      });
+
+      setPlacements(finalPlacements);
       setIsGenerateModalOpen(false);
     } catch (err: any) {
+      if (err?.message?.includes('cancelled') || err?.message?.includes('aborted') || err === 'cancelled') {
+        return;
+      }
       console.error('WASM Solver execution encountered error:', err);
       alert(
         isRtl
@@ -1596,80 +1628,11 @@ export default function TimetableStudioPage() {
   // Local Search Improvement Solve Mode (R1)
   // ==========================================
   const handleImproveTimetable = async () => {
-    if (isReadOnly) return;
-    recordHistory();
-
-    try {
-      const enrichedTeachers = teachers.map((tc) => {
-        const slots = extractSlotsFromTimeOffMatrix(
-          tc.id,
-          timeOffMatrix,
-          periodsPerDay,
-          tc.unavailableSlots
-        );
-        return {
-          ...tc,
-          unavailableSlots: slots.unavailableSlots,
-          undesirableSlots: slots.undesirableSlots,
-        };
-      });
-
-      const enrichedClasses = classes.map((c) => {
-        const slots = extractSlotsFromTimeOffMatrix(
-          c.id,
-          timeOffMatrix,
-          periodsPerDay,
-          []
-        );
-        return {
-          ...c,
-          unavailableSlots: slots.unavailableSlots,
-        };
-      });
-
-      const maxConsecutiveRule = advancedRules.find(
-        (r) => r.type === 'MAX_CONSECUTIVE_PERIODS' && r.enabled
-      );
-      const gapLimitsRule = advancedRules.find(
-        (r) => r.type === 'TEACHER_GAP_LIMITS' && r.enabled
-      );
-      const distribRule = advancedRules.find(
-        (r) => r.type === 'DISTRIBUTION_ACROSS_DAYS' && r.enabled
-      );
-
-      const solvedPlacements = await runWasmSolve({
-        lessons,
-        teachers: enrichedTeachers,
-        classes: enrichedClasses,
-        rooms,
-        subjects,
-        placements, // Pinned placements are preserved as immutable anchors
-        complexity: 'normal',
-        options: {
-          minimizeGaps: true,
-          strictRooms: false,
-          distributeSubjects: true,
-        },
-        solveMode: 'IMPROVE',
-        config: {
-          days: cycleDays,
-          periodsPerDay: periodsPerDay,
-          maxConsecutivePeriods: maxConsecutiveRule?.parameterValue ?? 2,
-          gapWeight: gapLimitsRule ? 30 : 10,
-          distributionWeight: distribRule ? 25 : 10,
-          solveMode: 'IMPROVE',
-        },
-      });
-
-      setPlacements(solvedPlacements);
-    } catch (err: any) {
-      console.error('Improve solve failed:', err);
-      alert(
-        isRtl
-          ? `تعذر تحسين الجدول: ${err?.message || err}`
-          : `Failed to improve timetable: ${err?.message || err}`
-      );
-    }
+    await handleRunGenerate(
+      'normal',
+      { minimizeGaps: true, strictRooms: false, distributeSubjects: true },
+      'IMPROVE'
+    );
   };
 
   // ==========================================
@@ -2236,7 +2199,6 @@ export default function TimetableStudioPage() {
         </div>
       </div>
 
-      {/* Modals */}
       <GenerateModal
         isOpen={isGenerateModalOpen}
         onClose={() => setIsGenerateModalOpen(false)}
@@ -2244,6 +2206,16 @@ export default function TimetableStudioPage() {
         isSolving={isSolving}
         progress={solverProgress}
         onRunGenerate={handleRunGenerate}
+        onCancel={cancelWasmSolve}
+        onOpenAdvisor={() => setIsAdvisorOpen(true)}
+        teachers={teachers}
+        classes={classes}
+        rooms={rooms}
+        subjects={subjects}
+        lessons={lessons}
+        cycleDays={cycleDays}
+        periodsPerDay={periodsPerDay}
+        timeOffMatrix={timeOffMatrix}
         solveDurationMs={solveStats?.durationMs}
         solveStatus={solveStats?.status}
         unplacedCount={unplacedCount}

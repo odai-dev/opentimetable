@@ -170,16 +170,32 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
       });
     }
 
+    const resolvedSolveMode = payload?.solveMode || payload?.config?.solveMode || 'NEW';
+
+    const normalizedLessons = (payload?.lessons || []).map((l: any) => {
+      const isPinned = Boolean(l.isPinned || l.isLocked || l.is_pinned || l.is_locked);
+      return {
+        ...l,
+        isPinned,
+        pinnedSlot: l.pinnedSlot ?? l.pinned_slot,
+        pinnedRoomId: l.pinnedRoomId ?? l.pinned_room_id,
+        initialSlot: l.initialSlot ?? l.initial_slot,
+        initialRoomId: l.initialRoomId ?? l.initial_room_id,
+      };
+    });
+
     const normalizedPayload = {
       ...payload,
       days: resolvedDays,
       periodsPerDay: resolvedPeriodsPerDay,
       teachers: normalizedTeachers,
       classes: normalizedClasses,
+      lessons: normalizedLessons,
       config: {
         ...payload?.config,
         days: resolvedDays,
         periodsPerDay: resolvedPeriodsPerDay,
+        solveMode: resolvedSolveMode,
       },
     };
 
@@ -267,7 +283,7 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
             const lessonId = p.lessonId || p.lesson_id;
             const lesson = lessonMap.get(lessonId);
             const fallbackRoom = lesson?.roomId || (payload?.rooms && payload.rooms[0]?.id) || '';
-            const origLesson = (payload?.lessons || []).find((l: any) => l.id === lessonId);
+            const origLesson = (normalizedLessons || []).find((l: any) => l.id === lessonId);
             return {
               lessonId,
               dayIndex:
@@ -279,7 +295,7 @@ ctx.addEventListener('message', async (event: MessageEvent<InboundWorkerMessage>
                 p.period_index ??
                 (p.slot !== undefined ? p.slot % resolvedPeriodsPerDay : 0),
               roomId: p.roomId || p.room_id || fallbackRoom,
-              isLocked: origLesson?.isPinned ?? false,
+              isLocked: Boolean(origLesson?.isPinned || origLesson?.isLocked),
             };
           });
 

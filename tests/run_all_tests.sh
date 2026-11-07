@@ -32,6 +32,9 @@ node --test tests/test_m3_scheduling_workflows.mjs
 echo "==> Running Milestone 4 Canvas & Card Deck Precision Verification Suite..."
 node --test tests/test_canvas_card_deck_precision.mjs
 
+echo "==> Running Milestone 4 Constraint Validation, Feasibility Diagnostics & Solver Suite..."
+node --test tests/test_m4_solver_feasibility.mjs
+
 echo "==> Running Dynamic Scaling & Multi-Period Boundaries Adversarial Suite..."
 node --test tests/test_dynamic_scaling_adversarial.mjs
 

@@ -11,6 +11,7 @@ import {
   AdvisorDiagnostic,
 } from '../lib/types';
 import { translations } from '../lib/i18n';
+import { analyzeFeasibilityDiagnostics } from '../lib/domain';
 import {
   Lightbulb,
   Sparkles,
@@ -54,126 +55,19 @@ export const AdvisorModal: React.FC<AdvisorModalProps> = ({
   const t = translations[lang];
   const isRtl = t.dir === 'rtl';
 
-  const totalCycleSlots = cycleDays * periodsPerDay;
-
   // Diagnostic analysis engine
   const diagnostics = useMemo<AdvisorDiagnostic[]>(() => {
-    const list: AdvisorDiagnostic[] = [];
-
-    // 1. Faculty Workload vs Available Unblocked Slots (Pigeonhole Principle)
-    const teacherLessonHours = new Map<string, number>();
-    for (const l of lessons) {
-      const dur = l.duration || 1;
-      teacherLessonHours.set(l.teacherId, (teacherLessonHours.get(l.teacherId) || 0) + dur);
-    }
-
-    for (const teacher of teachers) {
-      const requiredHours = teacherLessonHours.get(teacher.id) || 0;
-      if (requiredHours === 0) continue;
-
-      // Count blocked slots
-      let blockedCount = 0;
-      const blockedSlots: number[] = [];
-      for (let d = 0; d < cycleDays; d++) {
-        for (let p = 0; p < periodsPerDay; p++) {
-          const key = `${teacher.id}-${d}-${p}`;
-          if (timeOffMatrix[key] === 0) {
-            blockedCount++;
-            blockedSlots.push(d * periodsPerDay + p);
-          }
-        }
-      }
-
-      const availableSlots = totalCycleSlots - blockedCount;
-      if (requiredHours > availableSlots) {
-        const shortage = requiredHours - availableSlots;
-        list.push({
-          id: `ADV_PIGEONHOLE_${teacher.id}`,
-          type: 'PIGEONHOLE_TEACHER',
-          severity: 'CRITICAL',
-          title: `Impossible Schedule for Faculty Member: ${teacher.name}`,
-          titleAr: `استحالة رياضية لتسكين جدول عضو هيئة التدريس: ${teacher.name}`,
-          analysis: `Faculty member ${teacher.name} has ${requiredHours} required weekly lecture hours, but only ${availableSlots} available slots due to ${blockedCount} blocked lecture slots in Time-Off (Deficit: ${shortage} lectures).`,
-          analysisAr: `عضو هيئة التدريس ${teacher.name} مطلوب منه تدريس ${requiredHours} محاضرة، بينما المتاح له فقط ${availableSlots} محاضرة بسبب حظر ${blockedCount} محاضرة في جدول تفريغه (العجز: ${shortage} محاضرة). التسكين مستحيل رياضياً.`,
-          suggestedAction: `Unblock at least ${shortage} lecture slots in ${teacher.name}'s Time-Off schedule.`,
-          suggestedActionAr: `إلغاء حظر ما لا يقل عن ${shortage} محاضرة في جدول تفريغ عضو هيئة التدريس ${teacher.name}.`,
-          actionPayload: {
-            type: 'UNBLOCK_TIMEOFF',
-            teacherId: teacher.id,
-            slots: blockedSlots.slice(0, shortage),
-          },
-        });
-      }
-    }
-
-    // 2. Hall & Lab Type Depletion Bottleneck
-    const roomTypeCounts = new Map<string, number>();
-    for (const r of rooms) {
-      if (r.type && r.type !== 'STANDARD') {
-        roomTypeCounts.set(r.type, (roomTypeCounts.get(r.type) || 0) + 1);
-      }
-    }
-
-    const roomTypeDemand = new Map<string, number>();
-    for (const l of lessons) {
-      const sub = subjects.find((s) => s.id === l.subjectId);
-      if (sub?.requiredRoomType && sub.requiredRoomType !== 'STANDARD') {
-        const dur = l.duration || 1;
-        roomTypeDemand.set(
-          sub.requiredRoomType,
-          (roomTypeDemand.get(sub.requiredRoomType) || 0) + dur
-        );
-      }
-    }
-
-    for (const [rType, demandedHours] of roomTypeDemand.entries()) {
-      const physicalRooms = roomTypeCounts.get(rType) || 0;
-      const totalAvailableLabHours = physicalRooms * totalCycleSlots;
-      if (demandedHours > totalAvailableLabHours) {
-        list.push({
-          id: `ADV_ROOM_${rType}`,
-          type: 'ROOM_BOTTLENECK',
-          severity: 'CRITICAL',
-          title: `Severe Hall / Lab Shortage: ${rType}`,
-          titleAr: `عجز حاد في قاعات / معامل: ${rType}`,
-          analysis: `Total weekly demand for ${rType} is ${demandedHours} hours, but the university only has ${physicalRooms} hall(s)/lab(s) of this type (${totalAvailableLabHours} max capacity).`,
-          analysisAr: `الطلب الأسبوعي على قاعات/معامل (${rType}) هو ${demandedHours} محاضرة، بينما الكلية تمتلك فقط ${physicalRooms} قاعة/معمل بطاقة قصوى ${totalAvailableLabHours} محاضرة.`,
-          suggestedAction: `Allow general lecture hall fallback or add another ${rType} facility.`,
-          suggestedActionAr: `السماح باستخدام المدرجات والقاعات العامة كبديل أو إضافة قاعة/معمل ${rType} إضافي.`,
-          actionPayload: {
-            type: 'FALLBACK_ROOM',
-            roomId: rType,
-          },
-        });
-      }
-    }
-
-    // 3. Group / Section Load Overload
-    const classTotalHours = new Map<string, number>();
-    for (const l of lessons) {
-      const dur = l.duration || 1;
-      classTotalHours.set(l.classId, (classTotalHours.get(l.classId) || 0) + dur);
-    }
-
-    for (const cls of classes) {
-      const totalH = classTotalHours.get(cls.id) || 0;
-      if (totalH > totalCycleSlots) {
-        list.push({
-          id: `ADV_CLASS_${cls.id}`,
-          type: 'UNRESOLVABLE_CLASH',
-          severity: 'CRITICAL',
-          title: `Over-allocated Curriculum for Section: ${cls.name}`,
-          titleAr: `حمولة محاضرات زائدة للدفعة/الشعبة: ${cls.name}`,
-          analysis: `Group/Section ${cls.name} has ${totalH} assigned weekly hours, which exceeds the entire week capacity of ${totalCycleSlots} lecture slots.`,
-          analysisAr: `الدفعة/الشعبة ${cls.name} تم إسناد ${totalH} محاضرة لها أسبوعياً، وهو ما يتجاوز الطاقة القصوى لكامل الأسبوع (${totalCycleSlots} محاضرة).`,
-          suggestedAction: `Reduce weekly lectures for this group/section by ${totalH - totalCycleSlots} lectures.`,
-          suggestedActionAr: `تقليص المحاضرات الأسبوعية لهذه الدفعة/الشعبة بمقدار ${totalH - totalCycleSlots} محاضرة.`,
-        });
-      }
-    }
-
-    return list;
-  }, [teachers, classes, rooms, subjects, lessons, cycleDays, periodsPerDay, timeOffMatrix, totalCycleSlots]);
+    return analyzeFeasibilityDiagnostics({
+      teachers,
+      classes,
+      rooms,
+      subjects,
+      lessons,
+      cycleDays,
+      periodsPerDay,
+      timeOffMatrix,
+    });
+  }, [teachers, classes, rooms, subjects, lessons, cycleDays, periodsPerDay, timeOffMatrix]);
 
   if (!isOpen) return null;
 

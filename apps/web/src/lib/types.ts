@@ -88,6 +88,8 @@ export interface Lesson {
   isPinned?: boolean;
   pinnedSlot?: number;
   pinnedRoomId?: string;
+  initialSlot?: number;
+  initialRoomId?: string;
 }
 
 export interface Placement {

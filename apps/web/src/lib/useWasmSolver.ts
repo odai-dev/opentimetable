@@ -126,7 +126,30 @@ export function useWasmSolver(): UseWasmSolverReturn {
           const totalCapacity = Math.max(1, days * periods);
 
           let slot = 0;
-          const solvedPlacements: Placement[] = payload.lessons.map((lesson) => {
+          const solvedPlacements: Placement[] = payload.lessons.map((lesson: any) => {
+            const isPinned = Boolean(lesson.isPinned || lesson.isLocked);
+            if (isPinned && lesson.pinnedSlot !== undefined) {
+              const d = Math.floor(lesson.pinnedSlot / periods);
+              const p = lesson.pinnedSlot % periods;
+              return {
+                lessonId: lesson.id,
+                dayIndex: d,
+                periodIndex: p,
+                roomId: lesson.pinnedRoomId || lesson.roomId || (payload.rooms && payload.rooms[0]?.id) || '',
+                isLocked: true,
+              };
+            }
+            if (payload.solveMode === 'IMPROVE' && lesson.initialSlot !== undefined) {
+              const d = Math.floor(lesson.initialSlot / periods);
+              const p = lesson.initialSlot % periods;
+              return {
+                lessonId: lesson.id,
+                dayIndex: d,
+                periodIndex: p,
+                roomId: lesson.initialRoomId || lesson.roomId || (payload.rooms && payload.rooms[0]?.id) || '',
+                isLocked: isPinned,
+              };
+            }
             const currentSlot = slot % totalCapacity;
             const d = Math.floor(currentSlot / periods);
             const p = currentSlot % periods;
@@ -136,6 +159,7 @@ export function useWasmSolver(): UseWasmSolverReturn {
               dayIndex: d,
               periodIndex: p,
               roomId: lesson.roomId || (payload.rooms && payload.rooms[0]?.id) || '',
+              isLocked: isPinned,
             };
           });
 
