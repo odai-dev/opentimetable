@@ -33,29 +33,8 @@ export interface SchoolDataUpdate {
   bellSchedule?: string[];
 }
 
-export function generateDefaultBells(count: number): string[] {
-  const bells: string[] = [];
-  let currentHour = 8;
-  let currentMinute = 0;
-  for (let i = 0; i < count; i++) {
-    const startH = String(currentHour).padStart(2, '0');
-    const startM = String(currentMinute).padStart(2, '0');
-    currentMinute += 45;
-    if (currentMinute >= 60) {
-      currentHour += Math.floor(currentMinute / 60);
-      currentMinute %= 60;
-    }
-    const endH = String(currentHour).padStart(2, '0');
-    const endM = String(currentMinute).padStart(2, '0');
-    bells.push(`${startH}:${startM} - ${endH}:${endM}`);
-    currentMinute += 5; // 5 min passing period
-    if (currentMinute >= 60) {
-      currentHour += Math.floor(currentMinute / 60);
-      currentMinute %= 60;
-    }
-  }
-  return bells;
-}
+import { generateDefaultBells } from '../lib/domain';
+export { generateDefaultBells };
 
 interface BasicDataModalProps {
   isOpen: boolean;
@@ -729,7 +708,7 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
                     onChange={(e) => handlePeriodsChange(Number(e.target.value))}
                     className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 font-bold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
                   >
-                    {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((p) => (
+                    {[4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24].map((p) => (
                       <option key={p} value={p}>
                         {p} {isRtl ? 'محاضرات' : 'Lectures'}
                       </option>
@@ -745,17 +724,28 @@ export const BasicDataModal: React.FC<BasicDataModalProps> = ({
               </div>
 
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="font-bold text-slate-700">
                     {isRtl ? 'أوقات المحاضرات' : 'Lecture Schedule (Times)'}
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setLocalBellSchedule(generateDefaultBells(localPeriodsPerDay))}
-                    className="text-[11px] text-sky-600 hover:text-sky-800 underline font-semibold"
-                  >
-                    {isRtl ? 'إعادة تعيين الأوقات الافتراضية' : 'Reset to Default Times'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLocalBellSchedule(generateDefaultBells(localPeriodsPerDay, 30, 0))}
+                      className="text-[11px] bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded px-2 py-0.5 text-slate-700 font-semibold"
+                      title={isRtl ? 'فترات 30 دقيقة بدون استراحة (نظام الجامعات)' : '30-minute intervals (University system)'}
+                    >
+                      {isRtl ? '30 دقيقة (جامعي)' : '30-min (University)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLocalBellSchedule(generateDefaultBells(localPeriodsPerDay, 45, 5))}
+                      className="text-[11px] bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded px-2 py-0.5 text-slate-700 font-semibold"
+                      title={isRtl ? 'فترات 45 دقيقة مع استراحة 5 دقائق (نظام المدارس)' : '45-minute intervals (School system)'}
+                    >
+                      {isRtl ? '45 دقيقة (مدرسي)' : '45-min (School)'}
+                    </button>
+                  </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
                   <table className="w-full text-left border-collapse text-xs">

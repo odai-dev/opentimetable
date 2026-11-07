@@ -33,6 +33,7 @@ import {
 import {
   IndividualTimetableSheet,
   ColorMode,
+  SheetLayoutOrientation,
 } from './IndividualTimetableSheet';
 
 export type PrintDocumentMode = 'batch_classes' | 'batch_teachers' | 'selected_entity' | 'master_wall';
@@ -104,6 +105,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   const [paperSize, setPaperSize] = useState<PaperSize>('A4');
   const [orientation, setOrientation] = useState<PageOrientation>('landscape');
   const [colorMode, setColorMode] = useState<ColorMode>('color');
+  const [layoutOrientation, setLayoutOrientation] = useState<SheetLayoutOrientation>('horizontal_asc');
   const [zoom, setZoom] = useState<number>(100);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showSignatures, setShowSignatures] = useState<boolean>(true);
@@ -443,6 +445,35 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Grid Layout Format (aSc Horizontal vs Vertical) */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">{isRtl ? 'تخطيط الجدول' : 'Grid Format'}:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setLayoutOrientation('horizontal_asc')}
+                      className={`px-2 py-1 rounded text-[10px] font-bold border transition ${
+                        layoutOrientation === 'horizontal_asc'
+                          ? 'bg-sky-600 border-sky-400 text-white'
+                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                      }`}
+                      title={isRtl ? 'تنسيق aSc الأصلي: الأيام صفوف والحصص أعمدة مع دمج المحاضرات الممتدة' : 'Classic aSc layout: Days as rows, periods as columns with merged spans'}
+                    >
+                      {isRtl ? 'أفقي (aSc)' : 'aSc Horizontal'}
+                    </button>
+                    <button
+                      onClick={() => setLayoutOrientation('vertical_days')}
+                      className={`px-2 py-1 rounded text-[10px] font-bold border transition ${
+                        layoutOrientation === 'vertical_days'
+                          ? 'bg-sky-600 border-sky-400 text-white'
+                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                      }`}
+                      title={isRtl ? 'الحصص صفوف والأيام أعمدة' : 'Periods as rows, days as columns'}
+                    >
+                      {isRtl ? 'عمودي' : 'Vertical'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -704,6 +735,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                         subjectMap={subjectMap}
                         lessonMap={lessonMap}
                         colorMode={colorMode}
+                        layoutOrientation={layoutOrientation}
                         showSignatures={showSignatures}
                         preparedBy={preparedBy}
                         approvedBy={approvedBy}
@@ -745,6 +777,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                 subjectMap={subjectMap}
                 lessonMap={lessonMap}
                 colorMode={colorMode}
+                layoutOrientation={layoutOrientation}
                 showSignatures={showSignatures}
                 preparedBy={preparedBy}
                 approvedBy={approvedBy}
@@ -779,6 +812,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                 subjectMap={subjectMap}
                 lessonMap={lessonMap}
                 colorMode={colorMode}
+                layoutOrientation={layoutOrientation}
                 showSignatures={showSignatures}
                 preparedBy={preparedBy}
                 approvedBy={approvedBy}
@@ -812,6 +846,7 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
               subjectMap={subjectMap}
               lessonMap={lessonMap}
               colorMode={colorMode}
+              layoutOrientation={layoutOrientation}
               showSignatures={showSignatures}
               preparedBy={preparedBy}
               approvedBy={approvedBy}

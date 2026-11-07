@@ -217,7 +217,7 @@ pub fn validate_timetable(req: &TimetableRequest, response: &TimetableResponse) 
             .and_then(|t| t.max_consecutive_periods)
             .unwrap_or(default_max_consecutive);
 
-        let mut sched_mask = 0u64;
+        let mut sched_mask = 0u128;
         for &(s, d, _) in slots {
             sched_mask |= slot_mask(s, d);
         }

@@ -1,11 +1,11 @@
 #[inline(always)]
-pub fn slot_mask(slot: u8, duration: u8) -> u64 {
+pub fn slot_mask(slot: u8, duration: u8) -> u128 {
     if duration <= 1 {
-        1u64 << slot
+        1u128 << slot
     } else if duration == 2 {
-        (3u64) << slot
+        (3u128) << slot
     } else {
-        ((1u64 << duration) - 1) << slot
+        ((1u128 << duration) - 1) << slot
     }
 }
 
@@ -16,52 +16,52 @@ pub fn crosses_day_boundary(slot: u8, duration: u8, periods_per_day: u8) -> bool
 }
 
 #[inline(always)]
-pub fn build_unavailability_mask(slots: &[u8]) -> u64 {
-    let mut mask = 0u64;
+pub fn build_unavailability_mask(slots: &[u8]) -> u128 {
+    let mut mask = 0u128;
     for &s in slots {
-        if s < 64 {
-            mask |= 1u64 << s;
+        if s < 128 {
+            mask |= 1u128 << s;
         }
     }
     mask
 }
 
 #[inline(always)]
-pub fn day_mask(day: u8, periods_per_day: u8) -> u64 {
-    let day_len = periods_per_day as u64;
-    let base = if day_len >= 64 {
-        !0u64
+pub fn day_mask(day: u8, periods_per_day: u8) -> u128 {
+    let day_len = periods_per_day as u128;
+    let base = if day_len >= 128 {
+        !0u128
     } else {
-        (1u64 << day_len) - 1
+        (1u128 << day_len) - 1
     };
-    base << ((day as u64) * day_len)
+    base << ((day as u128) * day_len)
 }
 
 #[inline(always)]
-pub fn extract_day_bits(schedule: u64, day: u8, periods_per_day: u8) -> u64 {
-    let shift = (day as u64) * (periods_per_day as u64);
-    let mask = if periods_per_day >= 64 {
-        !0u64
+pub fn extract_day_bits(schedule: u128, day: u8, periods_per_day: u8) -> u128 {
+    let shift = (day as u128) * (periods_per_day as u128);
+    let mask = if periods_per_day >= 128 {
+        !0u128
     } else {
-        (1u64 << periods_per_day) - 1
+        (1u128 << periods_per_day) - 1
     };
     (schedule >> shift) & mask
 }
 
 #[inline(always)]
-pub fn count_day_gaps(day_bits: u64) -> u32 {
+pub fn count_day_gaps(day_bits: u128) -> u32 {
     if day_bits == 0 {
         return 0;
     }
     let first = day_bits.trailing_zeros();
-    let last = 63 - day_bits.leading_zeros();
+    let last = 127 - day_bits.leading_zeros();
     let count = day_bits.count_ones();
     let span = last - first + 1;
     span.saturating_sub(count)
 }
 
 #[inline(always)]
-pub fn max_consecutive_ones(mut day_bits: u64) -> u8 {
+pub fn max_consecutive_ones(mut day_bits: u128) -> u8 {
     let mut count = 0u8;
     while day_bits != 0 {
         day_bits &= day_bits << 1;
@@ -105,5 +105,15 @@ mod tests {
         assert_eq!(max_consecutive_ones(0b0011100), 3);
         assert_eq!(max_consecutive_ones(0b0110111), 3);
         assert_eq!(max_consecutive_ones(0b1111111), 7);
+    }
+
+    #[test]
+    fn test_university_108_slots_u128() {
+        // 6 days * 18 periods = 108 slots
+        let slot_107_mask = slot_mask(107, 1);
+        assert_eq!(slot_107_mask, 1u128 << 107);
+        let unavail = build_unavailability_mask(&[0, 63, 64, 100, 107]);
+        assert_ne!(unavail & slot_107_mask, 0);
+        assert_eq!(unavail & slot_mask(106, 1), 0);
     }
 }

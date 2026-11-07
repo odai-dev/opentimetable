@@ -45,14 +45,14 @@ pub struct SolverState {
     pub class_slot_usage: Vec<Vec<u8>>,        // [class_idx][slot]
     pub room_slot_usage: Vec<Vec<u8>>,         // [room_idx][slot]
 
-    pub teacher_masks: Vec<u64>,               // [teacher_idx]
-    pub class_masks: Vec<u64>,                 // [class_idx]
-    pub room_masks: Vec<u64>,                  // [room_idx]
+    pub teacher_masks: Vec<u128>,               // [teacher_idx]
+    pub class_masks: Vec<u128>,                 // [class_idx]
+    pub room_masks: Vec<u128>,                  // [room_idx]
 
-    pub teacher_unavail_masks: Vec<u64>,
-    pub class_unavail_masks: Vec<u64>,
-    pub room_unavail_masks: Vec<u64>,
-    pub teacher_undesirable_masks: Vec<u64>,
+    pub teacher_unavail_masks: Vec<u128>,
+    pub class_unavail_masks: Vec<u128>,
+    pub room_unavail_masks: Vec<u128>,
+    pub teacher_undesirable_masks: Vec<u128>,
 
     // Class subject day count: [class_idx][subject_idx][day]
     pub class_subject_day_usage: Vec<Vec<Vec<u8>>>,
@@ -249,9 +249,9 @@ impl SolverState {
             class_slot_usage,
             room_slot_usage,
 
-            teacher_masks: vec![0u64; num_teachers],
-            class_masks: vec![0u64; num_classes],
-            room_masks: vec![0u64; num_rooms],
+            teacher_masks: vec![0u128; num_teachers],
+            class_masks: vec![0u128; num_classes],
+            room_masks: vec![0u128; num_rooms],
 
             teacher_unavail_masks,
             class_unavail_masks,
@@ -371,7 +371,7 @@ impl SolverState {
     }
 
     #[inline(always)]
-    pub fn is_free_at(&self, teacher_idx: usize, class_idx: usize, room_idx: usize, mask: u64) -> bool {
+    pub fn is_free_at(&self, teacher_idx: usize, class_idx: usize, room_idx: usize, mask: u128) -> bool {
         let t_mask = self.teacher_masks[teacher_idx];
         let c_mask = self.class_masks[class_idx];
         let r_mask = self.room_masks[room_idx];
@@ -430,27 +430,27 @@ impl SolverState {
             }
 
             // Rebuild masks from slot usage
-            let mut new_t_mask = 0u64;
+            let mut new_t_mask = 0u128;
             for (p, &cnt) in self.teacher_slot_usage[t_idx].iter().enumerate() {
-                if cnt > 0 {
-                    new_t_mask |= 1u64 << p;
+                if cnt > 0 && p < 128 {
+                    new_t_mask |= 1u128 << p;
                 }
             }
             self.teacher_masks[t_idx] = new_t_mask;
 
-            let mut new_c_mask = 0u64;
+            let mut new_c_mask = 0u128;
             for (p, &cnt) in self.class_slot_usage[c_idx].iter().enumerate() {
-                if cnt > 0 {
-                    new_c_mask |= 1u64 << p;
+                if cnt > 0 && p < 128 {
+                    new_c_mask |= 1u128 << p;
                 }
             }
             self.class_masks[c_idx] = new_c_mask;
 
             if room_idx < self.rooms.len() {
-                let mut new_r_mask = 0u64;
+                let mut new_r_mask = 0u128;
                 for (p, &cnt) in self.room_slot_usage[room_idx].iter().enumerate() {
-                    if cnt > 0 {
-                        new_r_mask |= 1u64 << p;
+                    if cnt > 0 && p < 128 {
+                        new_r_mask |= 1u128 << p;
                     }
                 }
                 self.room_masks[room_idx] = new_r_mask;

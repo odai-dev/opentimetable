@@ -622,24 +622,53 @@ export function validateScheduleConstraints(params: {
 
 /**
  * Generate default bell schedule intervals given a period count.
- * Each period is 45 minutes with a 5-minute passing period starting at 08:00.
+ * For standard school schedules (<= 12 periods), defaults to 45 minutes with a 5-minute passing period starting at 08:00.
+ * For university schedules (> 12 periods or when 30-min selected), generates 30-minute intervals
+ * matching authentic aSc Timetables print format (e.g. 08:00 - 08:29, 08:30 - 08:59, ..., 16:30 - 16:59).
  */
-export function generateDefaultBells(count: number): string[] {
+export function generateDefaultBells(
+  count: number,
+  intervalMinutes?: number,
+  breakMinutes?: number,
+  startHour: number = 8,
+  startMinute: number = 0
+): string[] {
+  const isUniversityInterval = intervalMinutes !== undefined ? intervalMinutes === 30 : count > 12;
+  const interval = intervalMinutes ?? (isUniversityInterval ? 30 : 45);
+  const breakTime = breakMinutes ?? (isUniversityInterval ? 0 : 5);
+
   const bells: string[] = [];
-  let currentHour = 8;
-  let currentMinute = 0;
+  let currentHour = startHour;
+  let currentMinute = startMinute;
+
   for (let i = 0; i < count; i++) {
     const startH = String(currentHour).padStart(2, '0');
     const startM = String(currentMinute).padStart(2, '0');
-    currentMinute += 45;
+
+    currentMinute += interval;
     if (currentMinute >= 60) {
       currentHour += Math.floor(currentMinute / 60);
       currentMinute %= 60;
     }
-    const endH = String(currentHour).padStart(2, '0');
-    const endM = String(currentMinute).padStart(2, '0');
+
+    let endHVal = currentHour;
+    let endMVal = currentMinute;
+
+    if (breakTime === 0) {
+      // Authentic aSc 30-minute interval display: 08:00 - 08:29, 08:30 - 08:59, etc.
+      if (endMVal === 0) {
+        endMVal = 59;
+        endHVal -= 1;
+      } else {
+        endMVal -= 1;
+      }
+    }
+
+    const endH = String(endHVal).padStart(2, '0');
+    const endM = String(endMVal).padStart(2, '0');
     bells.push(`${startH}:${startM} - ${endH}:${endM}`);
-    currentMinute += 5; // 5 min passing period
+
+    currentMinute += breakTime;
     if (currentMinute >= 60) {
       currentHour += Math.floor(currentMinute / 60);
       currentMinute %= 60;
@@ -647,4 +676,70 @@ export function generateDefaultBells(count: number): string[] {
   }
   return bells;
 }
+
+/**
+ * Collects a comma-separated sorted string of unique classrooms used by a class or teacher.
+ * Matches desktop aSc Timetables top-right classroom list print format.
+ */
+export function collectEntityClassrooms(
+  entityId: string,
+  entityType: 'class' | 'teacher' | 'room',
+  lessons: Lesson[],
+  rooms: Room[],
+  placements: Placement[]
+): string {
+  const roomMap = new Map(rooms.map((r) => [r.id, r]));
+  const lessonMap = new Map(lessons.map((l) => [l.id, l]));
+  const usedRoomIds = new Set<string>();
+
+  for (const p of placements) {
+    const l = lessonMap.get(p.lessonId);
+    if (!l) continue;
+
+    let matches = false;
+    if (entityType === 'class') {
+      matches =
+        l.classId === entityId ||
+        Boolean(l.classIds?.includes(entityId)) ||
+        Boolean(l.jointClassIds?.includes(entityId));
+    } else if (entityType === 'teacher') {
+      matches = l.teacherId === entityId || Boolean(l.teacherIds?.includes(entityId));
+    } else {
+      matches = p.roomId === entityId;
+    }
+
+    if (matches) {
+      if (p.roomId) usedRoomIds.add(p.roomId);
+      else if (l.roomId) usedRoomIds.add(l.roomId);
+    }
+  }
+
+  // Also include rooms from unplaced lessons for this entity
+  for (const l of lessons) {
+    let matches = false;
+    if (entityType === 'class') {
+      matches =
+        l.classId === entityId ||
+        Boolean(l.classIds?.includes(entityId)) ||
+        Boolean(l.jointClassIds?.includes(entityId));
+    } else if (entityType === 'teacher') {
+      matches = l.teacherId === entityId || Boolean(l.teacherIds?.includes(entityId));
+    }
+    if (matches && l.roomId) {
+      usedRoomIds.add(l.roomId);
+    }
+  }
+
+  const roomNames = Array.from(usedRoomIds)
+    .map((rid) => {
+      const r = roomMap.get(rid);
+      if (!r) return rid;
+      if (r.capacity) return `${r.name} (${r.capacity})`;
+      return r.name;
+    })
+    .sort();
+
+  return roomNames.join(', ');
+}
+
 

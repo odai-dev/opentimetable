@@ -56,6 +56,9 @@ node --test tests/test_m1_dynamic_dimensions_challenger.mjs
 echo "==> Running Parity, Conflict & aSc XML Export Suite (M2)..."
 node --test tests/test_m2_features.mjs
 
+echo "==> Running University aSc Timetable Print & Solver Parity Suite (18 Periods, u128 Bitmasks)..."
+node --test tests/test_university_asc_print_parity.mjs
+
 echo "=========================================================="
 echo "         ALL OPENTIMETABLE TESTS PASSED (100%)            "
 echo "=========================================================="
